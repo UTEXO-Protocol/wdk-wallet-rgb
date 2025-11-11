@@ -4,7 +4,7 @@
 
 `@tetherto/wdk-wallet-rgb` bridges the Wallet Development Kit (WDK) interfaces with the RGB ecosystem by wrapping the official `rgb-sdk` WalletManager API inside the familiar WDK abstractions. It handles key-derivation, account lifecycle, UTXO orchestration, asset issuance, transfers, and wallet backup flows while keeping the WDK ergonomics you already know. The library expects an RGB node and Bitcoin backend to be available, just like the upstream `rgb-sdk` tooling.
 
-[SDK Overview – rgb-sdk](https://github.com/RGB-OS/rgb-sdk)
+[RGB SDK Overview – rgb-sdk](https://github.com/RGB-OS/rgb-sdk)
 
 ---
 
