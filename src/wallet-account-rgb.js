@@ -249,11 +249,11 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    * This method implements the RGB transfer flow using sendBegin/sendEnd.
    *
    * @param {TransferOptions} options - The transfer's options.
-   * @property {string} options.asset_id - The RGB asset ID to transfer.
+   * @property {string} options.assetId - The RGB asset ID to transfer.
    * @property {string} options.to - The recipient's invoice (from blindReceive).
    * @property {number} options.value - The amount to transfer.
-   * @property {number} [options.fee_rate] - The fee rate in sat/vbyte (default: 1).
-   * @property {number} [options.min_confirmations] - Minimum confirmations (default: 1).
+   * @property {number} [options.feeRate] - The fee rate in sat/vbyte (default: 1).
+   * @property {number} [options.minConfirmations] - Minimum confirmations (default: 1).
    * @returns {Promise<TransferResult>} The transfer's result.
    */
   async transfer (options) {
@@ -302,7 +302,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
    * @param {number} [options.limit] - The number of transfers to return (default: 10).
    * @param {number} [options.skip] - The number of transfers to skip (default: 0).
-   * @param {string} [options.asset_id] - Optional asset ID to filter transfers.
+   * @param {string} [options.assetId] - Optional asset ID to filter transfers.
    * @returns {Promise<Array>} The transfers.
    */
   async getTransfers (options = {}) {

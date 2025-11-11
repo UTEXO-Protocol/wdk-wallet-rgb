@@ -2,9 +2,9 @@
 
 > **Beta notice:** this package is still evolving. Please exercise caution and validate behaviour against your RGB node before deploying in production.
 
-`@tetherto/wdk-wallet-rgb` bridges the Wallet Development Kit (WDK) interfaces with the RGB ecosystem by wrapping the official `rgb-sdk` WalletManager API inside the familiar WDK abstractions. It handles key-derivation, account lifecycle, UTXO orchestration, asset issuance, transfers, and wallet backup flows while keeping the WDK ergonomics you already know. The library expects an RGB node and Bitcoin backend to be available, just like the upstream `rgb-sdk` tooling.[^rgb-sdk]
+`@tetherto/wdk-wallet-rgb` bridges the Wallet Development Kit (WDK) interfaces with the RGB ecosystem by wrapping the official `rgb-sdk` WalletManager API inside the familiar WDK abstractions. It handles key-derivation, account lifecycle, UTXO orchestration, asset issuance, transfers, and wallet backup flows while keeping the WDK ergonomics you already know. The library expects an RGB node and Bitcoin backend to be available, just like the upstream `rgb-sdk` tooling.
 
-[^rgb-sdk]: [SDK Overview – rgb-sdk](https://raw.githubusercontent.com/RGB-OS/rgb-connect-nodejs/wdk-wallet/Readme.md)
+[SDK Overview – rgb-sdk](https://github.com/RGB-OS/rgb-connect-nodejs/blob/wdk-wallet/Readme.md)
 
 ---
 
@@ -29,7 +29,6 @@ With this package you can:
 | `constructor(seed, config)` | Initialises the manager for `seed` with RGB network + node endpoint configuration. |
 | `getAccount()` | Returns (and caches) the RGB account at index `0`, deriving keys via `rgb-sdk`. |
 | `restoreAccountFromBackup(restoreConfig)` | Builds a manager-backed account directly from encrypted backup payloads. |
-| `getAccountByPath(path)` | Always throws – RGB taproot wallets only expose the single index `0`. |
 | `getFeeRates()` | Returns basic Bitcoin fee hints (`{ normal: 1n, fast: 2n }`). |
 | `dispose()` | Clears cached accounts and key material in memory. |
 
@@ -64,7 +63,7 @@ With this package you can:
 ## 📦 Installation
 
 ```bash
-npm install @tetherto/wdk-wallet-rgb rgb-sdk
+npm install @tetherto/wdk-wallet-rgb
 ```
 
 You also need access to an RGB node (default endpoint `http://127.0.0.1:8000`) and a Bitcoin backend that the node trusts. The examples assume a locally running regtest stack.
@@ -75,22 +74,19 @@ You also need access to an RGB node (default endpoint `http://127.0.0.1:8000`) a
 
 ```javascript
 import WalletManagerRgb from '@tetherto/wdk-wallet-rgb'
-import { createWallet } from 'rgb-sdk'
 
-const RGB_NODE_ENDPOINT = process.env.RGB_NODE_ENDPOINT ?? 'http://127.0.0.1:8000'
-const NETWORK = process.env.BITCOIN_NETWORK ?? 'regtest'
+const RGB_NODE_ENDPOINT = 'http://127.0.0.1:8000'
+const NETWORK = 'regtest'
 
-// Generate keys (or bring your own mnemonic)
-const keys = await createWallet(NETWORK)
+const seedPhrase = 'poem twice question inch happy capital grain quality laptop dry chaos what';
 
 // Initialise the WDK manager – it will derive RGB keys on demand
-const manager = new WalletManagerRgb(keys.mnemonic, {
-  network: NETWORK,
-  rgb_node_endpoint: RGB_NODE_ENDPOINT
+const manager = new WalletManagerRgb(seedPhrase, {
+  network: 'mainnet', // 'mainnet', 'testnet', 'regtest'
+  rgb_node_endpoint: 'http://127.0.0.1:8000'
 })
 
 const account = await manager.getAccount()
-await account.registerWallet()
 
 const address = await account.getAddress()
 console.log('Deposit address:', address)
@@ -115,7 +111,6 @@ const manager = new WalletManagerRgb(mnemonic, {
   rgb_node_endpoint: 'http://127.0.0.1:8000'
 })
 const account = await manager.getAccount() // always index 0
-await account.registerWallet()
 ```
 
 ### Manage UTXOs
@@ -189,7 +184,7 @@ console.log('Restored address:', await restored.getAddress())
 Run the example with:
 
 ```bash
-node --experimental-wasm-modules examples/rgb-wallet-flow.mjs
+node examples/rgb-wallet-flow.mjs
 ```
 
 ---
