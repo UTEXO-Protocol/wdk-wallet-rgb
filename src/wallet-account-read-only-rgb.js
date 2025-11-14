@@ -92,7 +92,6 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
   async getBalance () {
     await this._initializeWallet()
     const balance = await this._wallet.getBtcBalance()
-    console.log('BTC balance:', JSON.stringify(balance))
     return BigInt(balance.vanilla.settled || 0)
   }
 
@@ -152,7 +151,7 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
       min_confirmations: minConfirmations
     })
     const signedPsbt = await this._wallet.signPsbt(psbt)
-    const {fee} = await this._wallet.estimateFee(signedPsbt)
+    const { fee } = await this._wallet.estimateFee(signedPsbt)
     return { fee: BigInt(fee) }
   }
 

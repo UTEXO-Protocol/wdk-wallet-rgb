@@ -243,7 +243,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    * @param {number} [tx.feeRate] - Fee rate in sat/vbyte (default: 1).
    * @returns {Promise<TransactionResult>} The transaction's result.
    */
-  async sendTransaction ({ to, value ,feeRate}) {
+  async sendTransaction ({ to, value, feeRate }) {
     try {
       const psbt = await this._wallet.sendBtcBegin({
         address: to,
@@ -366,8 +366,11 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    */
   dispose () {
     if (this._keyPair?.privateKey) {
-      // Clear private key from memory
-      this._keyPair.privateKey.fill(0)
+      if (typeof this._keyPair.privateKey === 'string') {
+        this._keyPair.privateKey = ''
+      } else {
+        this._keyPair.privateKey.fill(0)
+      }
     }
     this._keyPair = null
     this._wallet = null
