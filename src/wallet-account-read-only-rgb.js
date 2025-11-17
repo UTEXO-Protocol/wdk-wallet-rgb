@@ -110,16 +110,16 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
   /**
    * Quotes the costs of a send transaction operation.
    *
-   * @param {Transaction} tx - The transaction.
-   * @param {string} tx.to - The transaction's recipient.
-   * @param {number} tx.value - The amount of bitcoins to send to the recipient (in satoshis).
+   * @param {Transaction} options - The transaction.
+   * @param {string} options.to - The transaction's recipient.
+   * @param {number} options.value - The amount of bitcoins to send to the recipient (in satoshis).
    * @returns {Promise<Omit<TransactionResult, 'hash'>>} The transaction's quotes.
    */
-  async quoteSendTransaction ({ to, value }) {
+  async quoteSendTransaction (options) {
     const feeRate = await this._wallet.estimateFeeRate(1)
     const psbt = await this._wallet.sendBtcBegin({
-      address: to,
-      amount: value,
+      address: options.to,
+      amount: options.value,
       fee_rate: Math.round(feeRate)
     })
     const signedPsbt = await this._wallet.signPsbt(psbt)
@@ -131,24 +131,24 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
    * Quotes the costs of a transfer operation.
    *
    * @param {TransferOptions} options - The transfer's options.
-   * @property {string} options.assetId - The RGB asset ID to transfer.
+   * @property {string} options.asset_id - The RGB asset ID to transfer.
    * @property {string} options.to - The recipient's invoice (from blindReceive).
    * @property {number} options.value - The amount to transfer.
-   * @property {number} [options.feeRate] - The fee rate in sat/vbyte (default: 1).
-   * @property {number} [options.minConfirmations] - Minimum confirmations (default: 1).
+   * @property {Object} [options.witness_data] - The witness data.
+   * @property {number} [options.fee_rate] - The fee rate in sat/vbyte (default: 1).
+   * @property {number} [options.min_confirmations] - Minimum confirmations (default: 1).
    * @returns {Promise<Omit<TransferResult, 'hash'>>} The transfer's quotes.
    *
    */
   async quoteTransfer (options) {
     const feeRate = await this._wallet.estimateFeeRate(1)
-    const { to: invoice, assetId, value: amount, witnessData, minConfirmations } = options
     const psbt = await this._wallet.sendBegin({
-      invoice,
-      asset_id: assetId,
-      witness_data: witnessData,
-      amount,
+      invoice: options.to,
+      asset_id: options.asset_id,
+      witness_data: options.witness_data,
+      amount: options.value,
       fee_rate: Math.round(feeRate),
-      min_confirmations: minConfirmations
+      min_confirmations: options.min_confirmations
     })
     const signedPsbt = await this._wallet.signPsbt(psbt)
     const { fee } = await this._wallet.estimateFee(signedPsbt)

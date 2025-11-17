@@ -240,15 +240,15 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    * @param {RgbTransaction} tx - The transaction.
    * @param {string} tx.to - Recipient Bitcoin address.
    * @param {number} tx.value - Amount in satoshis.
-   * @param {number} [tx.feeRate] - Fee rate in sat/vbyte (default: 1).
+   * @param {number} [tx.fee_rate] - Fee rate in sat/vbyte (default: 1).
    * @returns {Promise<TransactionResult>} The transaction's result.
    */
-  async sendTransaction ({ to, value, feeRate }) {
+  async sendTransaction (options) {
     try {
       const psbt = await this._wallet.sendBtcBegin({
-        address: to,
-        amount: value,
-        fee_rate: feeRate
+        address: options.to,
+        amount: options.value,
+        fee_rate: options.fee_rate
       })
       const signedPsbt = await this.signPsbt(psbt)
       const result = await this._wallet.sendBtcEnd({ signed_psbt: signedPsbt })
@@ -266,19 +266,19 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    * This method implements the RGB transfer flow using sendBegin/sendEnd.
    *
    * @param {TransferOptions} options - The transfer's options.
-   * @property {string} options.assetId - The RGB asset ID to transfer.
+   * @property {string} options.asset_id - The RGB asset ID to transfer.
    * @property {string} options.to - The recipient's invoice (from blindReceive).
    * @property {number} options.value - The amount to transfer.
-   * @property {Object} [options.witnessData] - The witness data.
-   * @property {number} [options.witnessData.amount_sat] - The amount in satoshis.
-   * @property {number} [options.witnessData.blinding] - The blinding factor.
-   * @property {number} [options.feeRate] - The fee rate in sat/vbyte (default: 1).
-   * @property {number} [options.minConfirmations] - Minimum confirmations (default: 1).
+   * @property {Object} [options.witness_data] - The witness data.
+   * @property {number} [options.witness_data.amount_sat] - The amount in satoshis.
+   * @property {number} [options.witness_data.blinding] - The blinding factor.
+   * @property {number} [options.fee_rate] - The fee rate in sat/vbyte (default: 1).
+   * @property {number} [options.min_confirmations] - Minimum confirmations (default: 1).
    * @returns {Promise<TransferResult>} The transfer's result.
    */
   async transfer (options) {
-    if (!options.assetId && !options.to) {
-      throw new Error('assetId and to (invoice) are required for RGB asset transfers')
+    if (!options.asset_id && !options.to) {
+      throw new Error('asset_id and to (invoice) are required for RGB asset transfers')
     }
 
     // RGB SDK transfer flow:
@@ -287,16 +287,14 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
     // 3. Sender signs the PSBT using signPsbt
     // 4. Sender calls sendEnd with the signed PSBT
 
-    const { to: invoice, assetId, value: amount, feeRate, witnessData, minConfirmations } = options
-
     try {
       const psbt = await this.sendBegin({
-        invoice,
-        asset_id: assetId,
-        witness_data: witnessData,
-        amount,
-        fee_rate: feeRate,
-        min_confirmations: minConfirmations
+        invoice: options.to,
+        asset_id: options.asset_id,
+        witness_data: options.witness_data,
+        amount: options.value,
+        fee_rate: options.fee_rate,
+        min_confirmations: options.min_confirmations
       })
 
       const signedPsbt = await this.signPsbt(psbt)

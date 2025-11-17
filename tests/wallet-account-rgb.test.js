@@ -149,7 +149,7 @@ describe('WalletAccountRgb', () => {
 
     test('transfer performs RGB send flow', async () => {
       const { account, wallet } = await createAccount()
-      const result = await account.transfer({ assetId: 'asset-1', to: 'rgb1-invoice', value: 100 })
+      const result = await account.transfer({ asset_id: 'asset-1', to: 'rgb1-invoice', value: 100 })
 
       expect(wallet.sendBegin).toHaveBeenCalledWith({
         invoice: 'rgb1-invoice',
