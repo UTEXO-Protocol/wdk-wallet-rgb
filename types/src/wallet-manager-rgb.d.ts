@@ -2,7 +2,7 @@
 /** @typedef {import('./wallet-account-read-only-rgb.js').RgbWalletConfig} RgbWalletConfig */
 export default class WalletManagerRgb extends WalletManager {
     /**
-     * Creates a new wallet manager for the RGB blockchain.
+     * Creates a new wallet manager for the RGB.
      *
      * @param {string | Uint8Array} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
      * @param {RgbWalletConfig} [config] - The configuration object.

@@ -106,23 +106,23 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb implement
      * @param {RgbTransaction} tx - The transaction.
      * @param {string} tx.to - Recipient Bitcoin address.
      * @param {number} tx.value - Amount in satoshis.
-     * @param {number} [tx.feeRate] - Fee rate in sat/vbyte (default: 1).
+     * @param {number} [tx.fee_rate] - Fee rate in sat/vbyte (default: 1).
      * @returns {Promise<TransactionResult>} The transaction's result.
      */
-    sendTransaction({ to, value, feeRate }: RgbTransaction): Promise<TransactionResult>;
+    sendTransaction(options: any): Promise<TransactionResult>;
     /**
      * Transfers an RGB asset to another wallet.
      * This method implements the RGB transfer flow using sendBegin/sendEnd.
      *
      * @param {TransferOptions} options - The transfer's options.
-     * @property {string} options.assetId - The RGB asset ID to transfer.
+     * @property {string} options.asset_id - The RGB asset ID to transfer.
      * @property {string} options.to - The recipient's invoice (from blindReceive).
      * @property {number} options.value - The amount to transfer.
-     * @property {Object} [options.witnessData] - The witness data.
-     * @property {number} [options.witnessData.amount_sat] - The amount in satoshis.
-     * @property {number} [options.witnessData.blinding] - The blinding factor.
-     * @property {number} [options.feeRate] - The fee rate in sat/vbyte (default: 1).
-     * @property {number} [options.minConfirmations] - Minimum confirmations (default: 1).
+     * @property {Object} [options.witness_data] - The witness data.
+     * @property {number} [options.witness_data.amount_sat] - The amount in satoshis.
+     * @property {number} [options.witness_data.blinding] - The blinding factor.
+     * @property {number} [options.fee_rate] - The fee rate in sat/vbyte (default: 1).
+     * @property {number} [options.min_confirmations] - Minimum confirmations (default: 1).
      * @returns {Promise<TransferResult>} The transfer's result.
      */
     transfer(options: TransferOptions): Promise<TransferResult>;
