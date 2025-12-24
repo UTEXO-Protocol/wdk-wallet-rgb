@@ -46,7 +46,9 @@ describe('WalletAccountReadOnlyRgb', () => {
     test('should create a read-only account with address', async () => {
       const address = 'bc1p1234567890abcdefghijklmnopqrstuvwxyz'
       const account = new WalletAccountReadOnlyRgb(address, {
-        keys: mockKeys
+        keys: mockKeys,
+        network: 'testnet',
+        rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org'
       })
       expect(account).toBeInstanceOf(WalletAccountReadOnlyRgb)
       // The address is passed to the parent class constructor
@@ -55,7 +57,9 @@ describe('WalletAccountReadOnlyRgb', () => {
 
     test('should create a read-only account with default config', () => {
       const defaultAccount = new WalletAccountReadOnlyRgb('bc1p...', {
-        keys: mockKeys
+        keys: mockKeys,
+        network: 'testnet',
+        rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org'
       })
       expect(defaultAccount).toBeInstanceOf(WalletAccountReadOnlyRgb)
     })
@@ -64,8 +68,29 @@ describe('WalletAccountReadOnlyRgb', () => {
   describe('constructor validation', () => {
     test('should throw error if keys are not provided', () => {
       expect(() => {
-        new WalletAccountReadOnlyRgb('bc1p...', {})
+        new WalletAccountReadOnlyRgb('bc1p...', {
+          network: 'testnet',
+          rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org'
+        })
       }).toThrow('Wallet keys are required for read-only account')
+    })
+
+    test('should throw error if network is not provided', () => {
+      expect(() => {
+        new WalletAccountReadOnlyRgb('bc1p...', {
+          keys: mockKeys,
+          rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org'
+        })
+      }).toThrow('Network configuration is required.')
+    })
+
+    test('should throw error if rgbNodeEndpoint is not provided', () => {
+      expect(() => {
+        new WalletAccountReadOnlyRgb('bc1p...', {
+          keys: mockKeys,
+          network: 'testnet'
+        })
+      }).toThrow('RGB node endpoint configuration is required.')
     })
   })
 })

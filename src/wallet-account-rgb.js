@@ -86,7 +86,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    * Creates a new RGB wallet account.
    *
    * @param {string | Uint8Array} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
-   * @param {RgbWalletConfig} [config] - The configuration object.
+   * @param {RgbWalletConfig} config - The configuration object (network and rgbNodeEndpoint are required).
    * @returns {Promise<WalletAccountRgb>} The wallet account.
    */
   static async at (seed, config = {}) {
@@ -195,7 +195,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
     // RGB SDK uses BIP-86 (Taproot) derivation: m/86'/coinType'/0'
     // For WDK interface compatibility, return a path representation
     // The actual derivation is handled by rgb-sdk internally
-    const network = this._config.network || 'regtest'
+    const network = this._config.network
     const isMainnet = network === 'mainnet'
     const coinType = isMainnet ? 0 : 1
     return `m/86'/${coinType}'/0'`
@@ -207,7 +207,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    * @type {string}
    */
   get coloredPath () {
-    const network = this._config.network || 'regtest'
+    const network = this._config.network
     const isMainnet = network === 'mainnet'
     const coinType = isMainnet ? 827166 : 827167
     return `m/86'/${coinType}'/0'`
@@ -227,7 +227,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
     }
 
     const keys = this._config.keys
-    const network = this._config.network || 'testnet'
+    const network = this._config.network
     const versions = BIP32_VERSIONS[network] || BIP32_VERSIONS.testnet
     const hdPriv = HDKey.fromExtendedKey(keys.xpriv, {
       private: versions.private,
@@ -485,6 +485,51 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    */
   async sendBegin (options) {
     return await this._wallet.sendBegin(options)
+  }
+
+  /**
+   * Quotes the costs of a send transaction operation.
+   *
+   * @param {Omit<RgbTransaction, 'feeRate'>} tx - The transaction.
+   * @returns {Promise<Omit<TransactionResult, 'hash'>>} The transaction's quotes.
+   */
+  async quoteSendTransaction (tx) {
+    const feeRate = await this._wallet.estimateFeeRate(1)
+    const psbt = await this._wallet.sendBtcBegin({
+      address: tx.to,
+      amount: tx.value,
+      fee_rate: Math.round(feeRate)
+    })
+    const signedPsbt = await this.signPsbt(psbt)
+    const { fee } = await this._wallet.estimateFee(signedPsbt)
+    return { fee: BigInt(fee) }
+  }
+
+  /**
+   * Quotes the costs of a transfer operation.
+   *
+   * @param {TransferOptions} options - The transfer's options.
+   * @returns {Promise<Omit<TransferResult, 'hash'>>} The transfer's quotes.
+   */
+  async quoteTransfer (options) {
+    const estimatedFeeRate = await this._wallet.estimateFeeRate(1)
+    const feeRate = options.feeRate || estimatedFeeRate
+    const psbt = await this._wallet.sendBegin({
+      invoice: options.recipient,
+      asset_id: options.token,
+      witness_data: options.witnessData
+        ? {
+            amount_sat: options.witnessData.amountSat,
+            blinding: options.witnessData.blinding
+          }
+        : undefined,
+      amount: options.amount,
+      fee_rate: Math.round(feeRate),
+      min_confirmations: options.minConfirmations
+    })
+    const signedPsbt = await this.signPsbt(psbt)
+    const { fee } = await this._wallet.estimateFee(signedPsbt)
+    return { fee: BigInt(fee) }
   }
 
   /**

@@ -12,7 +12,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git://github.com//RGB-OS/wdk-wallet-rgb.git"
+    "url": "https://github.com/RGB-OS/wdk-wallet-rgb"
   },
   "main": "index.js",
   "type": "module",

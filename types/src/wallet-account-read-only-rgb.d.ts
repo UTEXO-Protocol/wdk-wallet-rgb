@@ -25,8 +25,8 @@
  */
 /**
  * @typedef {Object} RgbWalletConfig
- * @property {'mainnet' | 'testnet' | 'regtest'} [network] - The network (default: "regtest").
- * @property {string} [rgbNodeEndpoint] - The RGB node endpoint (default: "https://rgb-node.test.thunderstack.org").
+ * @property {'mainnet' | 'testnet' | 'regtest'} network - The network (required).
+ * @property {string} rgbNodeEndpoint - The RGB node endpoint (required).
  * @property {Keys} [keys] - The wallet keys from rgb-sdk.
  * @property {number | bigint} [transferMaxFee] - The maximum fee amount for transfer operations.
  */
@@ -35,7 +35,7 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
      * Creates a new RGB read-only wallet account.
      *
      * @param {string} address - The account's address.
-     * @param {RgbWalletConfig} [config] - The configuration object.
+     * @param {RgbWalletConfig} config - The configuration object (network and rgbNodeEndpoint are required).
      */
     constructor(address: string, config?: RgbWalletConfig);
     /**
@@ -126,13 +126,13 @@ export type RgbTransaction = {
 };
 export type RgbWalletConfig = {
     /**
-     * - The network (default: "regtest").
+     * - The network (required).
      */
-    network?: "mainnet" | "testnet" | "regtest";
+    network: "mainnet" | "testnet" | "regtest";
     /**
-     * - The RGB node endpoint (default: "https://rgb-node.test.thunderstack.org").
+     * - The RGB node endpoint (required).
      */
-    rgbNodeEndpoint?: string;
+    rgbNodeEndpoint: string;
     /**
      * - The wallet keys from rgb-sdk.
      */

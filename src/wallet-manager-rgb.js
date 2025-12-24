@@ -30,15 +30,22 @@ export default class WalletManagerRgb extends WalletManager {
    * Creates a new wallet manager for the RGB.
    *
    * @param {string | Uint8Array} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
-   * @param {RgbWalletConfig} [config] - The configuration object.
+   * @param {RgbWalletConfig} config - The configuration object (network and rgbNodeEndpoint are required).
    */
   constructor (seed, config = {}) {
     super(seed, config)
 
+    if (!config.network) {
+      throw new Error('network configuration is required.')
+    }
+    if (!config.rgbNodeEndpoint) {
+      throw new Error('rgbNodeEndpoint configuration is required.')
+    }
+
     /** @private */
-    this._network = config.network || 'testnet'
+    this._network = config.network
     /** @private */
-    this._rgbNodeEndpoint = config.rgbNodeEndpoint || 'https://rgb-node.test.thunderstack.org'
+    this._rgbNodeEndpoint = config.rgbNodeEndpoint
     /** @private @type {GeneratedKeys | null} */
     this._keys = null
   }

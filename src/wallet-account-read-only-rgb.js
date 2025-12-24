@@ -47,8 +47,8 @@ import { WalletManager } from 'rgb-sdk'
 
 /**
  * @typedef {Object} RgbWalletConfig
- * @property {'mainnet' | 'testnet' | 'regtest'} [network] - The network (default: "regtest").
- * @property {string} [rgbNodeEndpoint] - The RGB node endpoint (default: "https://rgb-node.test.thunderstack.org").
+ * @property {'mainnet' | 'testnet' | 'regtest'} network - The network (required).
+ * @property {string} rgbNodeEndpoint - The RGB node endpoint (required).
  * @property {Keys} [keys] - The wallet keys from rgb-sdk.
  * @property {number | bigint} [transferMaxFee] - The maximum fee amount for transfer operations.
  */
@@ -58,7 +58,7 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
    * Creates a new RGB read-only wallet account.
    *
    * @param {string} address - The account's address.
-   * @param {RgbWalletConfig} [config] - The configuration object.
+   * @param {RgbWalletConfig} config - The configuration object (network and rgbNodeEndpoint are required).
    */
   constructor (address, config = {}) {
     super(address)
@@ -75,9 +75,18 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
       throw new Error('Wallet keys are required for read-only account')
     }
 
+    if (!this._config.network) {
+      throw new Error('Network configuration is required.')
+    }
+
+    if (!this._config.rgbNodeEndpoint) {
+      throw new Error('RGB node endpoint configuration is required.')
+    }
+
     const { keys } = this._config
-    const network = this._config.network || 'testnet'
-    const rgbNodeEndpoint = this._config.rgbNodeEndpoint || 'https://rgb-node.test.thunderstack.org'
+
+    const network = this._config.network
+    const rgbNodeEndpoint = this._config.rgbNodeEndpoint
 
     /** @private */
     this._wallet = new WalletManager({
@@ -117,15 +126,7 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
    * @returns {Promise<Omit<TransactionResult, 'hash'>>} The transaction's quotes.
    */
   async quoteSendTransaction (tx) {
-    const feeRate = await this._wallet.estimateFeeRate(1)
-    const psbt = await this._wallet.sendBtcBegin({
-      address: tx.to,
-      amount: tx.value,
-      fee_rate: Math.round(feeRate)
-    })
-    const signedPsbt = await this._wallet.signPsbt(psbt)
-    const { fee } = await this._wallet.estimateFee(signedPsbt)
-    return { fee: BigInt(fee) }
+    throw new Error('quoteSendTransaction is not implemented for read-only accounts. Use WalletAccountRgb instead.')
   }
 
   /**
@@ -135,24 +136,7 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
    * @returns {Promise<Omit<TransferResult, 'hash'>>} The transfer's quotes.
    */
   async quoteTransfer (options) {
-    const estimatedFeeRate = await this._wallet.estimateFeeRate(1)
-    const feeRate = options.feeRate || estimatedFeeRate
-    const psbt = await this._wallet.sendBegin({
-      invoice: options.recipient,
-      asset_id: options.token,
-      witness_data: options.witnessData
-        ? {
-            amount_sat: options.witnessData.amountSat,
-            blinding: options.witnessData.blinding
-          }
-        : undefined,
-      amount: options.amount,
-      fee_rate: Math.round(feeRate),
-      min_confirmations: options.minConfirmations
-    })
-    const signedPsbt = await this._wallet.signPsbt(psbt)
-    const { fee } = await this._wallet.estimateFee(signedPsbt)
-    return { fee: BigInt(fee) }
+    throw new Error('quoteTransfer is not implemented for read-only accounts. Use WalletAccountRgb instead.')
   }
 
   /**

@@ -22,6 +22,15 @@ With this package you can:
 
 ## ⚙️ Capabilities
 
+### RGB Node Endpoints
+
+When initializing `WalletManagerRgb` or creating accounts, you must provide an `rgbNodeEndpoint` configuration. The following endpoints are recommended:
+
+- **Testnet**: `https://rgb-node.test.thunderstack.org`
+- **Mainnet**: `https://rgb-node.thunderstack.org`
+
+Both `network` and `rgbNodeEndpoint` are required configuration parameters. See the examples below for usage.
+
 ### `WalletManagerRgb`
 
 | Method | Description |
@@ -43,7 +52,6 @@ With this package you can:
 | `issueAssetNia(options)` | Issues a Non-Inflatable Asset using rgb-sdk defaults. |
 | `receiveAsset({ asset_id?, amount, witness? })` | Creates blind or witness receive invoices. |
 | `sendBegin` / `signPsbt` / `sendEnd` | Low-level PSBT pipeline for controlled transfers. |
-| `send(options)` | Convenience wrapper around the full transfer flow. |
 | `transfer(options)` | WDK-style wrapper that orchestrates invoice driven transfers. |
 | `createBackup(password)` / `downloadBackup(xpub?)` / `restoreFromBackup(params)` | Backup, download, and restore encrypted wallet snapshots. |
 | `refreshWallet()` / `registerWallet()` / `syncWallet()` | Maintenance helpers for RGB node state. |
@@ -66,7 +74,7 @@ With this package you can:
 npm install @utexo/wdk-wallet-rgb
 ```
 
-You also need access to an RGB node (default endpoint `https://rgb-node.test.thunderstack.org`) and a Bitcoin backend that the node trusts. The examples assume a locally running regtest stack.
+You also need access to an RGB node and a Bitcoin backend that the node trusts. The examples assume a locally running regtest stack.
 
 ---
 
@@ -75,15 +83,13 @@ You also need access to an RGB node (default endpoint `https://rgb-node.test.thu
 ```javascript
 import WalletManagerRgb from '@utexo/wdk-wallet-rgb'
 
-const RGB_NODE_ENDPOINT = 'https://rgb-node.test.thunderstack.org'
-const NETWORK = 'regtest'
-
 const seedPhrase = 'poem twice question inch happy capital grain quality laptop dry chaos what';
 
 // Initialise the WDK manager – it will derive RGB keys on demand
+// Both network and rgbNodeEndpoint are required
 const manager = new WalletManagerRgb(seedPhrase, {
-  network: 'mainnet', // 'mainnet', 'testnet', 'regtest'
-  rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org'
+  network: 'testnet', // 'mainnet', 'testnet', 'regtest' (required)
+  rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org' // required - see RGB Node Endpoints section
 })
 
 const account = await manager.getAccount()
@@ -142,11 +148,11 @@ const invoice = await account.receiveAsset({
   amount: 10
 })
 
-const sendResult = await account.send({
-  invoice: invoice.invoice,
-  asset_id: nia.asset_id,
+const sendResult = await account.transfer({
+  recipient: invoice.invoice,
+  token: nia.asset_id,
   amount: 10,
-  min_confirmations: 1
+  minConfirmations: 1
 })
 
 console.log('Transfer hash:', sendResult.hash)

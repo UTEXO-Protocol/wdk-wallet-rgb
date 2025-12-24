@@ -47,7 +47,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb implement
      * Creates a new RGB wallet account.
      *
      * @param {string | Uint8Array} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
-     * @param {RgbWalletConfig} [config] - The configuration object.
+     * @param {RgbWalletConfig} config - The configuration object (network and rgbNodeEndpoint are required).
      * @returns {Promise<WalletAccountRgb>} The wallet account.
      */
     static at(seed: string | Uint8Array, config?: RgbWalletConfig): Promise<WalletAccountRgb>;

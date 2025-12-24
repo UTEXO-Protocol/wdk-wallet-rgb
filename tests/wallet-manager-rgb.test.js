@@ -77,16 +77,24 @@ describe('WalletManagerRgb', () => {
   })
 
   describe('constructor', () => {
-    test('should create a wallet manager with default config', () => {
-      const defaultWallet = new WalletManagerRgb(SEED_PHRASE)
-      expect(defaultWallet).toBeInstanceOf(WalletManagerRgb)
-      defaultWallet.dispose()
+    test('should throw error if network is not provided', () => {
+      expect(() => {
+        new WalletManagerRgb(SEED_PHRASE)
+      }).toThrow('network configuration is required.')
+    })
+
+    test('should throw error if rgbNodeEndpoint is not provided', () => {
+      expect(() => {
+        new WalletManagerRgb(SEED_PHRASE, {
+          network: 'testnet'
+        })
+      }).toThrow('rgbNodeEndpoint configuration is required.')
     })
 
     test('should create a wallet manager with custom config', () => {
       const customWallet = new WalletManagerRgb(SEED_PHRASE, {
         network: 'testnet',
-        rgb_node_endpoint: 'http://localhost:8000'
+        rgbNodeEndpoint: 'http://localhost:8000'
       })
       expect(customWallet).toBeInstanceOf(WalletManagerRgb)
       customWallet.dispose()
