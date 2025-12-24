@@ -12,7 +12,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/RGB-OS/wdk-wallet-rgb"
+    "url": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb.git"
   },
   "main": "index.js",
   "type": "module",
