@@ -48,8 +48,9 @@ import { WalletManager } from 'rgb-sdk'
 /**
  * @typedef {Object} RgbWalletConfig
  * @property {'mainnet' | 'testnet' | 'regtest'} network - The network (required).
- * @property {string} rgbNodeEndpoint - The RGB node endpoint (required).
  * @property {Keys} [keys] - The wallet keys from rgb-sdk.
+ * @property {string} [indexerUrl] - Electrs indexer URL.
+ * @property {string} [transportEndpoint] - Transport endpoint.
  * @property {number | bigint} [transferMaxFee] - The maximum fee amount for transfer operations.
  */
 
@@ -79,22 +80,18 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
       throw new Error('Network configuration is required.')
     }
 
-    if (!this._config.rgbNodeEndpoint) {
-      throw new Error('RGB node endpoint configuration is required.')
-    }
 
-    const { keys } = this._config
-
-    const network = this._config.network
-    const rgbNodeEndpoint = this._config.rgbNodeEndpoint
+    const { keys, indexerUrl, transportEndpoint, dataDir,network} = this._config
 
     /** @private */
     this._wallet = new WalletManager({
-      xpub_van: keys.account_xpub_vanilla,
-      xpub_col: keys.account_xpub_colored,
-      master_fingerprint: keys.master_fingerprint,
+      xpubVan: keys.accountXpubVanilla,
+      xpubCol: keys.accountXpubColored,
+      masterFingerprint: keys.masterFingerprint,
       network,
-      rgb_node_endpoint: rgbNodeEndpoint
+      dataDir,
+      indexerUrl,
+      transportEndpoint,
     })
   }
 

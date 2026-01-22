@@ -26,8 +26,9 @@
 /**
  * @typedef {Object} RgbWalletConfig
  * @property {'mainnet' | 'testnet' | 'regtest'} network - The network (required).
- * @property {string} rgbNodeEndpoint - The RGB node endpoint (required).
  * @property {Keys} [keys] - The wallet keys from rgb-sdk.
+ * @property {string} [indexerUrl] - Electrs indexer URL.
+ * @property {string} [transportEndpoint] - Transport endpoint.
  * @property {number | bigint} [transferMaxFee] - The maximum fee amount for transfer operations.
  */
 export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
@@ -130,13 +131,17 @@ export type RgbWalletConfig = {
      */
     network: "mainnet" | "testnet" | "regtest";
     /**
-     * - The RGB node endpoint (required).
-     */
-    rgbNodeEndpoint: string;
-    /**
      * - The wallet keys from rgb-sdk.
      */
     keys?: Keys;
+    /**
+     * - Electrs indexer URL.
+     */
+    indexerUrl?: string;
+    /**
+     * - Transport endpoint.
+     */
+    transportEndpoint?: string;
     /**
      * - The maximum fee amount for transfer operations.
      */

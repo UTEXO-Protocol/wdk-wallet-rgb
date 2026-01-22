@@ -12,8 +12,6 @@ export default class WalletManagerRgb extends WalletManager {
     constructor(seed: string | Uint8Array, config?: RgbWalletConfig);
     /** @private */
     private _network;
-    /** @private */
-    private _rgbNodeEndpoint;
     /** @private @type {GeneratedKeys | null} */
     private _keys;
     /**

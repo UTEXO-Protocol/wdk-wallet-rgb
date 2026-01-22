@@ -29,7 +29,7 @@
     "@tetherto/wdk-wallet": "^1.0.0-beta.1",
     "bare-node-runtime": "1.1.4",
     "bip39": "3.1.0",
-    "rgb-sdk": "1.2.7",
+    "rgb-sdk": "file:../thunderlink-client",
     "sodium-universal": "5.0.1"
   },
   "devDependencies": {
