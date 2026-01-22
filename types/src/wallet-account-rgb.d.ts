@@ -31,12 +31,9 @@
  */
 /**
  * @typedef {Object} RgbRestoreParams
- * @property {Buffer | Uint8Array | ArrayBuffer | import('node:stream').Readable} backup - The backup file data.
  * @property {string} password - The password to decrypt the backup.
- * @property {string} [filename] - The backup filename.
- * @property {string} [xpubVan] - The vanilla extended public key override.
- * @property {string} [xpubCol] - The colored extended public key override.
- * @property {string} [masterFingerprint] - The master fingerprint override.
+ * @property {string} backupFilePath - The backup file path.
+ * @property {string} dataDir - The restore directory.
  */
 /**
  * @typedef {RgbWalletConfig & RgbRestoreParams} RgbRestoreConfig
@@ -308,22 +305,24 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb implement
     /**
      * Creates an encrypted backup of the wallet.
      *
-     * @param {string} password - The password used to encrypt the backup file.
-     * @returns {Promise<{message: string, downloadUrl: string}>} The backup response from rgb-sdk.
+     * @param {options} options - The options.
+     * @param {string} options.password - The password used to encrypt the backup file.
+     * @param {string} options.backupPath - The backup path.
+     * @returns {{message: string, downloadUrl: string}} The backup response from rgb-sdk.
      */
-    createBackup(password: string): Promise<{
+    createBackup(options: any): {
         message: string;
         downloadUrl: string;
-    }>;
+    };
     /**
      * Restores a wallet from a backup file.
      *
      * @param {RgbRestoreParams} params - Restore options.
-     * @returns {Promise<{message: string}>} The restore response from rgb-sdk.
+     * @returns {{message: string}} The restore response from rgb-sdk.
      */
-    restoreFromBackup(params: RgbRestoreParams): Promise<{
+    restoreFromBackup(params: RgbRestoreParams): {
         message: string;
-    }>;
+    };
     /**
      * Refreshes the wallet state
      *
@@ -397,29 +396,17 @@ export type RgbKeyPair = {
 };
 export type RgbRestoreParams = {
     /**
-     * - The backup file data.
-     */
-    backup: Buffer | Uint8Array | ArrayBuffer | import("node:stream").Readable;
-    /**
      * - The password to decrypt the backup.
      */
     password: string;
     /**
-     * - The backup filename.
+     * - The backup file path.
      */
-    filename?: string;
+    backupFilePath: string;
     /**
-     * - The vanilla extended public key override.
+     * - The restore directory.
      */
-    xpubVan?: string;
-    /**
-     * - The colored extended public key override.
-     */
-    xpubCol?: string;
-    /**
-     * - The master fingerprint override.
-     */
-    masterFingerprint?: string;
+    dataDir: string;
 };
 export type RgbRestoreConfig = RgbWalletConfig & RgbRestoreParams;
 import WalletAccountReadOnlyRgb from './wallet-account-read-only-rgb.js';

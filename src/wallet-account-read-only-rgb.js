@@ -52,6 +52,7 @@ import { WalletManager } from 'rgb-sdk'
  * @property {string} [indexerUrl] - Electrs indexer URL.
  * @property {string} [transportEndpoint] - Transport endpoint.
  * @property {number | bigint} [transferMaxFee] - The maximum fee amount for transfer operations.
+ * @property {string} [dataDir] - RGB state data directory.
  */
 
 export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {

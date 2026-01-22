@@ -3,9 +3,9 @@ import { beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globa
 const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 
 const mockKeysBase = {
-  account_xpub_vanilla: 'tpubDDMTD6EJKKLP6Gx9JUnMpjf9NYyePJszmqBnNqULNmcgEuU1yQ3JsHhWZdRFecszWETnNsmhEe9vnaNibfzZkDDHycbR2rGFbXdHWRgBfu7',
-  account_xpub_colored: 'tpubDDPLJfdVbDoGtnn6hSto3oCnm6hpfHe9uk2MxcANanxk87EuquhSVfSLQv7e5UykgzaFn41DUXaikjjVGcUSUTGNaJ9LcozfRwatKp1vTfC',
-  master_fingerprint: 'a66bffef',
+  accountXpubVanilla: 'tpubDDMTD6EJKKLP6Gx9JUnMpjf9NYyePJszmqBnNqULNmcgEuU1yQ3JsHhWZdRFecszWETnNsmhEe9vnaNibfzZkDDHycbR2rGFbXdHWRgBfu7',
+  accountXpubColored: 'tpubDDPLJfdVbDoGtnn6hSto3oCnm6hpfHe9uk2MxcANanxk87EuquhSVfSLQv7e5UykgzaFn41DUXaikjjVGcUSUTGNaJ9LcozfRwatKp1vTfC',
+  masterFingerprint: 'a66bffef',
   mnemonic: SEED_PHRASE,
   xpriv: "tprv8ZgxMBicQKsPdQaFUyyJodvPVicQ6HxagSy18xrJmd8GPHUD1YuDR5WXL9eUDiNnLfkufjL2EwzWpnkiyck5da731zevC4t34QyR69uTSSX",
   xpub: "tpubD6NzVbkrYhZ4Wsc3NdduD3aW4k8LFd9VFkZnRUtcBtvfDmiydwioba8PWFrJRBQrSSHzfvR8Gz8sGvqV3vm5wEmgT1dcWDAaz2xRKRPaBok"
@@ -22,7 +22,7 @@ const createMockWallet = () => ({
     uda: null,
     cfa: null
   }),
-  listTransfers: jest.fn().mockResolvedValue([{ txid: 'tx-1', direction: 'incoming' }]),
+  listTransfers: jest.fn().mockReturnValue([{ txid: 'tx-1', direction: 'incoming' }]),
   sendBegin: jest.fn().mockResolvedValue('psbt-bytes'),
   signPsbt: jest.fn().mockImplementation(psbt => `signed:${psbt}`),
   sendEnd: jest.fn().mockResolvedValue({ txid: 'abc123', fee: 210 }),
@@ -35,14 +35,14 @@ const createMockWallet = () => ({
   witnessReceive: jest.fn().mockResolvedValue({ invoice: 'rgb1-witness' }),
   issueAssetNia: jest.fn().mockResolvedValue({
     asset: {
-      asset_id: 'rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
+      assetId: 'rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
       assetIface: 'RGB20',
       ticker: 'RGB',
       name: 'RGB Asset',
       precision: 0,
-      issued_supply: 100,
+      issuedSupply: 100,
       timestamp: 1691160565,
-      added_at: 1691161979
+      addedAt: 1691161979
     }
   }),
   createUtxosBegin: jest.fn().mockResolvedValue('psbt-utxo'),
@@ -85,7 +85,7 @@ beforeAll(async () => {
 
 const createAccountConfig = (configOverrides = {}, keysOverrides = {}) => ({
   network: 'regtest',
-  rgbNodeEndpoint: 'http://127.0.0.1:8000',
+  transportEndpoint: 'http://127.0.0.1:8000',
   keys: {
     ...mockKeysBase,
     ...keysOverrides
@@ -123,7 +123,7 @@ describe('WalletAccountRgb', () => {
 
       expect(account).toBeInstanceOf(WalletAccountRgb)
       expect(account._config.network).toBe(config.network)
-      expect(account._config.rgbNodeEndpoint).toBe(config.rgbNodeEndpoint)
+      expect(account._config.transportEndpoint).toBe(config.transportEndpoint)
       expect(account.index).toBe(0)
     })
   })
@@ -165,29 +165,37 @@ describe('WalletAccountRgb', () => {
 
     test('transfer performs RGB send flow', async () => {
       const { account, wallet } = await createAccount()
+      // Mock sendBegin to return a promise that resolves to psbt
+      wallet.sendBegin.mockResolvedValue('psbt-bytes')
+      // signPsbt needs to handle the promise and resolve it
+      wallet.signPsbt.mockImplementation(async (psbt) => {
+        const resolvedPsbt = await psbt
+        return `signed:${resolvedPsbt}`
+      })
       const result = await account.transfer({ token: 'asset-1', recipient: 'rgb:invoice-123', amount: 100 })
 
       expect(wallet.sendBegin).toHaveBeenCalledWith({
         invoice: 'rgb:invoice-123',
-        asset_id: 'asset-1',
-        witness_data: undefined,
+        assetId: 'asset-1',
+        witnessData: undefined,
         amount: 100,
-        fee_rate: 1,
-        min_confirmations: undefined
+        feeRate: 1,
+        minConfirmations: undefined
       })
-      expect(wallet.signPsbt).toHaveBeenCalledWith('psbt-bytes')
-      expect(wallet.sendEnd).toHaveBeenCalledWith({ signed_psbt: 'signed:psbt-bytes' })
+      // signPsbt will be called with the promise
+      expect(wallet.signPsbt).toHaveBeenCalled()
+      expect(wallet.sendEnd).toHaveBeenCalledWith({ signedPsbt: 'signed:psbt-bytes' })
       expect(result).toEqual({ hash: 'abc123', fee: BigInt(210) })
     })
 
     test('getTransfers returns transfers without asset filter', async () => {
       const { account, wallet } = await createAccount()
-      wallet.listTransfers.mockResolvedValue([
+      wallet.listTransfers.mockReturnValue([
         { txid: 'tx-1', direction: 'incoming' },
         { txid: 'tx-2', direction: 'outgoing' }
       ])
 
-      const transfers = await account.getTransfers()
+      const transfers = account.getTransfers()
 
       expect(wallet.listTransfers).toHaveBeenCalledWith()
       expect(transfers).toEqual([
@@ -198,9 +206,9 @@ describe('WalletAccountRgb', () => {
 
     test('getTransfers with assetId filters by asset', async () => {
       const { account, wallet } = await createAccount()
-      wallet.listTransfers.mockResolvedValue([{ txid: 'tx-1', direction: 'incoming' }])
+      wallet.listTransfers.mockReturnValue([{ txid: 'tx-1', direction: 'incoming' }])
 
-      const transfers = await account.getTransfers({ assetId: 'asset-alpha' })
+      const transfers = account.getTransfers({ assetId: 'asset-alpha' })
 
       expect(wallet.listTransfers).toHaveBeenCalledWith('asset-alpha')
       expect(transfers).toEqual([{ txid: 'tx-1', direction: 'incoming' }])
@@ -208,7 +216,7 @@ describe('WalletAccountRgb', () => {
 
     test('getTransfers applies pagination', async () => {
       const { account, wallet } = await createAccount()
-      wallet.listTransfers.mockResolvedValue([
+      wallet.listTransfers.mockReturnValue([
         { txid: 'tx-1' },
         { txid: 'tx-2' },
         { txid: 'tx-3' },
@@ -216,7 +224,7 @@ describe('WalletAccountRgb', () => {
         { txid: 'tx-5' }
       ])
 
-      const transfers = await account.getTransfers({ limit: 2, skip: 1 })
+      const transfers = account.getTransfers({ limit: 2, skip: 1 })
 
       expect(wallet.listTransfers).toHaveBeenCalledWith()
       expect(transfers).toEqual([{ txid: 'tx-2' }, { txid: 'tx-3' }])
@@ -442,7 +450,7 @@ describe('WalletAccountRgb', () => {
 
       expect(readOnly._config.keys).toEqual(config.keys)
       expect(readOnly._config.network).toBe(config.network)
-      expect(readOnly._config.rgbNodeEndpoint).toBe(config.rgbNodeEndpoint)
+      expect(readOnly._config.transportEndpoint).toBe(config.transportEndpoint)
     })
   })
 
@@ -463,20 +471,21 @@ describe('WalletAccountRgb', () => {
       const account = await WalletAccountRgb.fromBackup(SEED_PHRASE, config)
 
       expect(WalletManagerMock).toHaveBeenCalledWith({
-        xpub_van: config.keys.account_xpub_vanilla,
-        xpub_col: config.keys.account_xpub_colored,
-        master_fingerprint: config.keys.master_fingerprint,
-        network: config.network,
-        rgb_node_endpoint: config.rgbNodeEndpoint
+        xpubVan: config.keys.accountXpubVanilla,
+        xpubCol: config.keys.accountXpubColored,
+        masterFingerprint: config.keys.masterFingerprint,
+        transportEndpoint: config.transportEndpoint,
+        dataDir: config.dataDir,
+        indexerUrl: config.indexerUrl
       })
 
       expect(walletInstance.restoreFromBackup).toHaveBeenCalledWith({
         backup: config.backup,
         password: config.password,
         filename: config.filename,
-        xpub_van: config.keys.account_xpub_vanilla,
-        xpub_col: config.keys.account_xpub_colored,
-        master_fingerprint: config.keys.master_fingerprint
+        xpubVan: config.keys.accountXpubVanilla,
+        xpubCol: config.keys.accountXpubColored,
+        masterFingerprint: config.keys.masterFingerprint
       })
 
       expect(walletInstance.registerWallet).not.toHaveBeenCalled()

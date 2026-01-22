@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, jest, test } from '@jest/globals'
 
 const mockKeys = {
-  account_xpub_vanilla: 'tpubDDMTD6EJKKLP6Gx9JUnMpjf9NYyePJszmqBnNqULNmcgEuU1yQ3JsHhWZdRFecszWETnNsmhEe9vnaNibfzZkDDHycbR2rGFbXdHWRgBfu7',
-  account_xpub_colored: 'tpubDDPLJfdVbDoGtnn6hSto3oCnm6hpfHe9uk2MxcANanxk87EuquhSVfSLQv7e5UykgzaFn41DUXaikjjVGcUSUTGNaJ9LcozfRwatKp1vTfC',
-  master_fingerprint: 'a66bffef',
+  accountXpubVanilla: 'tpubDDMTD6EJKKLP6Gx9JUnMpjf9NYyePJszmqBnNqULNmcgEuU1yQ3JsHhWZdRFecszWETnNsmhEe9vnaNibfzZkDDHycbR2rGFbXdHWRgBfu7',
+  accountXpubColored: 'tpubDDPLJfdVbDoGtnn6hSto3oCnm6hpfHe9uk2MxcANanxk87EuquhSVfSLQv7e5UykgzaFn41DUXaikjjVGcUSUTGNaJ9LcozfRwatKp1vTfC',
+  masterFingerprint: 'a66bffef',
   mnemonic: 'test mnemonic',
   xpub: 'tpubD6NzVbkrYhZ4Wsc3NdduD3aW4k8LFd9VFkZnRUtcBtvfDmiydwioba8PWFrJRBQrSSHzfvR8Gz8sGvqV3vm5wEmgT1dcWDAaz2xRKRPaBok',
   xpriv: 'tprv8ZgxMBicQKsPdQaFUyyJodvPVicQ6HxagSy18xrJmd8GPHUD1YuDR5WXL9eUDiNnLfkufjL2EwzWpnkiyck5da731zevC4t34QyR69uTSSX'
@@ -48,7 +48,7 @@ describe('WalletAccountReadOnlyRgb', () => {
       const account = new WalletAccountReadOnlyRgb(address, {
         keys: mockKeys,
         network: 'testnet',
-        rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org'
+        transportEndpoint: 'https://rgb-node.test.thunderstack.org'
       })
       expect(account).toBeInstanceOf(WalletAccountReadOnlyRgb)
       // The address is passed to the parent class constructor
@@ -59,7 +59,7 @@ describe('WalletAccountReadOnlyRgb', () => {
       const defaultAccount = new WalletAccountReadOnlyRgb('bc1p...', {
         keys: mockKeys,
         network: 'testnet',
-        rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org'
+        transportEndpoint: 'https://rgb-node.test.thunderstack.org'
       })
       expect(defaultAccount).toBeInstanceOf(WalletAccountReadOnlyRgb)
     })
@@ -70,7 +70,7 @@ describe('WalletAccountReadOnlyRgb', () => {
       expect(() => {
         new WalletAccountReadOnlyRgb('bc1p...', {
           network: 'testnet',
-          rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org'
+          transportEndpoint: 'https://rgb-node.test.thunderstack.org'
         })
       }).toThrow('Wallet keys are required for read-only account')
     })
@@ -79,18 +79,9 @@ describe('WalletAccountReadOnlyRgb', () => {
       expect(() => {
         new WalletAccountReadOnlyRgb('bc1p...', {
           keys: mockKeys,
-          rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org'
+          transportEndpoint: 'https://rgb-node.test.thunderstack.org'
         })
       }).toThrow('Network configuration is required.')
-    })
-
-    test('should throw error if rgbNodeEndpoint is not provided', () => {
-      expect(() => {
-        new WalletAccountReadOnlyRgb('bc1p...', {
-          keys: mockKeys,
-          network: 'testnet'
-        })
-      }).toThrow('RGB node endpoint configuration is required.')
     })
   })
 })

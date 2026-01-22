@@ -78,7 +78,6 @@ export default class WalletManagerRgb extends WalletManager {
     if (!this._accounts[index]) {
       await this._initializeKeys()
       const { dataDir, indexerUrl, transportEndpoint } = this._config
-      console.log(' this._config',  this._config)
       const account = await WalletAccountRgb.at(
         this.seed,
         {
@@ -111,7 +110,6 @@ export default class WalletManagerRgb extends WalletManager {
       ...this._config,
       ...restoreConfig,
       network: this._network,
-      rgbNodeEndpoint: this._rgbNodeEndpoint,
       keys: this._keys
     }
 

@@ -14,7 +14,7 @@
 'use strict'
 
 import WalletAccountReadOnlyRgb from './wallet-account-read-only-rgb.js'
-import { WalletManager, BIP32_VERSIONS } from 'rgb-sdk'
+import { WalletManager, BIP32_VERSIONS,restoreFromBackup } from 'rgb-sdk'
 // eslint-disable-next-line camelcase
 import { sodium_memzero } from 'sodium-universal'
 import { HDKey } from '@scure/bip32'
@@ -56,12 +56,9 @@ import { base58 } from '@scure/base'
 
 /**
  * @typedef {Object} RgbRestoreParams
- * @property {Buffer | Uint8Array | ArrayBuffer | import('node:stream').Readable} backup - The backup file data.
  * @property {string} password - The password to decrypt the backup.
- * @property {string} [filename] - The backup filename.
- * @property {string} [xpubVan] - The vanilla extended public key override.
- * @property {string} [xpubCol] - The colored extended public key override.
- * @property {string} [masterFingerprint] - The master fingerprint override.
+ * @property {string} backupFilePath - The backup file path.
+ * @property {string} dataDir - The restore directory.
  */
 
 /**
@@ -110,8 +107,6 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
       dataDir,
     })
 
-    await wallet.registerWallet()
-
     const account = new WalletAccountRgb(wallet, config)
 
     return account
@@ -132,14 +127,23 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
     if (!config.network) {
       throw new Error('Network is required')
     }
-    if (!config.backup) {
+    if (!config.backupFilePath) {
       throw new Error('Backup file is required')
     }
     if (!config.password) {
       throw new Error('Backup password is required')
     }
 
+    if (!config.dataDir) {
+      throw new Error('Restore directory is required')
+    }
+
     const { dataDir, indexerUrl, transportEndpoint } = config
+    restoreFromBackup({
+      backupFilePath: config.backupFilePath,
+      password: config.password,
+      dataDir: config.dataDir
+    })
     const wallet = new WalletManager({
       xpubVan: keys.accountXpubVanilla,
       xpubCol: keys.accountXpubColored,
@@ -149,15 +153,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
       transportEndpoint
     })
 
-    await wallet.restoreFromBackup({
-      dataDir: config.dataDir,
-      backup: config.backup,
-      password: config.password,
-      filename: config.filename,
-      xpubVan: config.xpubVan ?? keys.accountXpubVanilla,
-      xpubCol: config.xpubCol ?? keys.accountXpubColored,
-      masterFingerprint: config.masterFingerprint ?? keys.masterFingerprint
-    })
+  
 
     const account = new WalletAccountRgb(wallet, config)
 
@@ -493,7 +489,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
       feeRate: Math.round(feeRate)
     })
     const signedPsbt = await this.signPsbt(psbt)
-    const { fee } = this._wallet.estimateFee(signedPsbt)
+    const { fee } = await this._wallet.estimateFee(signedPsbt)
     return { fee: BigInt(fee) }
   }
 
@@ -511,7 +507,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
       assetId: options.token,
       witnessData: options.witnessData
         ? {
-          amount_sat: options.witnessData.amountSat,
+          amountSat: options.witnessData.amountSat,
           blinding: options.witnessData.blinding
         }
         : undefined,
@@ -520,7 +516,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
       minConfirmations: options.minConfirmations
     })
     const signedPsbt = await this.signPsbt(psbt)
-    const { fee } = this._wallet.estimateFee(signedPsbt)
+    const { fee } = await this._wallet.estimateFee(signedPsbt)
     return { fee: BigInt(fee) }
   }
 
@@ -629,28 +625,23 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
   /**
    * Creates an encrypted backup of the wallet.
    *
-   * @param {string} password - The password used to encrypt the backup file.
-   * @returns {Promise<{message: string, downloadUrl: string}>} The backup response from rgb-sdk.
+   * @param {options} options - The options.
+   * @param {string} options.password - The password used to encrypt the backup file.
+   * @param {string} options.backupPath - The backup path.
+   * @returns {{message: string, downloadUrl: string}} The backup response from rgb-sdk.
    */
-  async createBackup(password) {
-    return await this._wallet.createBackup(password)
+  createBackup(options) {
+    return this._wallet.createBackup(options)
   }
 
   /**
    * Restores a wallet from a backup file.
    *
    * @param {RgbRestoreParams} params - Restore options.
-   * @returns {Promise<{message: string}>} The restore response from rgb-sdk.
+   * @returns {{message: string}} The restore response from rgb-sdk.
    */
-  async restoreFromBackup(params) {
-    return await this._wallet.restoreFromBackup({
-      backup: params.backup,
-      password: params.password,
-      filename: params.filename,
-      xpub_van: params.xpubVan,
-      xpub_col: params.xpubCol,
-      master_fingerprint: params.masterFingerprint
-    })
+  restoreFromBackup(params) {
+    return restoreFromBackup(params)
   }
 
   /**
