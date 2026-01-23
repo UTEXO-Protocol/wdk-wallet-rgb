@@ -3,12 +3,12 @@
 /** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
 /** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
 /** @typedef {import('./wallet-account-read-only-rgb.js').TransferOptions} TransferOptions */
-/** @typedef {import('rgb-sdk').Transaction} RgbTransactionReceipt */
-/** @typedef {import('rgb-sdk').RgbTransfer} RgbTransferReceipt */
-/** @typedef {import('rgb-sdk').IssueAssetNIAResponse} IssueAssetNIA */
-/** @typedef {import('rgb-sdk').ListAssetsResponse} ListAssets */
-/** @typedef {import('rgb-sdk').InvoiceReceiveData} InvoiceReceiveData */
-/** @typedef {import('rgb-sdk').BtcBalance} BtcBalance */
+/** @typedef {import('@utexo/rgb-sdk').Transaction} RgbTransactionReceipt */
+/** @typedef {import('@utexo/rgb-sdk').RgbTransfer} RgbTransferReceipt */
+/** @typedef {import('@utexo/rgb-sdk').IssueAssetNIAResponse} IssueAssetNIA */
+/** @typedef {import('@utexo/rgb-sdk').ListAssetsResponse} ListAssets */
+/** @typedef {import('@utexo/rgb-sdk').InvoiceReceiveData} InvoiceReceiveData */
+/** @typedef {import('@utexo/rgb-sdk').BtcBalance} BtcBalance */
 /**
  * Result returned by registerWallet method.
  *
@@ -16,9 +16,9 @@
  * @property {string} address - The wallet's Bitcoin address.
  * @property {BtcBalance} btcBalance - The wallet's Bitcoin balance.
  */
-/** @typedef {import('rgb-sdk').SendAssetEndRequestModel} SendAssetEndRequest */
-/** @typedef {import('rgb-sdk').SendResult} SendResult */
-/** @typedef {import('rgb-sdk').Unspent} Unspent */
+/** @typedef {import('@utexo/rgb-sdk').SendAssetEndRequestModel} SendAssetEndRequest */
+/** @typedef {import('@utexo/rgb-sdk').SendResult} SendResult */
+/** @typedef {import('@utexo/rgb-sdk').Unspent} Unspent */
 /** @typedef {import('./wallet-account-read-only-rgb.js').RgbTransaction} RgbTransaction */
 /** @typedef {import('./wallet-account-read-only-rgb.js').RgbWalletConfig} RgbWalletConfig */
 /**
@@ -89,7 +89,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb implement
     get coloredPath(): string;
     /**
      * The account's key pair.
-     * Note: This derives keys using the same BIP-86 path that rgb-sdk uses for WDK interface compatibility.
+     * Note: This derives keys using the same BIP-86 path that @utexo/rgb-sdk uses for WDK interface compatibility.
      * RGB SDK handles all actual operations internally.
      * Includes RGB-specific fields: accountXpubVanilla, accountXpubColored, masterFingerprint.
      *
@@ -308,7 +308,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb implement
      * @param {options} options - The options.
      * @param {string} options.password - The password used to encrypt the backup file.
      * @param {string} options.backupPath - The backup path.
-     * @returns {{message: string, downloadUrl: string}} The backup response from rgb-sdk.
+     * @returns {{message: string, downloadUrl: string}} The backup response from @utexo/rgb-sdk.
      */
     createBackup(options: any): {
         message: string;
@@ -318,7 +318,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb implement
      * Restores a wallet from a backup file.
      *
      * @param {RgbRestoreParams} params - Restore options.
-     * @returns {{message: string}} The restore response from rgb-sdk.
+     * @returns {{message: string}} The restore response from @utexo/rgb-sdk.
      */
     restoreFromBackup(params: RgbRestoreParams): {
         message: string;
@@ -348,12 +348,12 @@ export type KeyPair = import("@tetherto/wdk-wallet").KeyPair;
 export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult;
 export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type TransferOptions = import("./wallet-account-read-only-rgb.js").TransferOptions;
-export type RgbTransactionReceipt = import("rgb-sdk").Transaction;
-export type RgbTransferReceipt = import("rgb-sdk").RgbTransfer;
-export type IssueAssetNIA = import("rgb-sdk").IssueAssetNIAResponse;
-export type ListAssets = import("rgb-sdk").ListAssetsResponse;
-export type InvoiceReceiveData = import("rgb-sdk").InvoiceReceiveData;
-export type BtcBalance = import("rgb-sdk").BtcBalance;
+export type RgbTransactionReceipt = import("@utexo/rgb-sdk").Transaction;
+export type RgbTransferReceipt = import("@utexo/rgb-sdk").RgbTransfer;
+export type IssueAssetNIA = import("@utexo/rgb-sdk").IssueAssetNIAResponse;
+export type ListAssets = import("@utexo/rgb-sdk").ListAssetsResponse;
+export type InvoiceReceiveData = import("@utexo/rgb-sdk").InvoiceReceiveData;
+export type BtcBalance = import("@utexo/rgb-sdk").BtcBalance;
 /**
  * Result returned by registerWallet method.
  */
@@ -367,9 +367,9 @@ export type RegisterWalletResult = {
      */
     btcBalance: BtcBalance;
 };
-export type SendAssetEndRequest = import("rgb-sdk").SendAssetEndRequestModel;
-export type SendResult = import("rgb-sdk").SendResult;
-export type Unspent = import("rgb-sdk").Unspent;
+export type SendAssetEndRequest = import("@utexo/rgb-sdk").SendAssetEndRequestModel;
+export type SendResult = import("@utexo/rgb-sdk").SendResult;
+export type Unspent = import("@utexo/rgb-sdk").Unspent;
 export type RgbTransaction = import("./wallet-account-read-only-rgb.js").RgbTransaction;
 export type RgbWalletConfig = import("./wallet-account-read-only-rgb.js").RgbWalletConfig;
 export type RgbKeyPair = {
@@ -410,4 +410,4 @@ export type RgbRestoreParams = {
 };
 export type RgbRestoreConfig = RgbWalletConfig & RgbRestoreParams;
 import WalletAccountReadOnlyRgb from './wallet-account-read-only-rgb.js';
-import { WalletManager } from 'rgb-sdk';
+import { WalletManager } from '@utexo/rgb-sdk';

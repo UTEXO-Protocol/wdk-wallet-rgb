@@ -67,7 +67,7 @@ https.get(backup.download_url, (response) => {
 The backup is restored using `@utexo/wdk-wallet-rgb` v2:
 
 ```javascript
-import { restoreFromBackup } from 'rgb-sdk'
+import { restoreFromBackup } from '@utexo/rgb-sdk'
 import path from 'path'
 import fs from 'fs'
 
@@ -82,6 +82,7 @@ if (!fs.existsSync(dataDir)) {
 
 // Restore wallet from backup
 // This MUST be called BEFORE creating the WalletManager instance
+// Note: restoreFromBackup is imported from @utexo/rgb-sdk
 const responseMsg = restoreFromBackup({
   backupFilePath,
   password,
@@ -128,7 +129,7 @@ Here's a complete example showing the full migration process:
 
 ```javascript
 import WalletManagerRgb from '@utexo/wdk-wallet-rgb'
-import { restoreFromBackup } from 'rgb-sdk'
+import { restoreFromBackup } from '@utexo/rgb-sdk'
 import fs from 'fs'
 import path from 'path'
 import https from 'https'

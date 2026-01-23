@@ -2,7 +2,7 @@
 
 > **Beta notice:** this package is still evolving. Please exercise caution and validate behaviour against your RGB node before deploying in production.
 
-`@utexo/wdk-wallet-rgb` bridges the Wallet Development Kit (WDK) interfaces with the RGB ecosystem by wrapping the official `rgb-sdk` WalletManager API inside the familiar WDK abstractions. It handles key-derivation, account lifecycle, UTXO orchestration, asset issuance, transfers, and wallet backup flows while keeping the WDK ergonomics you already know. The library uses `rgb-lib` directly (RGB SDK v2), storing all wallet data locally without requiring an RGB Node server.
+`@utexo/wdk-wallet-rgb` bridges the Wallet Development Kit (WDK) interfaces with the RGB ecosystem by wrapping the official `@utexo/rgb-sdk` WalletManager API inside the familiar WDK abstractions. It handles key-derivation, account lifecycle, UTXO orchestration, asset issuance, transfers, and wallet backup flows while keeping the WDK ergonomics you already know. The library uses `rgb-lib` directly (RGB SDK v2), storing all wallet data locally without requiring an RGB Node server.
 
 [RGB SDK Overview – rgb-sdk](https://github.com/RGB-OS/rgb-sdk)  
 [@utexo/wdk-wallet-rgb v1 to v2 Migration Guide](./MIGRATION.md)
@@ -17,7 +17,7 @@ With this package you can:
 - create the single supported RGB account (Taproot / BIP-86) and convert it into a read-only view
 - manage RGB state, and orchestrate UTXO management
 - issue NIA assets, list asset balances, create blind/witness receive invoices, and complete transfers
-- perform the rgb-sdk `sendBegin → signPsbt → sendEnd` pipeline or fall back to the single-call `transfer`
+- perform the `@utexo/rgb-sdk` `sendBegin → signPsbt → sendEnd` pipeline or fall back to the single-call `transfer`
 - create encrypted backups and restore accounts from backup material
 
 ---
@@ -41,7 +41,7 @@ When initializing `WalletManagerRgb` or creating accounts, you must provide the 
 | Method | Description |
 | ------ | ----------- |
 | `constructor(seed, config)` | Initialises the manager for `seed` with RGB network configuration. |
-| `getAccount()` | Returns (and caches) the RGB account at index `0`, deriving keys via `rgb-sdk`. |
+| `getAccount()` | Returns (and caches) the RGB account at index `0`, deriving keys via `@utexo/rgb-sdk`. |
 | `restoreAccountFromBackup(restoreConfig)` | Builds a manager-backed account directly from encrypted backup payloads. |
 | `getFeeRates()` | Returns basic Bitcoin fee hints (`{ normal: 1n, fast: 2n }`). |
 | `dispose()` | Clears cached accounts and key material in memory. |
@@ -52,9 +52,9 @@ When initializing `WalletManagerRgb` or creating accounts, you must provide the 
 | ------ | ----------- |
 | `getAddress()` | Returns the taproot deposit address (synchronous). |
 | `getBalance()` / `getTokenBalance(assetId)` | Queries BTC satoshis and RGB asset balances (read-only base class). |
-| `listAssets()` / `listTransfers(assetId)` / `listTransactions()` / `listUnspents()` | Mirrors the rgb-sdk inventory views (all synchronous). |
+| `listAssets()` / `listTransfers(assetId)` / `listTransactions()` / `listUnspents()` | Mirrors the `@utexo/rgb-sdk` inventory views (all synchronous). |
 | `createUtxos*` | `createUtxos`, `createUtxosBegin`, `createUtxosEnd` for UTXO management. |
-| `issueAssetNia(options)` | Issues a Non-Inflatable Asset using rgb-sdk defaults (synchronous). |
+| `issueAssetNia(options)` | Issues a Non-Inflatable Asset using `@utexo/rgb-sdk` defaults (synchronous). |
 | `receiveAsset({ assetId?, amount, witness? })` | Creates blind or witness receive invoices (synchronous). |
 | `sendBegin` / `signPsbt` / `sendEnd` | Low-level PSBT pipeline for controlled transfers. |
 | `transfer(options)` | WDK-style wrapper that orchestrates invoice driven transfers. |
@@ -69,7 +69,7 @@ When initializing `WalletManagerRgb` or creating accounts, you must provide the 
 | ------ | ----------- |
 | `getBalance()` & `getTokenBalance(assetId)` | View-only BTC and RGB balances. |
 | `quoteSendTransaction(tx)` / `quoteTransfer(options)` | Returns placeholder fee hints (`1n`) for UI display. |
-| `getTransactionReceipt(hash)` | Returns `null` (not implemented) – use rgb-sdk directly if required. |
+| `getTransactionReceipt(hash)` | Returns `null` (not implemented) – use `@utexo/rgb-sdk` directly if required. |
 
 ---
 
@@ -193,7 +193,7 @@ const backup = account.createBackup({
 console.log('Backup created:', backup.message)
 
 // Restore from backup
-import { restoreFromBackup } from 'rgb-sdk'
+import { restoreFromBackup } from '@utexo/rgb-sdk'
 
 // Must call restoreFromBackup BEFORE creating the wallet manager
 const dataDir = './restored-wallet'
@@ -222,7 +222,7 @@ console.log('Restored address:', restored.getAddress())
 ## 📁 Examples
 
 - `examples/rgb-wallet-flow.mjs` – end-to-end flow that mines regtest blocks, issues an asset, performs standard and witness transfers, and demonstrates the backup/restore loop.
-- Jest suites (`tests/*.test.js`) show how to mock `rgb-sdk` when unit testing against the WDK surface.
+- Jest suites (`tests/*.test.js`) show how to mock `@utexo/rgb-sdk` when unit testing against the WDK surface.
 
 Run the example with:
 

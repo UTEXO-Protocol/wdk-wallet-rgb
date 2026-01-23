@@ -8,8 +8,8 @@ const mockKeys = {
   accountXpubColored: 'tpubDDPLJfdVbDoGtnn6hSto3oCnm6hpfHe9uk2MxcANanxk87EuquhSVfSLQv7e5UykgzaFn41DUXaikjjVGcUSUTGNaJ9LcozfRwatKp1vTfC',
   masterFingerprint: 'a66bffef',
 };
-// Mock rgb-sdk before importing anything that uses it
-jest.unstable_mockModule('rgb-sdk', () => {
+// Mock @utexo/rgb-sdk before importing anything that uses it
+jest.unstable_mockModule('@utexo/rgb-sdk', () => {
 
 
   const mockWalletManagerInstance = {
@@ -50,6 +50,7 @@ jest.unstable_mockModule('rgb-sdk', () => {
     deriveKeysFromMnemonic: jest.fn().mockResolvedValue(mockKeys),
     deriveKeysFromSeed: deriveKeysFromSeedMock,
     createWallet: jest.fn().mockResolvedValue({}),
+    restoreFromBackup: jest.fn().mockReturnValue({ message: 'Wallet restored successfully' }),
     BIP32_VERSIONS: {
       mainnet: { public: 76067358, private: 76066276 },
       testnet: { public: 70617039, private: 70615956 },

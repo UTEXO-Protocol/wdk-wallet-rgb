@@ -9,8 +9,8 @@ const mockKeys = {
   xpriv: 'tprv8ZgxMBicQKsPdQaFUyyJodvPVicQ6HxagSy18xrJmd8GPHUD1YuDR5WXL9eUDiNnLfkufjL2EwzWpnkiyck5da731zevC4t34QyR69uTSSX'
 }
 
-// Mock rgb-sdk before importing anything that uses it
-jest.unstable_mockModule('rgb-sdk', () => {
+// Mock @utexo/rgb-sdk before importing anything that uses it
+jest.unstable_mockModule('@utexo/rgb-sdk', () => {
   const mockWalletManagerInstance = {
     getBtcBalance: jest.fn().mockResolvedValue({ vanilla: { settled: 1000000 } }),
     getAssetBalance: jest.fn().mockResolvedValue({ settled: 500000 }),

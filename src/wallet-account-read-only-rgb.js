@@ -14,13 +14,13 @@
 'use strict'
 
 import { WalletAccountReadOnly } from '@tetherto/wdk-wallet'
-import { WalletManager } from 'rgb-sdk'
+import { WalletManager } from '@utexo/rgb-sdk'
 
 /** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
 /** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
-/** @typedef {import('rgb-sdk').Transaction} RgbTransactionReceipt */
-/** @typedef {import('rgb-sdk').RgbTransfer} RgbTransferReceipt */
-/** @typedef {import('rgb-sdk').GeneratedKeys} Keys */
+/** @typedef {import('@utexo/rgb-sdk').Transaction} RgbTransactionReceipt */
+/** @typedef {import('@utexo/rgb-sdk').RgbTransfer} RgbTransferReceipt */
+/** @typedef {import('@utexo/rgb-sdk').GeneratedKeys} Keys */
 
 /**
  * @typedef {Object} WitnessData
@@ -48,7 +48,7 @@ import { WalletManager } from 'rgb-sdk'
 /**
  * @typedef {Object} RgbWalletConfig
  * @property {'mainnet' | 'testnet' | 'regtest'} network - The network (required).
- * @property {Keys} [keys] - The wallet keys from rgb-sdk.
+ * @property {Keys} [keys] - The wallet keys from @utexo/rgb-sdk.
  * @property {string} [indexerUrl] - Electrs indexer URL.
  * @property {string} [transportEndpoint] - Transport endpoint.
  * @property {number | bigint} [transferMaxFee] - The maximum fee amount for transfer operations.
@@ -81,8 +81,7 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
       throw new Error('Network configuration is required.')
     }
 
-
-    const { keys, indexerUrl, transportEndpoint, dataDir,network} = this._config
+    const { keys, indexerUrl, transportEndpoint, dataDir, network } = this._config
 
     /** @private */
     this._wallet = new WalletManager({
@@ -92,7 +91,7 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
       network,
       dataDir,
       indexerUrl,
-      transportEndpoint,
+      transportEndpoint
     })
   }
 

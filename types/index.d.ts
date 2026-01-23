@@ -1,8 +1,8 @@
 export { default } from "./src/wallet-manager-rgb.js";
 export { default as WalletAccountReadOnlyRgb } from "./src/wallet-account-read-only-rgb.js";
 export { default as WalletAccountRgb } from "./src/wallet-account-rgb.js";
-export type RgbTransactionReceipt = import("rgb-sdk").Transaction;
-export type RgbTransferReceipt = import("rgb-sdk").RgbTransfer;
+export type RgbTransactionReceipt = import("@utexo/rgb-sdk").Transaction;
+export type RgbTransferReceipt = import("@utexo/rgb-sdk").RgbTransfer;
 export type FeeRates = import("@tetherto/wdk-wallet").FeeRates;
 export type KeyPair = import("@tetherto/wdk-wallet").KeyPair;
 export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult;
