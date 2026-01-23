@@ -14,7 +14,7 @@
 'use strict'
 
 import WalletManager from '@tetherto/wdk-wallet'
-import { deriveKeysFromSeed } from 'rgb-sdk'
+import { deriveKeysFromSeed } from '@utexo/rgb-sdk'
 import WalletAccountRgb from './wallet-account-rgb.js'
 
 const MEMPOOL_SPACE_URL = 'https://mempool.space'
@@ -23,7 +23,7 @@ const MEMPOOL_SPACE_URL = 'https://mempool.space'
 
 /** @typedef {import('./wallet-account-read-only-rgb.js').RgbWalletConfig} RgbWalletConfig */
 /** @typedef {import('./wallet-account-rgb.js').RgbRestoreConfig} RgbRestoreConfig */
-/** @typedef {import('rgb-sdk').GeneratedKeys} GeneratedKeys */
+/** @typedef {import('@utexo/rgb-sdk').GeneratedKeys} GeneratedKeys */
 
 export default class WalletManagerRgb extends WalletManager {
   /**
@@ -38,14 +38,10 @@ export default class WalletManagerRgb extends WalletManager {
     if (!config.network) {
       throw new Error('network configuration is required.')
     }
-    if (!config.rgbNodeEndpoint) {
-      throw new Error('rgbNodeEndpoint configuration is required.')
-    }
 
     /** @private */
     this._network = config.network
-    /** @private */
-    this._rgbNodeEndpoint = config.rgbNodeEndpoint
+
     /** @private @type {GeneratedKeys | null} */
     this._keys = null
   }
@@ -81,12 +77,15 @@ export default class WalletManagerRgb extends WalletManager {
     }
     if (!this._accounts[index]) {
       await this._initializeKeys()
+      const { dataDir, indexerUrl, transportEndpoint } = this._config
       const account = await WalletAccountRgb.at(
         this.seed,
         {
           network: this._network,
-          rgbNodeEndpoint: this._rgbNodeEndpoint,
-          keys: this._keys
+          keys: this._keys,
+          dataDir,
+          indexerUrl,
+          transportEndpoint
         }
       )
 
@@ -111,7 +110,6 @@ export default class WalletManagerRgb extends WalletManager {
       ...this._config,
       ...restoreConfig,
       network: this._network,
-      rgbNodeEndpoint: this._rgbNodeEndpoint,
       keys: this._keys
     }
 

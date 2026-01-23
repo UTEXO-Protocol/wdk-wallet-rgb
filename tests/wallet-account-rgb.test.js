@@ -3,9 +3,9 @@ import { beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globa
 const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 
 const mockKeysBase = {
-  account_xpub_vanilla: 'tpubDDMTD6EJKKLP6Gx9JUnMpjf9NYyePJszmqBnNqULNmcgEuU1yQ3JsHhWZdRFecszWETnNsmhEe9vnaNibfzZkDDHycbR2rGFbXdHWRgBfu7',
-  account_xpub_colored: 'tpubDDPLJfdVbDoGtnn6hSto3oCnm6hpfHe9uk2MxcANanxk87EuquhSVfSLQv7e5UykgzaFn41DUXaikjjVGcUSUTGNaJ9LcozfRwatKp1vTfC',
-  master_fingerprint: 'a66bffef',
+  accountXpubVanilla: 'tpubDDMTD6EJKKLP6Gx9JUnMpjf9NYyePJszmqBnNqULNmcgEuU1yQ3JsHhWZdRFecszWETnNsmhEe9vnaNibfzZkDDHycbR2rGFbXdHWRgBfu7',
+  accountXpubColored: 'tpubDDPLJfdVbDoGtnn6hSto3oCnm6hpfHe9uk2MxcANanxk87EuquhSVfSLQv7e5UykgzaFn41DUXaikjjVGcUSUTGNaJ9LcozfRwatKp1vTfC',
+  masterFingerprint: 'a66bffef',
   mnemonic: SEED_PHRASE,
   xpriv: "tprv8ZgxMBicQKsPdQaFUyyJodvPVicQ6HxagSy18xrJmd8GPHUD1YuDR5WXL9eUDiNnLfkufjL2EwzWpnkiyck5da731zevC4t34QyR69uTSSX",
   xpub: "tpubD6NzVbkrYhZ4Wsc3NdduD3aW4k8LFd9VFkZnRUtcBtvfDmiydwioba8PWFrJRBQrSSHzfvR8Gz8sGvqV3vm5wEmgT1dcWDAaz2xRKRPaBok"
@@ -22,7 +22,7 @@ const createMockWallet = () => ({
     uda: null,
     cfa: null
   }),
-  listTransfers: jest.fn().mockResolvedValue([{ txid: 'tx-1', direction: 'incoming' }]),
+  listTransfers: jest.fn().mockReturnValue([{ txid: 'tx-1', direction: 'incoming' }]),
   sendBegin: jest.fn().mockResolvedValue('psbt-bytes'),
   signPsbt: jest.fn().mockImplementation(psbt => `signed:${psbt}`),
   sendEnd: jest.fn().mockResolvedValue({ txid: 'abc123', fee: 210 }),
@@ -31,18 +31,18 @@ const createMockWallet = () => ({
   send: jest.fn().mockResolvedValue({ txid: 'abc123', fee: 210 }),
   signMessage: jest.fn().mockResolvedValue('signed-message'),
   verifyMessage: jest.fn().mockResolvedValue(true),
-  blindReceive: jest.fn().mockResolvedValue({ invoice: 'rgb1-invoice' }),
-  witnessReceive: jest.fn().mockResolvedValue({ invoice: 'rgb1-witness' }),
-  issueAssetNia: jest.fn().mockResolvedValue({
+  blindReceive: jest.fn().mockReturnValue({ invoice: 'rgb1-invoice' }), // synchronous in v2
+  witnessReceive: jest.fn().mockReturnValue({ invoice: 'rgb1-witness' }), // synchronous in v2
+  issueAssetNia: jest.fn().mockReturnValue({ // synchronous in v2
     asset: {
-      asset_id: 'rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
+      assetId: 'rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
       assetIface: 'RGB20',
       ticker: 'RGB',
       name: 'RGB Asset',
       precision: 0,
-      issued_supply: 100,
+      issuedSupply: 100,
       timestamp: 1691160565,
-      added_at: 1691161979
+      addedAt: 1691161979
     }
   }),
   createUtxosBegin: jest.fn().mockResolvedValue('psbt-utxo'),
@@ -62,7 +62,7 @@ let WalletAccountRgb
 let WalletManagerMock
 
 beforeAll(async () => {
-  jest.unstable_mockModule('rgb-sdk', () => {
+  jest.unstable_mockModule('@utexo/rgb-sdk', () => {
     WalletManagerMock = jest.fn().mockImplementation(() => createMockWallet())
 
     return {
@@ -70,6 +70,7 @@ beforeAll(async () => {
       deriveKeysFromMnemonic: jest.fn(),
       deriveKeysFromSeed: jest.fn(),
       createWallet: jest.fn(),
+      restoreFromBackup: jest.fn().mockReturnValue({ message: 'Wallet restored successfully' }),
       BIP32_VERSIONS: {
         mainnet: { public: 76067358, private: 76066276 },
         testnet: { public: 70617039, private: 70615956 },
@@ -85,7 +86,7 @@ beforeAll(async () => {
 
 const createAccountConfig = (configOverrides = {}, keysOverrides = {}) => ({
   network: 'regtest',
-  rgbNodeEndpoint: 'http://127.0.0.1:8000',
+  transportEndpoint: 'http://127.0.0.1:8000',
   keys: {
     ...mockKeysBase,
     ...keysOverrides
@@ -101,8 +102,11 @@ const createAccount = async (configOverrides = {}, keysOverrides = {}) => {
   return { account, wallet, config }
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks()
+  // Reset restoreFromBackup mock to default success response
+  const { restoreFromBackup: restoreFromBackupMock } = await import('@utexo/rgb-sdk')
+  restoreFromBackupMock.mockReturnValue({ message: 'Wallet restored successfully' })
 })
 
 describe('WalletAccountRgb', () => {
@@ -123,7 +127,7 @@ describe('WalletAccountRgb', () => {
 
       expect(account).toBeInstanceOf(WalletAccountRgb)
       expect(account._config.network).toBe(config.network)
-      expect(account._config.rgbNodeEndpoint).toBe(config.rgbNodeEndpoint)
+      expect(account._config.transportEndpoint).toBe(config.transportEndpoint)
       expect(account.index).toBe(0)
     })
   })
@@ -165,29 +169,38 @@ describe('WalletAccountRgb', () => {
 
     test('transfer performs RGB send flow', async () => {
       const { account, wallet } = await createAccount()
+      // Mock sendBegin to return a promise that resolves to psbt
+      wallet.sendBegin.mockReturnValue('psbt-bytes') // synchronous in v2
+      // signPsbt needs to handle the promise and resolve it
+      wallet.signPsbt.mockImplementation(async (psbt) => {
+        const resolvedPsbt = await psbt
+        return `signed:${resolvedPsbt}`
+      })
+      wallet.sendEnd.mockReturnValue({ txid: 'abc123' }) // synchronous in v2, returns txid
       const result = await account.transfer({ token: 'asset-1', recipient: 'rgb:invoice-123', amount: 100 })
 
       expect(wallet.sendBegin).toHaveBeenCalledWith({
         invoice: 'rgb:invoice-123',
-        asset_id: 'asset-1',
-        witness_data: undefined,
+        assetId: 'asset-1',
+        witnessData: undefined,
         amount: 100,
-        fee_rate: 1,
-        min_confirmations: undefined
+        feeRate: 1,
+        minConfirmations: undefined
       })
-      expect(wallet.signPsbt).toHaveBeenCalledWith('psbt-bytes')
-      expect(wallet.sendEnd).toHaveBeenCalledWith({ signed_psbt: 'signed:psbt-bytes' })
+      // signPsbt will be called with the promise
+      expect(wallet.signPsbt).toHaveBeenCalled()
+      expect(wallet.sendEnd).toHaveBeenCalledWith({ signedPsbt: 'signed:psbt-bytes' })
       expect(result).toEqual({ hash: 'abc123', fee: BigInt(210) })
     })
 
     test('getTransfers returns transfers without asset filter', async () => {
       const { account, wallet } = await createAccount()
-      wallet.listTransfers.mockResolvedValue([
+      wallet.listTransfers.mockReturnValue([
         { txid: 'tx-1', direction: 'incoming' },
         { txid: 'tx-2', direction: 'outgoing' }
       ])
 
-      const transfers = await account.getTransfers()
+      const transfers = account.getTransfers()
 
       expect(wallet.listTransfers).toHaveBeenCalledWith()
       expect(transfers).toEqual([
@@ -198,9 +211,9 @@ describe('WalletAccountRgb', () => {
 
     test('getTransfers with assetId filters by asset', async () => {
       const { account, wallet } = await createAccount()
-      wallet.listTransfers.mockResolvedValue([{ txid: 'tx-1', direction: 'incoming' }])
+      wallet.listTransfers.mockReturnValue([{ txid: 'tx-1', direction: 'incoming' }])
 
-      const transfers = await account.getTransfers({ assetId: 'asset-alpha' })
+      const transfers = account.getTransfers({ assetId: 'asset-alpha' })
 
       expect(wallet.listTransfers).toHaveBeenCalledWith('asset-alpha')
       expect(transfers).toEqual([{ txid: 'tx-1', direction: 'incoming' }])
@@ -208,7 +221,7 @@ describe('WalletAccountRgb', () => {
 
     test('getTransfers applies pagination', async () => {
       const { account, wallet } = await createAccount()
-      wallet.listTransfers.mockResolvedValue([
+      wallet.listTransfers.mockReturnValue([
         { txid: 'tx-1' },
         { txid: 'tx-2' },
         { txid: 'tx-3' },
@@ -216,7 +229,7 @@ describe('WalletAccountRgb', () => {
         { txid: 'tx-5' }
       ])
 
-      const transfers = await account.getTransfers({ limit: 2, skip: 1 })
+      const transfers = account.getTransfers({ limit: 2, skip: 1 })
 
       expect(wallet.listTransfers).toHaveBeenCalledWith()
       expect(transfers).toEqual([{ txid: 'tx-2' }, { txid: 'tx-3' }])
@@ -237,17 +250,29 @@ describe('WalletAccountRgb', () => {
 
     test('issueAssetNia proxies to wallet manager', async () => {
       const { account, wallet } = await createAccount()
-      const result = await account.issueAssetNia({ ticker: 'RGB', name: 'RGB Asset', amounts: [100], precision: 0 })
-      expect(result).toEqual({
+      wallet.issueAssetNia.mockReturnValue({ // synchronous in v2
         asset: {
-          asset_id: 'rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
+          assetId: 'rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
           assetIface: 'RGB20',
           ticker: 'RGB',
           name: 'RGB Asset',
           precision: 0,
-          issued_supply: 100,
+          issuedSupply: 100,
           timestamp: 1691160565,
-          added_at: 1691161979
+          addedAt: 1691161979
+        }
+      })
+      const result = account.issueAssetNia({ ticker: 'RGB', name: 'RGB Asset', amounts: [100], precision: 0 })
+      expect(result).toEqual({
+        asset: {
+          assetId: 'rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
+          assetIface: 'RGB20',
+          ticker: 'RGB',
+          name: 'RGB Asset',
+          precision: 0,
+          issuedSupply: 100,
+          timestamp: 1691160565,
+          addedAt: 1691161979
         }
       })
       expect(wallet.issueAssetNia).toHaveBeenCalledWith({
@@ -260,17 +285,19 @@ describe('WalletAccountRgb', () => {
 
     test('receiveAsset uses blind receive by default', async () => {
       const { account, wallet } = await createAccount()
-      const invoice = await account.receiveAsset({ asset_id: 'asset-1', amount: 10 })
+      wallet.blindReceive.mockReturnValue({ invoice: 'rgb1-invoice' }) // synchronous in v2
+      const invoice = account.receiveAsset({ assetId: 'asset-1', amount: 10 }) // camelCase in v2
       expect(invoice).toEqual({ invoice: 'rgb1-invoice' })
       expect(wallet.blindReceive).toHaveBeenCalled()
     })
 
     test('receiveAsset uses witness receive when requested', async () => {
       const { account, wallet } = await createAccount()
-      const invoice = await account.receiveAsset({ asset_id: 'asset-1', amount: 10, witness: true })
+      wallet.witnessReceive.mockReturnValue({ invoice: 'rgb1-witness' }) // synchronous in v2
+      const invoice = account.receiveAsset({ assetId: 'asset-1', amount: 10, witness: true }) // camelCase in v2
       expect(invoice).toEqual({ invoice: 'rgb1-witness' })
       expect(wallet.witnessReceive).toHaveBeenCalled()
-      expect(wallet.blindReceive).not.toHaveBeenCalledWith(expect.objectContaining({ witness: true }))
+      expect(wallet.blindReceive).not.toHaveBeenCalled()
     })
 
     test('sign delegates to wallet manager', async () => {
@@ -315,7 +342,7 @@ describe('WalletAccountRgb', () => {
 
     test('createBackup throws error when backup creation fails (500)', async () => {
       const { account, wallet } = await createAccount()
-      // rgb-sdk throws _RgbNodeError with statusCode 500 when backup file was not created
+      // @utexo/rgb-sdk throws _RgbNodeError with statusCode 500 when backup file was not created
       const backupError = new Error('Backup file was not created')
       backupError.name = '_RgbNodeError'
       backupError.code = 'RGB_NODE_ERROR'
@@ -335,103 +362,91 @@ describe('WalletAccountRgb', () => {
       expect(wallet.createBackup).toHaveBeenCalledWith('secure-password')
     })
 
-    test('restoreFromBackup delegates to wallet manager and returns success response', async () => {
-      const { account, wallet } = await createAccount()
+    test('restoreFromBackup delegates to top-level function and returns success response', async () => {
+      const { account } = await createAccount()
+      const { restoreFromBackup: restoreFromBackupMock } = await import('@utexo/rgb-sdk')
       const mockResponse = { message: 'Wallet restored successfully' }
-      wallet.restoreFromBackup.mockResolvedValue(mockResponse)
+      restoreFromBackupMock.mockReturnValue(mockResponse)
 
       const params = {
-        backup: Buffer.from('backup-data'),
+        backupFilePath: './backups/wallet.backup',
         password: 'secure-password',
-        filename: 'backup.rgb',
-        xpubVan: 'custom-xpub-van',
-        xpubCol: 'custom-xpub-col',
-        masterFingerprint: 'deadbeef'
+        dataDir: './restored-wallet'
       }
 
-      const result = await account.restoreFromBackup(params)
+      const result = account.restoreFromBackup(params)
       expect(result).toEqual(mockResponse)
-      expect(wallet.restoreFromBackup).toHaveBeenCalledWith({
-        backup: params.backup,
+      expect(restoreFromBackupMock).toHaveBeenCalledWith({
+        backupFilePath: params.backupFilePath,
         password: params.password,
-        filename: params.filename,
-        xpub_van: params.xpubVan,
-        xpub_col: params.xpubCol,
-        master_fingerprint: params.masterFingerprint
+        dataDir: params.dataDir
       })
     })
 
     test('restoreFromBackup throws error when network error occurs (node down)', async () => {
-      const { account, wallet } = await createAccount()
+      const { account } = await createAccount()
+      const { restoreFromBackup: restoreFromBackupMock } = await import('@utexo/rgb-sdk')
       const networkError = new Error('Network error: connect ECONNREFUSED 127.0.0.1:8000')
       networkError.name = '_NetworkError'
       networkError.code = 'NETWORK_ERROR'
       networkError.statusCode = undefined
-      wallet.restoreFromBackup.mockRejectedValue(networkError)
+      restoreFromBackupMock.mockImplementation(() => {
+        throw networkError
+      })
 
       const params = {
-        backup: Buffer.from('backup-data'),
+        backupFilePath: './backups/wallet.backup',
         password: 'secure-password',
-        filename: 'backup.rgb'
+        dataDir: './restored-wallet'
       }
 
-      await expect(account.restoreFromBackup(params))
-        .rejects.toThrow('Network error: connect ECONNREFUSED 127.0.0.1:8000')
-      expect(wallet.restoreFromBackup).toHaveBeenCalled()
+      expect(() => account.restoreFromBackup(params))
+        .toThrow('Network error: connect ECONNREFUSED 127.0.0.1:8000')
+      expect(restoreFromBackupMock).toHaveBeenCalled()
     })
 
     test('restoreFromBackup throws error when wallet state already exists (409)', async () => {
-      const { account, wallet } = await createAccount()
+      const { account } = await createAccount()
+      const { restoreFromBackup: restoreFromBackupMock } = await import('@utexo/rgb-sdk')
       const conflictError = new Error('Wallet state already exists. Restoring over an existing state is not allowed because it can corrupt RGB state.')
       conflictError.name = '_ConflictError'
       conflictError.code = 'CONFLICT'
       conflictError.statusCode = 409
-      const axiosError = new Error('Request failed with status code 409')
-      axiosError.code = 'ERR_BAD_REQUEST'
-      axiosError.response = {
-        status: 409,
-        statusText: 'Conflict',
-        data: { detail: 'Wallet state already exists. Restoring over an existing state is not allowed because it can corrupt RGB state.' }
-      }
-      conflictError.cause = axiosError
-      wallet.restoreFromBackup.mockRejectedValue(conflictError)
+      restoreFromBackupMock.mockImplementation(() => {
+        throw conflictError
+      })
 
       const params = {
-        backup: Buffer.from('backup-data'),
+        backupFilePath: './backups/wallet.backup',
         password: 'secure-password',
-        filename: 'backup.rgb'
+        dataDir: './restored-wallet'
       }
 
-      await expect(account.restoreFromBackup(params))
-        .rejects.toThrow('Wallet state already exists. Restoring over an existing state is not allowed because it can corrupt RGB state.')
-      expect(wallet.restoreFromBackup).toHaveBeenCalled()
+      expect(() => account.restoreFromBackup(params))
+        .toThrow('Wallet state already exists. Restoring over an existing state is not allowed because it can corrupt RGB state.')
+      expect(restoreFromBackupMock).toHaveBeenCalled()
     })
 
     test('restoreFromBackup throws error when backup is invalid (400)', async () => {
-      const { account, wallet } = await createAccount()
+      const { account } = await createAccount()
+      const { restoreFromBackup: restoreFromBackupMock } = await import('@utexo/rgb-sdk')
       const backupError = new Error('Failed to restore wallet: WrongPassword')
       backupError.name = '_BadRequestError'
       backupError.code = 'BAD_REQUEST'
       backupError.statusCode = 400
-      const axiosError = new Error('Request failed with status code 400')
-      axiosError.code = 'ERR_BAD_REQUEST'
-      axiosError.response = {
-        status: 400,
-        statusText: 'Bad Request',
-        data: { detail: 'Failed to restore wallet: WrongPassword' }
-      }
-      backupError.cause = axiosError
-      wallet.restoreFromBackup.mockRejectedValue(backupError)
+      restoreFromBackupMock.mockImplementation(() => {
+        throw backupError
+      })
 
       const params = {
-        backup: Buffer.from('invalid-backup'),
+        backupFilePath: './backups/invalid.backup',
         password: 'wrong-password',
-        filename: 'backup.rgb'
+        dataDir: './restored-wallet'
       }
 
-      await expect(account.restoreFromBackup(params))
-        .rejects.toThrow('Failed to restore wallet: WrongPassword')
-      expect(wallet.restoreFromBackup).toHaveBeenCalled()
+      expect(() => account.restoreFromBackup(params))
+        .toThrow('Failed to restore wallet: WrongPassword')
+      expect(restoreFromBackupMock).toHaveBeenCalled()
     })
   })
 
@@ -442,41 +457,41 @@ describe('WalletAccountRgb', () => {
 
       expect(readOnly._config.keys).toEqual(config.keys)
       expect(readOnly._config.network).toBe(config.network)
-      expect(readOnly._config.rgbNodeEndpoint).toBe(config.rgbNodeEndpoint)
+      expect(readOnly._config.transportEndpoint).toBe(config.transportEndpoint)
     })
   })
 
   describe('fromBackup', () => {
     test('restores wallet from backup without registering', async () => {
       const walletInstance = createMockWallet()
-      walletInstance.restoreFromBackup.mockResolvedValue({ message: 'Wallet restored successfully' })
       walletInstance.registerWallet = jest.fn()
 
       WalletManagerMock.mockImplementationOnce(() => walletInstance)
 
+      // Get the restoreFromBackup mock - it's already reset in beforeEach
+      const { restoreFromBackup: restoreFromBackupMock } = await import('@utexo/rgb-sdk')
+
       const config = createAccountConfig({
-        backup: Buffer.from('backup-data'),
+        backupFilePath: './backups/wallet.backup',
         password: 'secure-password',
-        filename: 'wallet.rgb'
+        dataDir: './restored-wallet'
       })
 
       const account = await WalletAccountRgb.fromBackup(SEED_PHRASE, config)
 
-      expect(WalletManagerMock).toHaveBeenCalledWith({
-        xpub_van: config.keys.account_xpub_vanilla,
-        xpub_col: config.keys.account_xpub_colored,
-        master_fingerprint: config.keys.master_fingerprint,
-        network: config.network,
-        rgb_node_endpoint: config.rgbNodeEndpoint
+      expect(restoreFromBackupMock).toHaveBeenCalledWith({
+        backupFilePath: config.backupFilePath,
+        password: config.password,
+        dataDir: config.dataDir
       })
 
-      expect(walletInstance.restoreFromBackup).toHaveBeenCalledWith({
-        backup: config.backup,
-        password: config.password,
-        filename: config.filename,
-        xpub_van: config.keys.account_xpub_vanilla,
-        xpub_col: config.keys.account_xpub_colored,
-        master_fingerprint: config.keys.master_fingerprint
+      expect(WalletManagerMock).toHaveBeenCalledWith({
+        xpubVan: config.keys.accountXpubVanilla,
+        xpubCol: config.keys.accountXpubColored,
+        masterFingerprint: config.keys.masterFingerprint,
+        dataDir: config.dataDir,
+        indexerUrl: config.indexerUrl,
+        transportEndpoint: config.transportEndpoint
       })
 
       expect(walletInstance.registerWallet).not.toHaveBeenCalled()

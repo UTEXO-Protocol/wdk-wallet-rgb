@@ -1,8 +1,8 @@
 /** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
 /** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
-/** @typedef {import('rgb-sdk').Transaction} RgbTransactionReceipt */
-/** @typedef {import('rgb-sdk').RgbTransfer} RgbTransferReceipt */
-/** @typedef {import('rgb-sdk').GeneratedKeys} Keys */
+/** @typedef {import('@utexo/rgb-sdk').Transaction} RgbTransactionReceipt */
+/** @typedef {import('@utexo/rgb-sdk').RgbTransfer} RgbTransferReceipt */
+/** @typedef {import('@utexo/rgb-sdk').GeneratedKeys} Keys */
 /**
  * @typedef {Object} WitnessData
  * @property {number | bigint} [amountSat] - The amount in satoshis.
@@ -26,9 +26,11 @@
 /**
  * @typedef {Object} RgbWalletConfig
  * @property {'mainnet' | 'testnet' | 'regtest'} network - The network (required).
- * @property {string} rgbNodeEndpoint - The RGB node endpoint (required).
- * @property {Keys} [keys] - The wallet keys from rgb-sdk.
+ * @property {Keys} [keys] - The wallet keys from @utexo/rgb-sdk.
+ * @property {string} [indexerUrl] - Electrs indexer URL.
+ * @property {string} [transportEndpoint] - Transport endpoint.
  * @property {number | bigint} [transferMaxFee] - The maximum fee amount for transfer operations.
+ * @property {string} [dataDir] - RGB state data directory.
  */
 export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
     /**
@@ -71,9 +73,9 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
 }
 export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult;
 export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
-export type RgbTransactionReceipt = import("rgb-sdk").Transaction;
-export type RgbTransferReceipt = import("rgb-sdk").RgbTransfer;
-export type Keys = import("rgb-sdk").GeneratedKeys;
+export type RgbTransactionReceipt = import("@utexo/rgb-sdk").Transaction;
+export type RgbTransferReceipt = import("@utexo/rgb-sdk").RgbTransfer;
+export type Keys = import("@utexo/rgb-sdk").GeneratedKeys;
 export type WitnessData = {
     /**
      * - The amount in satoshis.
@@ -130,16 +132,8 @@ export type RgbWalletConfig = {
      */
     network: "mainnet" | "testnet" | "regtest";
     /**
-     * - The RGB node endpoint (required).
-     */
-    rgbNodeEndpoint: string;
-    /**
-     * - The wallet keys from rgb-sdk.
+     * - The wallet keys from
      */
     keys?: Keys;
-    /**
-     * - The maximum fee amount for transfer operations.
-     */
-    transferMaxFee?: number | bigint;
 };
 import { WalletAccountReadOnly } from '@tetherto/wdk-wallet';

@@ -1,7 +1,7 @@
 /** @typedef {import('@tetherto/wdk-wallet').FeeRates} FeeRates */
 /** @typedef {import('./wallet-account-read-only-rgb.js').RgbWalletConfig} RgbWalletConfig */
 /** @typedef {import('./wallet-account-rgb.js').RgbRestoreConfig} RgbRestoreConfig */
-/** @typedef {import('rgb-sdk').GeneratedKeys} GeneratedKeys */
+/** @typedef {import('@utexo/rgb-sdk').GeneratedKeys} GeneratedKeys */
 export default class WalletManagerRgb extends WalletManager {
     /**
      * Creates a new wallet manager for the RGB.
@@ -12,8 +12,6 @@ export default class WalletManagerRgb extends WalletManager {
     constructor(seed: string | Uint8Array, config?: RgbWalletConfig);
     /** @private */
     private _network;
-    /** @private */
-    private _rgbNodeEndpoint;
     /** @private @type {GeneratedKeys | null} */
     private _keys;
     /**
@@ -48,6 +46,6 @@ export default class WalletManagerRgb extends WalletManager {
 export type FeeRates = import("@tetherto/wdk-wallet").FeeRates;
 export type RgbWalletConfig = import("./wallet-account-read-only-rgb.js").RgbWalletConfig;
 export type RgbRestoreConfig = import("./wallet-account-rgb.js").RgbRestoreConfig;
-export type GeneratedKeys = import("rgb-sdk").GeneratedKeys;
+export type GeneratedKeys = import("@utexo/rgb-sdk").GeneratedKeys;
 import WalletManager from '@tetherto/wdk-wallet';
 import WalletAccountRgb from './wallet-account-rgb.js';

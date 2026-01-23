@@ -4,12 +4,12 @@ const SEED_PHRASE = 'poem twice question inch happy capital grain quality laptop
 const mockKeys = {
   mnemonic: SEED_PHRASE,
   xpub: 'tpubD6NzVbkrYhZ4XCaTDersU6277zvyyV6uCCeEgx1jfv7bUYMrbTt8Vem1MBt5Gmp7eMwjv4rB54s2kjqNNtTLYpwFsVX7H2H93pJ8SpZFRRi',
-  account_xpub_vanilla: 'tpubDDMTD6EJKKLP6Gx9JUnMpjf9NYyePJszmqBnNqULNmcgEuU1yQ3JsHhWZdRFecszWETnNsmhEe9vnaNibfzZkDDHycbR2rGFbXdHWRgBfu7',
-  account_xpub_colored: 'tpubDDPLJfdVbDoGtnn6hSto3oCnm6hpfHe9uk2MxcANanxk87EuquhSVfSLQv7e5UykgzaFn41DUXaikjjVGcUSUTGNaJ9LcozfRwatKp1vTfC',
-  master_fingerprint: 'a66bffef',
+  accountXpubVanilla: 'tpubDDMTD6EJKKLP6Gx9JUnMpjf9NYyePJszmqBnNqULNmcgEuU1yQ3JsHhWZdRFecszWETnNsmhEe9vnaNibfzZkDDHycbR2rGFbXdHWRgBfu7',
+  accountXpubColored: 'tpubDDPLJfdVbDoGtnn6hSto3oCnm6hpfHe9uk2MxcANanxk87EuquhSVfSLQv7e5UykgzaFn41DUXaikjjVGcUSUTGNaJ9LcozfRwatKp1vTfC',
+  masterFingerprint: 'a66bffef',
 };
-// Mock rgb-sdk before importing anything that uses it
-jest.unstable_mockModule('rgb-sdk', () => {
+// Mock @utexo/rgb-sdk before importing anything that uses it
+jest.unstable_mockModule('@utexo/rgb-sdk', () => {
 
 
   const mockWalletManagerInstance = {
@@ -50,6 +50,7 @@ jest.unstable_mockModule('rgb-sdk', () => {
     deriveKeysFromMnemonic: jest.fn().mockResolvedValue(mockKeys),
     deriveKeysFromSeed: deriveKeysFromSeedMock,
     createWallet: jest.fn().mockResolvedValue({}),
+    restoreFromBackup: jest.fn().mockReturnValue({ message: 'Wallet restored successfully' }),
     BIP32_VERSIONS: {
       mainnet: { public: 76067358, private: 76066276 },
       testnet: { public: 70617039, private: 70615956 },
@@ -68,7 +69,7 @@ describe('WalletManagerRgb', () => {
   beforeEach(() => {
     wallet = new WalletManagerRgb(SEED_PHRASE, {
       network: 'regtest',
-      rgbNodeEndpoint: 'http://127.0.0.1:8000'
+      transportEndpoint: 'http://127.0.0.1:8000'
     })
   })
 
@@ -83,18 +84,10 @@ describe('WalletManagerRgb', () => {
       }).toThrow('network configuration is required.')
     })
 
-    test('should throw error if rgbNodeEndpoint is not provided', () => {
-      expect(() => {
-        new WalletManagerRgb(SEED_PHRASE, {
-          network: 'testnet'
-        })
-      }).toThrow('rgbNodeEndpoint configuration is required.')
-    })
-
     test('should create a wallet manager with custom config', () => {
       const customWallet = new WalletManagerRgb(SEED_PHRASE, {
         network: 'testnet',
-        rgbNodeEndpoint: 'http://localhost:8000'
+        transportEndpoint: 'http://localhost:8000'
       })
       expect(customWallet).toBeInstanceOf(WalletManagerRgb)
       customWallet.dispose()
@@ -147,7 +140,7 @@ describe('WalletManagerRgb', () => {
         filename: 'wallet.rgb',
         keys: mockKeys,
         network: 'regtest',
-        rgbNodeEndpoint: 'http://127.0.0.1:8000'
+        transportEndpoint: 'http://127.0.0.1:8000'
       }))
       expect(result).toBe(restoredAccount)
 
