@@ -1,8 +1,8 @@
 # @utexo/wdk-wallet-rgb
 
-> **Beta notice:** this package is still evolving. Please exercise caution and validate behaviour against your RGB node before deploying in production.
+> **Beta notice:** This package is currently in beta. Please test thoroughly in development environments before using in production.
 
-`@utexo/wdk-wallet-rgb` bridges the Wallet Development Kit (WDK) interfaces with the RGB ecosystem by wrapping the official `@utexo/rgb-sdk` WalletManager API inside the familiar WDK abstractions. It handles key-derivation, account lifecycle, UTXO orchestration, asset issuance, transfers, and wallet backup flows while keeping the WDK ergonomics you already know. The library uses `rgb-lib` directly (RGB SDK v2), storing all wallet data locally without requiring an RGB Node server.
+`@utexo/wdk-wallet-rgb` bridges the Wallet Development Kit (WDK) interfaces with the RGB ecosystem by wrapping the official `@utexo/rgb-sdk` WalletManager API inside the familiar WDK abstractions. It handles key-derivation, account lifecycle, UTXO orchestration, asset issuance, transfers, and wallet backup flows while keeping the WDK ergonomics you already know.
 
 [RGB SDK Overview – rgb-sdk](https://github.com/RGB-OS/rgb-sdk)  
 [@utexo/wdk-wallet-rgb v1 to v2 Migration Guide](./MIGRATION.md)
@@ -33,8 +33,6 @@ When initializing `WalletManagerRgb` or creating accounts, you must provide the 
 - **`transportEndpoint`** (optional): RGB transport endpoint (e.g., `'rpcs://proxy.iriswallet.com/0.2/json-rpc'`)
 - **`dataDir`** (optional): Local directory for RGB wallet state (defaults to temp directory if not provided)
 - **`transferMaxFee`** (optional): Maximum fee amount for transfer operations
-
-**Note:** RGB SDK v2 uses `rgb-lib` directly and stores all wallet data locally. No RGB Node server is required.
 
 ### `WalletManagerRgb`
 
