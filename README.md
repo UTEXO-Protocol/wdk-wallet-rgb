@@ -18,6 +18,7 @@ If you are migrating from **`wdk-wallet-rgb v1.0.0`** (legacy version relying on
 **Recommendation:**  
 If privacy is a concern, migrate funds to a fresh wallet created with the new SDK.
 
+see the **[Migration Guide](./MIGRATION.md)** for step-by-step instructions on moving your wallet state to local storage
 ---
 
 ## 🧾 At a Glance
