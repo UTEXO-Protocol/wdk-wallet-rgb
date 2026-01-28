@@ -4,10 +4,19 @@
 
 `@utexo/wdk-wallet-rgb` bridges the Wallet Development Kit (WDK) interfaces with the RGB ecosystem by wrapping the official `@utexo/rgb-sdk` WalletManager API inside the familiar WDK abstractions. It handles key-derivation, account lifecycle, UTXO orchestration, asset issuance, transfers, and wallet backup flows while keeping the WDK ergonomics you already know.
 
-[RGB SDK Overview – rgb-sdk](https://github.com/RGB-OS/rgb-sdk)
-⚠️ Security Notice [https://github.com/UTEXO-Protocol/rgb-sdk/blob/main/SECURITY.md]
-If you're migrating from the legacy wdk-wallet-rgb v1.0.0 (which relied on a remote RGB Node server), be aware that wallet metadata such as xpubs have been exposed and this cannot be undone. Treat existing wallets as privacy-compromised.
-[@utexo/wdk-wallet-rgb v1 to v2 Migration Guide](./MIGRATION.md)
+## ⚠️ Security Notice
+
+Please review the full security disclosure here:  
+👉 https://github.com/UTEXO-Protocol/rgb-sdk/blob/main/SECURITY.md
+
+If you are migrating from **`wdk-wallet-rgb v1.0.0`** (legacy version relying on a remote RGB Node server), be aware of the following:
+
+- Wallet metadata, including **xpubs**, may have been exposed
+- This exposure **cannot be undone**
+- Affected wallets should be considered **privacy-compromised**
+
+**Recommendation:**  
+If privacy is a concern, migrate funds to a fresh wallet created with the new SDK.
 
 ---
 
