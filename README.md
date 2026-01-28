@@ -13,12 +13,14 @@ see the **[Migration Guide](./MIGRATION.md)** for step-by-step instructions on m
 
 If you are migrating from **`wdk-wallet-rgb v1.0.0`** (legacy version relying on a remote RGB Node server), be aware of the following:
 
+
 - Wallet metadata, including **xpubs**, may have been exposed
 - This exposure **cannot be undone**
 - Affected wallets should be considered **privacy-compromised**
 
-**Recommendation:**  
+#### Recommendation:
 If privacy is a concern, migrate funds to a fresh wallet created with the new SDK.
+
 ---
 
 ## 🧾 At a Glance
