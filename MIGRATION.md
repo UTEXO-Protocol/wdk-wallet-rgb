@@ -10,6 +10,29 @@ This guide explains how to migrate your RGB wallet state from `@utexo/wdk-wallet
 2. Restoring the backup in v2 to a local directory
 3. Initializing your wallet in v2 pointing to the restored directory
 
+## 🔐 Privacy Recommendation (Important)
+
+If you are migrating from `@utexo/wdk-wallet-rgb` v1, it is important to understand the privacy implications of the legacy architecture.
+
+Version 1 relied on an RGB Node server, which means that wallet metadata (such as extended public keys and transaction graph information) may have been exposed to the node operator. This exposure is **permanent** and cannot be reversed by upgrading software alone.
+
+### Recommended approach (if privacy matters)
+
+If wallet privacy is important to you, we strongly recommend:
+
+1. **Creating a brand new wallet with a new seed phrase in v2**
+2. Migrating assets from the old wallet to the new wallet using standard RGB transfers
+3. Discontinuing use of the old seed phrase and xpubs
+
+This is the **only way** to fully eliminate historical metadata exposure.
+
+### Alternative (state migration)
+
+The migration steps below restore wallet state using the **same seed phrase** and preserve balances and history. This approach is safe from a funds perspective, but it **does not remove prior privacy exposure**.
+
+Choose the approach that best matches your threat model.
+
+
 ## Step 1: Backup Wallet State in v1
 
 A backup of your wallet state is created using `@utexo/wdk-wallet-rgb` v1:
