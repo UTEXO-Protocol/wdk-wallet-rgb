@@ -4,7 +4,7 @@
 
 `@utexo/wdk-wallet-rgb` bridges the Wallet Development Kit (WDK) interfaces with the RGB ecosystem by wrapping the official `@utexo/rgb-sdk` WalletManager API inside the familiar WDK abstractions. It handles key-derivation, account lifecycle, UTXO orchestration, asset issuance, transfers, and wallet backup flows while keeping the WDK ergonomics you already know.
 
-[RGB SDK Overview – rgb-sdk](https://github.com/RGB-OS/rgb-sdk)  
+[RGB SDK Overview – rgb-sdk](https://github.com/UTEXO-Protocol/rgb-sdk)  
 [@utexo/wdk-wallet-rgb v1 to v2 Migration Guide](./MIGRATION.md)
 
 ---
@@ -213,19 +213,6 @@ const restored = await restoredManager.restoreAccountFromBackup({
   dataDir
 })
 console.log('Restored address:', restored.getAddress())
-```
-
----
-
-## 📁 Examples
-
-- `examples/rgb-wallet-flow.mjs` – end-to-end flow that mines regtest blocks, issues an asset, performs standard and witness transfers, and demonstrates the backup/restore loop.
-- Jest suites (`tests/*.test.js`) show how to mock `@utexo/rgb-sdk` when unit testing against the WDK surface.
-
-Run the example with:
-
-```bash
-node examples/rgb-wallet-flow.mjs
 ```
 
 ---
