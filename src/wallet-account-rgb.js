@@ -857,5 +857,4 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
   syncWallet () {
     return this._wallet.syncWallet()
   }
-
 }
