@@ -831,6 +831,75 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
   }
 
   /**
+   * VSS (Versioned Storage Service) cloud-backup config.
+   *
+   * @typedef {Object} VssBackupConfigParams
+   * @property {string} serverUrl - VSS server base URL.
+   * @property {string} storeId - Per-wallet store identifier.
+   * @property {string} signingKeyHex - 64-char hex (32-byte secp256k1 secret key) used to auth + sign requests.
+   * @property {boolean} [encryptionEnabled=true] - Client-side encrypt payloads before upload.
+   * @property {boolean} [autoBackup=false] - Enable automatic backup on state-changing ops.
+   * @property {'Async'|'Blocking'} [backupMode='Async'] - Auto-backup flush mode.
+   */
+
+  /**
+   * VSS backup status returned by {@link vssBackupInfo}.
+   *
+   * @typedef {Object} VssBackupInfo
+   * @property {boolean} backupExists - Whether a backup exists on the server.
+   * @property {number|null} serverVersion - Latest version on the server, or null.
+   * @property {boolean} backupRequired - Whether local state is ahead of the server.
+   */
+
+  /**
+   * Configures automatic VSS cloud backup. Once configured with
+   * `autoBackup: true`, rgb-lib flushes wallet state to the VSS server
+   * after state-changing operations. Encryption is client-side; the
+   * server never sees plaintext when `encryptionEnabled` is set.
+   *
+   * @param {VssBackupConfigParams} config - VSS backup configuration.
+   * @returns {void}
+   */
+  configureVssBackup (config) {
+    return this._wallet.configureVssBackup(config)
+  }
+
+  /**
+   * Disables automatic VSS backup previously enabled via
+   * {@link configureVssBackup}. Does not delete any existing remote
+   * backup; only stops further automatic flushes.
+   *
+   * @returns {void}
+   */
+  disableVssAutoBackup () {
+    return this._wallet.disableVssAutoBackup()
+  }
+
+  /**
+   * Uploads a VSS cloud backup of the current wallet state immediately.
+   * Use for app-controlled checkpoints rather than relying on the
+   * automatic on-write flush.
+   *
+   * @param {VssBackupConfigParams} config - VSS backup configuration.
+   * @returns {Promise<number>} The snapshot version persisted.
+   */
+  vssBackup (config) {
+    return this._wallet.vssBackup(config)
+  }
+
+  /**
+   * Queries the VSS server for this wallet's backup status without
+   * mutating anything — whether a backup exists, the server's latest
+   * version, and whether local state is ahead of the server.
+   *
+   * @param {VssBackupConfigParams} config - VSS backup configuration.
+   * @returns {Promise<VssBackupInfo>} The backup status.
+   */
+  vssBackupInfo (config) {
+    return this._wallet.vssBackupInfo(config)
+  }
+
+  /**
    * Refreshes the wallet state
    *
    * @returns {void}
