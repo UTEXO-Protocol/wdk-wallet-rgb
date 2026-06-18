@@ -1,5 +1,7 @@
 # @utexo/wdk-wallet-rgb
 
+[![Built with WDK](./assets/built-with-wdk.png)](https://github.com/tetherto/wdk)
+
 > **Beta notice:** This package is currently in beta. Please test thoroughly in development environments before using in production.
 
 `@utexo/wdk-wallet-rgb` bridges the Wallet Development Kit (WDK) interfaces with the RGB ecosystem by wrapping the `@utexo/rgb-lib-bare` native addon and `@utexo/rgb-sdk` Taproot signer inside the familiar WDK abstractions. It handles key derivation, account lifecycle, UTXO orchestration, asset issuance, transfers, and wallet backup flows while keeping WDK ergonomics.

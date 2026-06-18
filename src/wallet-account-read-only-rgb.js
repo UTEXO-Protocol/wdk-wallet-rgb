@@ -105,7 +105,7 @@ export default class WalletAccountReadOnlyRgb extends WalletAccountReadOnly {
   /**
    * Verifies a message's signature.
    *
-   * Required by `@tetherto/wdk-wallet@1.0.0-beta.7`'s `IWalletAccountReadOnly`
+   * Required by `@tetherto/wdk-wallet@1.0.0-beta.10`'s `IWalletAccountReadOnly`
    * interface. Message verification is public (no private key needed) — we
    * delegate to rgb-sdk-core's `verifyMessage`, which expects the vanilla
    * BIP-86 xpub that was derived from the owner's seed.
