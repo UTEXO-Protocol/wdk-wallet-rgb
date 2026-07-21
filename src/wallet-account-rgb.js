@@ -17,6 +17,7 @@ import WalletAccountReadOnlyRgb from './wallet-account-read-only-rgb.js'
 import { BIP32_VERSIONS } from '@utexo/rgb-sdk-core'
 import { BareRgbLibBinding } from './bare-binding.js'
 import { BareSigner } from './bare-signer.js'
+import { estimateVbytesFromPsbt } from './fee-utils.js'
 import rgblib from '@utexo/rgb-lib-bare'
 // eslint-disable-next-line camelcase
 import { sodium_memzero } from 'sodium-universal'
@@ -342,10 +343,11 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
 
       const signedPsbt = await this.signPsbt(psbt)
 
-      // Estimate fee from the signed PSBT (same formula as bare-binding.estimateFee)
-      // and enforce the transferMaxFee guard before broadcasting.
-      const sizeBytes = signedPsbt.length * 3 / 4
-      const estimatedVbytes = Math.ceil(sizeBytes * 0.4)
+      // Estimate fee from the signed PSBT by parsing its structure
+      // to count inputs/outputs, then applying P2TR vbyte estimates.
+      // The previous formula (sizeBytes * 0.4) severely underestimated
+      // fees because PSBT metadata inflates size well beyond the final tx.
+      const estimatedVbytes = estimateVbytesFromPsbt(signedPsbt)
       const fee = BigInt(feeRate * estimatedVbytes)
       if (this._config.transferMaxFee !== undefined && fee >= BigInt(this._config.transferMaxFee)) {
         throw new Error('Exceeded maximum fee cost for transfer operation.')
