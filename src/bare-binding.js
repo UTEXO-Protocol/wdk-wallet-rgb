@@ -7,6 +7,7 @@
 import rgblib from '@utexo/rgb-lib-bare'
 import { DEFAULT_TRANSPORT_ENDPOINTS, DEFAULT_INDEXER_URLS } from '@utexo/rgb-sdk-core'
 import fs from 'bare-fs'
+import { estimateVbytesFromPsbt } from './fee-utils.js'
 
 function mapNetwork (network) {
   const map = {
@@ -444,8 +445,7 @@ export class BareRgbLibBinding {
   }
 
   async estimateFee (signedPsbt) {
-    const sizeBytes = signedPsbt.length * 3 / 4
-    const vbytes = Math.ceil(sizeBytes * 0.4)
+    const vbytes = estimateVbytesFromPsbt(signedPsbt)
     const feeRate = await this.estimateFeeRate(1)
     return { fee: Math.ceil(vbytes * feeRate), vsize: vbytes }
   }
