@@ -447,7 +447,7 @@ export class BareRgbLibBinding {
     const sizeBytes = signedPsbt.length * 3 / 4
     const vbytes = Math.ceil(sizeBytes * 0.4)
     const feeRate = await this.estimateFeeRate(1)
-    return { fee: Math.ceil(vbytes * feeRate), vsize: vbytes }
+    return { fee: Math.ceil(vbytes * feeRate), vbytes, feeRate }
   }
 
   async createUtxos (options) {

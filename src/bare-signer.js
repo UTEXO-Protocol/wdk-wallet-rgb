@@ -32,9 +32,20 @@ export class BareSigner {
     return verifyMessage(params)
   }
 
-  async estimateFee (_psbt) {
-    // estimatePsbt is not exported from rgb-sdk's main bundle.
-    // Fee can be computed from the PSBT directly if needed.
-    return { fee: 0, feeRate: 0, vbytes: 0 }
+  async estimateFee (psbt) {
+    // rgb-sdk's main bundle does not export estimatePsbt, so delegate
+    // to the binding's PSBT-size-based estimate (BareRgbLibBinding.
+    // estimateFee). Returning zeros here would make every
+    // WalletAccountRgb.sendTransaction() report fee: 0n even though
+    // the broadcast tx pays a real fee.
+    if (this._binding && typeof this._binding.estimateFee === 'function') {
+      return this._binding.estimateFee(psbt)
+    }
+    const sizeBytes = psbt.length * 3 / 4
+    const vbytes = Math.ceil(sizeBytes * 0.4)
+    const feeRate = this._binding && typeof this._binding.estimateFeeRate === 'function'
+      ? await this._binding.estimateFeeRate(1)
+      : 1
+    return { fee: Math.ceil(vbytes * feeRate), vbytes, feeRate }
   }
 }

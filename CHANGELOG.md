@@ -5,6 +5,18 @@ All notable changes to `@utexo/wdk-wallet-rgb` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `BareSigner.estimateFee()` no longer returns a hard-coded zero fee:
+  it delegates to `BareRgbLibBinding.estimateFee()`, so
+  `WalletAccountRgb.sendTransaction()` reports the real fee in
+  `TransactionResult.fee` instead of `0n` for every BTC send.
+- `BareRgbLibBinding.estimateFee()` now returns the full
+  `EstimateFeeResult` shape (`{ fee, vbytes, feeRate }`) instead of
+  `{ fee, vsize }`.
+
 ## [2.0.3] — 2026-01-28
 
 ### Changed
