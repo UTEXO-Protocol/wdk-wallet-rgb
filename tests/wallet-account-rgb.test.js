@@ -228,6 +228,30 @@ describe('WalletAccountRgb', () => {
       expect(result).toEqual({ hash: 'abc123', fee: BigInt(6) })
     })
 
+    test('sendTransaction reports the fee estimated by the signer', async () => {
+      const wallet = createMockWallet()
+      const signer = {
+        signPsbtWithSeed: jest.fn().mockResolvedValue('signed-psbt'),
+        estimateFee: jest.fn().mockResolvedValue({ fee: 210, vbytes: 140, feeRate: 1 })
+      }
+      const account = new WalletAccountRgb(
+        { binding: wallet, signer, seed: SEED_PHRASE },
+        createAccountConfig()
+      )
+
+      const result = await account.sendTransaction({ to: 'bc1p-recv', value: 1000, feeRate: 2 })
+
+      expect(wallet.sendBtcBegin).toHaveBeenCalledWith({
+        address: 'bc1p-recv',
+        amount: 1000,
+        feeRate: 2
+      })
+      expect(signer.signPsbtWithSeed).toHaveBeenCalledWith(SEED_PHRASE, 'cHNidF9kYXRh', 'regtest')
+      expect(signer.estimateFee).toHaveBeenCalledWith('signed-psbt')
+      expect(wallet.sendBtcEnd).toHaveBeenCalledWith({ signedPsbt: 'signed-psbt' })
+      expect(result).toEqual({ hash: 'txid-456', fee: BigInt(210) })
+    })
+
     test('getTransfers returns transfers without asset filter', async () => {
       const { account, wallet } = await createAccount()
       wallet.listTransfers.mockReturnValue([
