@@ -260,6 +260,9 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
+    if (this._disposed || !this._wallet) {
+      throw new Error('Wallet account is disposed')
+    }
     if (this._signer) {
       return await this._signer.signMessage({ message, seed: this._seed, network: this._config.network })
     }
@@ -417,6 +420,21 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
       sodium_memzero(this._keyPair.privateKey)
       this._keyPair.privateKey = null
     }
+    this._keyPair = null
+    // The seed is the most sensitive secret held here: without clearing it (and
+    // dropping the signer that consumes it) a "disposed" account could still sign
+    // via the sign()/signPsbt() seed paths below. Strings are immutable so they
+    // can only be dereferenced; byte buffers are zeroed in place.
+    if (this._seed && typeof this._seed !== 'string') {
+      try {
+        sodium_memzero(this._seed)
+      } catch {
+        // best effort (e.g. foreign-realm typed arrays); the reference is nulled below
+      }
+    }
+    this._seed = null
+    this._signer = null
+    this._disposed = true
     if (this._wallet) {
       this._wallet.dispose()
     }
@@ -664,6 +682,9 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    * @returns {Promise<string>} The signed PSBT (base64 encoded).
    */
   async signPsbt (psbt) {
+    if (this._disposed || !this._wallet) {
+      throw new Error('Wallet account is disposed')
+    }
     // rgb-lib wallet is watch-only (mnemonic: null), so we sign externally
     // using BareSigner which implements pure-JS Taproot signing via rgb-sdk.
     if (this._signer && this._seed) {

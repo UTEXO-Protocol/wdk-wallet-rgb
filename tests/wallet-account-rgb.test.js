@@ -547,7 +547,25 @@ describe('WalletAccountRgb', () => {
       account.dispose()
 
       expect(account._wallet).toBeNull()
-      expect(account._keyPair?.privateKey).toBeNull()
+      expect(account._keyPair?.privateKey ?? null).toBeNull()
+    })
+
+    test('clears seed and signer so a disposed account cannot sign', async () => {
+      const config = createAccountConfig()
+      const wallet = createMockWallet()
+      const seed = Uint8Array.from({ length: 64 }, (_, i) => i + 1)
+      const signer = { signPsbtWithSeed: jest.fn(), signMessage: jest.fn() }
+      const account = new WalletAccountRgb({ binding: wallet, signer, seed }, config)
+
+      account.dispose()
+
+      expect(account._seed).toBeNull()
+      expect(account._signer).toBeNull()
+      expect(seed.every((b) => b === 0)).toBe(true)
+      await expect(account.signPsbt('psbt')).rejects.toThrow('disposed')
+      await expect(account.sign('msg')).rejects.toThrow('disposed')
+      expect(signer.signPsbtWithSeed).not.toHaveBeenCalled()
+      expect(signer.signMessage).not.toHaveBeenCalled()
     })
   })
 })
