@@ -5,6 +5,16 @@ All notable changes to `@utexo/wdk-wallet-rgb` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Clamp and default `feeRate` in `sendBtcBegin`, `quoteSendTransaction`,
+  `createUtxos`/`createUtxosBegin`, `inflate` and `drainTo` (shared
+  `toSafeFeeRate` helper): fractional or negative rates previously reached
+  rgb-lib's uint FFI conversion and broke it, and a missing rate reached it
+  as NULL. `transfer`/`sendTransaction` already clamped; now all flows do.
+
 ## [2.0.3] — 2026-01-28
 
 ### Changed

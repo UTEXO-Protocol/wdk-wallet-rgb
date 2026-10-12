@@ -62,6 +62,23 @@ import { base58 } from '@scure/base'
  * @typedef {RgbWalletConfig & RgbRestoreParams} RgbRestoreConfig
  */
 
+/**
+ * Normalizes a caller-supplied fee rate for rgb-lib: an integer number of
+ * sat/vB, defaulting to 1 and clamped to >= 1.
+ *
+ * rgb-lib's C-FFI expects fee_rate as a uint, so floats break conversion,
+ * and 0 would produce an unbroadcastable tx. transfer()/sendTransaction()
+ * already clamp inline; this shares that rule with the remaining flows.
+ *
+ * @param {number} [feeRate] - The fee rate in sat/vbyte (default: 1).
+ * @returns {number} A safe integer fee rate >= 1.
+ */
+function toSafeFeeRate (feeRate) {
+  const n = Number(feeRate ?? 1)
+  if (!Number.isFinite(n)) return 1
+  return Math.max(1, Math.round(n))
+}
+
 /** @implements {IWalletAccount} */
 export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
   /** @package */
@@ -593,7 +610,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
     return this._wallet.sendBtcBegin({
       address: options.to || options.address,
       amount: options.value || options.amount,
-      feeRate: options.feeRate || 1
+      feeRate: toSafeFeeRate(options.feeRate)
     })
   }
 
@@ -616,7 +633,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
     const psbt = await this._wallet.sendBtcBegin({
       address: tx.to,
       amount: tx.value,
-      feeRate: tx.feeRate || 1
+      feeRate: toSafeFeeRate(tx.feeRate)
     })
     let feeRate = 1
     try {
@@ -695,7 +712,10 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    * @returns {Promise<number>} number of UTXOs created.
    */
   async createUtxos (options) {
-    const psbt = await this._wallet.createUtxosBegin(options)
+    const psbt = await this._wallet.createUtxosBegin({
+      ...options,
+      feeRate: toSafeFeeRate(options.feeRate)
+    })
     const signedPsbt = await this.signPsbt(psbt)
     return this._wallet.createUtxosEnd({ signedPsbt })
   }
@@ -711,7 +731,10 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
    * @returns {string} The PSBT (base64 encoded).
    */
   createUtxosBegin (options) {
-    return this._wallet.createUtxosBegin(options)
+    return this._wallet.createUtxosBegin({
+      ...options,
+      feeRate: toSafeFeeRate(options.feeRate)
+    })
   }
 
   /**
@@ -739,7 +762,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
     const begin = await this._wallet.inflateBegin({
       assetId: options.assetId,
       amounts: options.amounts,
-      feeRate: options.feeRate || 1,
+      feeRate: toSafeFeeRate(options.feeRate),
       minConfirmations: options.minConfirmations || 1,
       dryRun: false
     })
@@ -760,7 +783,7 @@ export default class WalletAccountRgb extends WalletAccountReadOnlyRgb {
     const psbt = await this._wallet.drainToBegin({
       address: options.address,
       destroyAssets: !!options.destroyAssets,
-      feeRate: options.feeRate || 1
+      feeRate: toSafeFeeRate(options.feeRate)
     })
     const signedPsbt = await this.signPsbt(psbt)
     return this._wallet.drainToEnd({ signedPsbt })
