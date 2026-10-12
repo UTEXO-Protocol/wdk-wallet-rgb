@@ -228,6 +228,34 @@ describe('WalletAccountRgb', () => {
       expect(result).toEqual({ hash: 'abc123', fee: BigInt(6) })
     })
 
+    test('sendBtcBegin clamps float fee rates for the FFI uint conversion', async () => {
+      const { account, wallet } = await createAccount()
+      await account.sendBtcBegin({ to: 'bc1p-x', value: 1000, feeRate: 0.5 })
+      expect(wallet.sendBtcBegin).toHaveBeenCalledWith({ address: 'bc1p-x', amount: 1000, feeRate: 1 })
+      await account.sendBtcBegin({ to: 'bc1p-x', value: 1000, feeRate: 2.7 })
+      expect(wallet.sendBtcBegin).toHaveBeenCalledWith({ address: 'bc1p-x', amount: 1000, feeRate: 3 })
+    })
+
+    test('quoteSendTransaction clamps float fee rates', async () => {
+      const { account, wallet } = await createAccount()
+      await account.quoteSendTransaction({ to: 'bc1p-x', value: 1000, feeRate: 0.5 })
+      expect(wallet.sendBtcBegin).toHaveBeenCalledWith({ address: 'bc1p-x', amount: 1000, feeRate: 1 })
+    })
+
+    test('createUtxos defaults a missing fee rate instead of passing NULL to FFI', async () => {
+      const { account, wallet } = await createAccount()
+      await account.createUtxos({ upTo: true, num: 5 })
+      expect(wallet.createUtxosBegin).toHaveBeenCalledWith({ upTo: true, num: 5, feeRate: 1 })
+    })
+
+    test('inflate and drainTo clamp float fee rates', async () => {
+      const { account, wallet } = await createAccount()
+      await account.inflate({ assetId: 'asset-1', amounts: [100], feeRate: 2.4 })
+      expect(wallet.inflateBegin).toHaveBeenCalledWith(expect.objectContaining({ feeRate: 2 }))
+      await account.drainTo({ address: 'bc1p-x', feeRate: 0.5 })
+      expect(wallet.drainToBegin).toHaveBeenCalledWith(expect.objectContaining({ feeRate: 1 }))
+    })
+
     test('getTransfers returns transfers without asset filter', async () => {
       const { account, wallet } = await createAccount()
       wallet.listTransfers.mockReturnValue([
