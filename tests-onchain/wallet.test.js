@@ -103,7 +103,7 @@ test('manager requires a loopback fixture profile and owns a copied seed', async
     authorize: () => false,
     burnDestinationRoutes: routes
   }
-  assert.throws(() => new WalletManagerRgb(seed, { ...config, network: 'signet' }), /isolated regtest/)
+  assert.throws(() => new WalletManagerRgb(seed, { ...config, network: 'signet' }), /Bitcoin-only/)
   assert.throws(() => new WalletManagerRgb(seed, { ...config, indexerUrl: 'ssl://example.com:50002' }), /loopback/)
   assert.throws(() => new WalletManagerRgb(seed, { ...config, burnDestinationRoutes: [{ chainId: 'eip155:1', dstEid: 0 }] }), /route/)
   assert.throws(() => new WalletManagerRgb(seed, { ...config, mode: 'btc-only' }), /does not accept RGB/)

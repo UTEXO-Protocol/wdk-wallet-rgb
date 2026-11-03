@@ -40,7 +40,7 @@ mod journal;
 mod send;
 
 const SOURCE: &str = "0a9d352f2690902df2b6fae9bca1a6c13c3354d4";
-const OVERLAY: &str = "5b7660a66d53da6a5935407bbaf21f7e73636f35";
+const OVERLAY: &str = "8d04178a740de8ed05cb597251ee162c6e9c8a79";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -72,6 +72,10 @@ fn native(err: rgb_lib::Error) -> Fault {
         rgb_lib::Error::InvalidIndexer { .. } => fault(
             "INVALID_INDEXER",
             "The indexer is unavailable, incompatible, or on a different Bitcoin network.",
+        ),
+        rgb_lib::Error::CannotEstimateFees => fault(
+            "FEE_UNAVAILABLE",
+            "Indexer did not return a usable fee estimate.",
         ),
         rgb_lib::Error::AssetNotFound { .. } => fault(
             "ASSET_NOT_FOUND",
@@ -291,13 +295,14 @@ pub(crate) struct Worker {
 
 fn chain(network: &str) -> Result<BitcoinNetwork> {
     match network {
-        "mainnet" => Ok(BitcoinNetwork::Mainnet),
-        "testnet" => Ok(BitcoinNetwork::Testnet),
-        "testnet4" => Ok(BitcoinNetwork::Testnet4),
-        "utexo" | "signet" => Ok(BitcoinNetwork::Signet),
+        "signet" => Ok(BitcoinNetwork::Signet),
         "regtest" => Ok(BitcoinNetwork::Regtest),
         _ => Err(input("Unsupported Bitcoin network.")),
     }
+}
+
+fn public_signet_btc_only() -> Fault {
+    fault("RGB_MODE_UNAVAILABLE", "Public Signet supports Bitcoin-only wallets.")
 }
 fn bitcoin_chain(network: BitcoinNetwork) -> Bitcoin {
     match network {
@@ -549,6 +554,9 @@ impl Worker {
                 }
                 let p: Open = decode(params)?;
                 let network = chain(&p.network)?;
+                if network == BitcoinNetwork::Signet && p.mode != journal::Mode::BtcOnly {
+                    return Err(public_signet_btc_only());
+                }
                 if !lower_hex(&p.master_fingerprint, 8)
                     || !(100..=120).contains(&p.account_xpub_vanilla.len())
                     || !(100..=120).contains(&p.account_xpub_colored.len())
@@ -811,11 +819,19 @@ impl Session {
     fn go_online(&mut self, mut p: GoOnline) -> Result<Value> {
         self.idle()?;
         let regtest = self.network == BitcoinNetwork::Regtest;
-        let config = crate::profile::indexer(p.indexer_url, p.bitcoind_auth.take(), regtest)?;
+        let config = crate::profile::indexer(p.indexer_url, p.bitcoind_auth.take(), self.network)?;
         let rgb_lib::wallet::IndexerConfig::Electrum { url: indexer_url } = &config else {
             unreachable!("the profile admits only Electrum");
         };
         let indexer_url = indexer_url.clone();
+        if self.journal_mode == journal::Mode::BtcOnly
+            && (!p.evm_rpc_urls.is_empty() || !p.proxy_auth_keys.is_empty())
+        {
+            for secret in p.proxy_auth_keys.values_mut() {
+                secret.zeroize();
+            }
+            return Err(input("Bitcoin-only mode does not accept RGB service configuration."));
+        }
         if p.evm_rpc_urls.len() > 16 || p.proxy_auth_keys.len() > 16 {
             return Err(input("Too many network endpoints."));
         }
@@ -1064,6 +1080,14 @@ impl Session {
         Ok(json!({"assetId":asset_id}))
     }
     fn dispatch(&mut self, method: &str, params: Value) -> Result<Value> {
+        if self.network == BitcoinNetwork::Signet
+            && matches!(method,
+                "checkProxyEndpoint" | "refresh" | "blindReceive" | "witnessReceive" |
+                "createUtxosBegin" | "createUtxosEnd" | "cancelAbandonedOutputs" |
+                "sendRgbBegin" | "sendRgbEnd" | "burnBegin" | "burnEnd" | "importContract")
+        {
+            return Err(public_signet_btc_only());
+        }
         match method {
             "goOnline" => self.go_online(decode(params)?),
             "getNetworkInfo" => self.network_info(params),
@@ -1072,6 +1096,9 @@ impl Session {
             "getAddress" => {
                 let _: Empty = decode(params)?;
                 self.idle()?;
+                if self.network == BitcoinNetwork::Signet {
+                    self.online()?;
+                }
                 Ok(json!({"address":self.wallet.get_address().map_err(native)?}))
             }
             "getBtcBalance" => {
@@ -1474,13 +1501,46 @@ mod tests {
             json!({"settled":"0","future":"0","spendable":"0"})
         );
         assert_eq!(worker.dispatch("listTransfers", asset).unwrap(), json!([]));
+
         let second = tempfile::tempdir().unwrap();
         std::fs::set_permissions(second.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         let mut wrong_chain = Worker::default();
-        wrong_chain
-            .dispatch("open", open_params(second.path(), "signet"))
-            .unwrap();
-        assert!(wrong_chain.dispatch("importContract", valid).is_err());
+        let mut params = open_params(second.path(), "signet");
+        params["mode"] = json!("btc-only");
+        wrong_chain.dispatch("open", params).unwrap();
+        let contract = decode(valid).unwrap();
+        assert!(wrong_chain.session.as_mut().unwrap().import_contract(contract).is_err());
+    }
+
+    #[test]
+    fn indexer_missing_fee_estimate_is_reported_as_unavailable() {
+        assert_eq!(native(rgb_lib::Error::CannotEstimateFees).code, "FEE_UNAVAILABLE");
+    }
+
+    #[test]
+    fn public_signet_native_open_and_mutations_require_bitcoin_only() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut worker = Worker::default();
+        let mut params = open_params(dir.path(), "signet");
+        assert_eq!(worker.dispatch("open", params.clone()).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
+        params["mode"] = json!("btc-only");
+        assert_eq!(worker.dispatch("open", params).unwrap()["network"], "signet");
+
+        assert_eq!(worker.dispatch("goOnline", json!({
+            "indexerUrl": "ssl://electrum.iriswallet.com:50033",
+            "evmRpcUrls": {"42161": "https://example.test"},
+        })).unwrap_err().code, "INVALID_PARAMS");
+        assert_eq!(worker.dispatch("goOnline", json!({
+            "indexerUrl": "tcp://127.0.0.1:50001",
+        })).unwrap_err().code, "INVALID_PARAMS");
+        assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
+        for method in ["checkProxyEndpoint", "importContract", "createUtxosBegin", "refresh", "sendRgbBegin", "burnBegin"] {
+            assert_eq!(worker.dispatch(method, json!({})).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
+        }
+        assert_eq!(worker.dispatch("discardUnsubmitted", json!({
+            "kind": "rgb-output", "checkpoint": [],
+        })).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
     }
 
     #[test]

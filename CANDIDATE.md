@@ -8,7 +8,7 @@
 | Android embedded runtime | Bare Kit `3.0.1`, Bare `1.36.2` |
 | Bare C headers | `1.35.0` |
 | RGB library | `v0.3.0-beta.7-upstream-dev-bfa.5`, `0a9d352f2690902df2b6fae9bca1a6c13c3354d4` |
-| Native overlay | Functional tree `5b7660a66d53da6a5935407bbaf21f7e73636f35`, embedded tree `8dd209a8bb849696e45f301b0ea1b3d4eb0fba06` |
+| Native overlay | Functional tree `8d04178a740de8ed05cb597251ee162c6e9c8a79`, embedded tree `9c562a793e484c433a6a10ae58a6cd76c8a70b11` |
 | Signing | `@scure/btc-signer@2.4.1`, `@scure/bip32@2.4.0`, `@scure/base@2.4.0`, `@noble/curves@2.4.0`, `@noble/hashes@2.4.0` |
 
 The RGB overlay ports public-contract registration from [RGB #4](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/4) and exact mint conservation from [RGB #8](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/8). Native preparation verifies the upstream commit and patched tree before building from the locked graph.
@@ -17,9 +17,11 @@ The RGB overlay ports public-contract registration from [RGB #4](https://github.
 
 Public JavaScript checks run from the lock with `npm ci --ignore-scripts`, `npm test`, and `npm run check:types`. Follow the [native build runbook](native/README.md) to compile and admit a matching native artifact. The reviewed Android pack stages the exact addon with `node scripts/stage-bare.mjs native/target/bare-addon-android/utexo__wdk-wallet-rgb.bare` before `npm pack --ignore-scripts`.
 
-Supply a canonical private data directory, disposable seed, loopback `tcp:` or `ssl:` Electrum endpoint with an explicit port, loopback RGB proxy and the required EVM validation RPC. The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Android packs a linked worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. The SDK verifies addon hash and native profile before opening.
+Supply a canonical private data directory and a disposable seed. For Regtest, set `network: 'regtest'` and a loopback `tcp:` or `ssl:` Electrum endpoint with an explicit port. Regtest RGB also needs a loopback RGB proxy and the EVM validation RPC appropriate to the fixture. For public Signet, set `network: 'signet'`, `mode: 'btc-only'`, and `indexerUrl: 'ssl://electrum.iriswallet.com:50033'`. The Signet profile accepts only that certificate-validated endpoint and checks the genesis and public block-one hashes on the wallet indexer and resolver before synchronization. It uses a separate wallet directory and has Bitcoin address allocation, balance, history, sends and message signing. The public Signet profile rejects RGB service settings and RGB mutations.
 
-Set `startupMode: 'offline'` to open without waiting on services. Local reads are cached until `connect()` completes. Address allocation, invoice creation and transaction preparation require a connected session. `getConnectionStatus()` describes session state. `getNetworkInfo()` reads the current tip reported by the configured Electrum server and checks its genesis. The two endpoint checks accept only the configured services. A proxy check verifies the advertised protocol independently of credential and mint readiness.
+The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Android packs a linked worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. The SDK verifies addon hash and native profile before opening.
+
+Set `startupMode: 'offline'` to open without waiting on services. Local reads are cached until `connect()` completes. Address allocation, invoice creation and transaction preparation require a connected session. `getConnectionStatus()` describes session state. `getNetworkInfo()` reads the current tip from Electrum and checks chain identity, including block one on public Signet. Electrum is a trusted service for the chain data it reports. The endpoint checks accept only the configured services. A proxy check verifies the advertised protocol independently of credential and mint readiness.
 
 For a seed-only restore into a new directory, explicitly set `mode: 'btc-only'` and supply the same-engine seed and Electrum endpoint. Online discovery searches Bitcoin history within the pinned library's HD scan gap. The directory stays in BTC-only mode across reopen. RGB wallet and bridge capabilities require matching, validated RGB state. Keep the original RGB wallet directory or its complete authenticated backup.
 

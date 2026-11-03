@@ -121,7 +121,7 @@ console.log(JSON.stringify({
   nativeEngineSha256: hash(readFileSync(join(root, 'src/engine.rs'))),
   rgb: {
     revision: '0a9d352f2690902df2b6fae9bca1a6c13c3354d4',
-    integrationTree: '8dd209a8bb849696e45f301b0ea1b3d4eb0fba06',
+    integrationTree: '9c562a793e484c433a6a10ae58a6cd76c8a70b11',
     features: ['electrum', 'camel_case']
   },
   loadAlignments: loads.map(load => load.Alignment),

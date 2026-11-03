@@ -10,7 +10,7 @@ import { checkOperationId, OnchainJournal, privateWalletDir } from './onchain-jo
 import { deriveOnchainSigner } from './onchain-signer.js'
 import { WalletRuntimeError } from './onchain-runtime-error.js'
 import { BIP322_CAPABILITIES, bip322MessageBytes, verifyMessageBip322 } from './onchain-message.js'
-import { admitSendStatus, checkFeeBlocks, checkRgbInvoice, prepareBtcSend, prepareRgbSend, sendRecoveryParams } from './onchain-send.js'
+import { admitFeeEstimate, admitSendStatus, checkFeeBlocks, checkRgbInvoice, prepareBtcSend, prepareRgbSend, sendRecoveryParams } from './onchain-send.js'
 
 const ROUTES = new Map([
   ['eip155:42161', 0],
@@ -23,8 +23,9 @@ const HEX_32 = /^[a-f0-9]{64}$/
 const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
 const NATIVE_SOURCE = '0a9d352f2690902df2b6fae9bca1a6c13c3354d4'
-const NATIVE_OVERLAY = '5b7660a66d53da6a5935407bbaf21f7e73636f35'
-const NATIVE_INTEGRATION = '8dd209a8bb849696e45f301b0ea1b3d4eb0fba06'
+const NATIVE_OVERLAY = '8d04178a740de8ed05cb597251ee162c6e9c8a79'
+const NATIVE_INTEGRATION = '9c562a793e484c433a6a10ae58a6cd76c8a70b11'
+const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
 const PROOF_MAGIC = [82, 71, 66, 0, 84, 70, 82]
 const SPEND_KINDS = new Set(['rgb-output', 'btc-send', 'rgb-send', 'rgb-burn'])
 const OPEN_WALLET_DIRECTORIES = new Set()
@@ -76,10 +77,25 @@ function httpUrl (value, name, protocols = ['http:', 'https:']) {
   return value
 }
 
+function indexerUrl (value, network) {
+  if (network === 'signet') {
+    if (value !== SIGNET_ELECTRUM && value !== SIGNET_ELECTRUM + '/') {
+      throw new TypeError('Public Signet requires the approved TLS Electrum endpoint')
+    }
+    return SIGNET_ELECTRUM
+  }
+  const indexer = new URL(httpUrl(value, 'indexer endpoint', ['tcp:', 'ssl:']))
+  if (!indexer.port || !['', '/'].includes(indexer.pathname)) {
+    throw new TypeError('Electrum requires an explicit port and no path')
+  }
+  return `${indexer.protocol}//${indexer.hostname}:${indexer.port}`
+}
+
 function configFor (options) {
-  if (options?.network !== 'regtest') throw new TypeError('The candidate supports isolated regtest only')
+  if (options?.network !== 'regtest' && options?.network !== 'signet') throw new TypeError('Unsupported Bitcoin network')
   const mode = options.mode === undefined ? 'rgb' : options.mode
   if (mode !== 'rgb' && mode !== 'btc-only') throw new TypeError('Invalid wallet mode')
+  if (options.network === 'signet' && mode !== 'btc-only') throw new TypeError('Public Signet supports Bitcoin-only wallets')
   if (mode === 'btc-only' && ['transportEndpoint', 'evmRpcUrls', 'proxyAuthKeys', 'burnDestinationRoutes'].some(key => options[key] !== undefined)) {
     throw new TypeError('Bitcoin-only mode does not accept RGB service configuration')
   }
@@ -96,11 +112,7 @@ function configFor (options) {
   if (new Set(routes.map(route => route.chainId)).size !== routes.length) throw new TypeError('Duplicate V1 bridge route')
 
   if (options.bitcoindAuth !== undefined) throw new TypeError('The wallet accepts only Electrum configuration')
-  const indexer = new URL(httpUrl(options.indexerUrl, 'indexer endpoint', ['tcp:', 'ssl:']))
-  if (!indexer.port || !['', '/'].includes(indexer.pathname)) {
-    throw new TypeError('Electrum requires an explicit port and no path')
-  }
-  const online = { indexerUrl: `${indexer.protocol}//${indexer.hostname}:${indexer.port}` }
+  const online = { indexerUrl: indexerUrl(options.indexerUrl, options.network) }
   if (options.evmRpcUrls) {
     online.evmRpcUrls = Object.fromEntries(Object.entries(options.evmRpcUrls).map(([id, url]) => {
       u64(id, 'EVM chain ID')
@@ -210,7 +222,7 @@ export class WalletAccountRgb {
     try {
       worker = await OnchainWorker.start(config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir)
       const version = await worker.request('version')
-      if (version?.protocol !== 2 || version.indexer !== 'electrum-only' || version.networkChecks !== 1 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
+      if (version?.protocol !== 2 || version.indexer !== 'electrum-only' || version.networkChecks !== 2 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
         version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION || version.unsignedRecovery !== 1 || version.journalWrites !== 1) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
@@ -278,7 +290,10 @@ export class WalletAccountRgb {
   #assertRgbMode () {
     this.#assertOpen()
     if (this.#config.mode === 'btc-only') {
-      throw new WalletRuntimeError('RGB_MODE_UNAVAILABLE', 'This wallet was restored for Bitcoin only. RGB state requires a verified wallet backup.')
+      const message = this.#config.network === 'signet'
+        ? 'Public Signet supports Bitcoin-only wallets.'
+        : 'This wallet was restored for Bitcoin only. RGB state requires a verified wallet backup.'
+      throw new WalletRuntimeError('RGB_MODE_UNAVAILABLE', message)
     }
   }
 
@@ -333,9 +348,7 @@ export class WalletAccountRgb {
   }
 
   checkIndexerUrl (url = this.#config.online.indexerUrl) {
-    const endpoint = new URL(httpUrl(url, 'indexer endpoint', ['tcp:', 'ssl:']))
-    if (!['', '/'].includes(endpoint.pathname) ||
-        `${endpoint.protocol}//${endpoint.hostname}:${endpoint.port}` !== this.#config.online.indexerUrl) {
+    if (indexerUrl(url, this.#config.network) !== this.#config.online.indexerUrl) {
       throw new TypeError('Only the configured Electrum endpoint can be checked')
     }
     return this.#run(async () => {
@@ -484,7 +497,9 @@ export class WalletAccountRgb {
     }())
   }
 
-  estimateFeeResult (blocks = 6) { return this.#read('getFeeRate', { blocks: checkFeeBlocks(blocks) }) }
+  async estimateFeeResult (blocks = 6) {
+    return admitFeeEstimate(await this.#read('getFeeRate', { blocks: checkFeeBlocks(blocks) }))
+  }
 
   decodeRgbInvoice (invoice) { return this.#read('decodeInvoice', { invoice: checkRgbInvoice(invoice) }) }
 
@@ -542,7 +557,12 @@ export class WalletAccountRgb {
 
   refreshTransfers (options = {}) { return this.refresh(options.assetId) }
 
-  sync () { return this.refresh() }
+  async sync () {
+    if (this.#config.mode !== 'btc-only') return this.refresh()
+    this.#assertConnected()
+    await this.getBtcBalance()
+    return { transfers: [] }
+  }
 
   importRgbContract (options) { return this.registerAssetContract(options) }
 

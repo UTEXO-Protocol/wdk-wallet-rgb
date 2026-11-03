@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::engine::{Credentials, Result, input, validated_url};
+use rgb_lib::BitcoinNetwork;
 use rgb_lib::wallet::IndexerConfig;
 use serde_json::{Value, json};
 use zeroize::Zeroize;
+
+const SIGNET_ELECTRUM: &str = "ssl://electrum.iriswallet.com:50033";
 
 pub(crate) fn version(source: &str, overlay: &str) -> Value {
     json!({
         "protocol": 2,
         "source": source,
         "overlayTree": overlay,
-        "integrationTree": "8dd209a8bb849696e45f301b0ea1b3d4eb0fba06",
+        "integrationTree": "9c562a793e484c433a6a10ae58a6cd76c8a70b11",
         "runtime": crate::RUNTIME,
         "indexer": "electrum-only",
-        "networkChecks": 1,
+        "networkChecks": 2,
         "unsignedRecovery": 1,
         "journalWrites": 1,
     })
@@ -21,7 +24,7 @@ pub(crate) fn version(source: &str, overlay: &str) -> Value {
 pub(crate) fn indexer(
     indexer_url: String,
     auth: Option<Credentials>,
-    regtest: bool,
+    network: BitcoinNetwork,
 ) -> Result<IndexerConfig> {
     if let Some(mut auth) = auth {
         auth.username.zeroize();
@@ -30,7 +33,16 @@ pub(crate) fn indexer(
             "Bitcoin Core credentials are not supported by the Electrum profile.",
         ));
     }
-    let url = validated_url(&indexer_url, &["ssl", "tcp"], regtest)?;
+    if network == BitcoinNetwork::Signet {
+        if indexer_url.strip_suffix('/').unwrap_or(&indexer_url) != SIGNET_ELECTRUM {
+            return Err(input("Public Signet requires the approved TLS Electrum endpoint."));
+        }
+        return Ok(IndexerConfig::Electrum { url: SIGNET_ELECTRUM.into() });
+    }
+    if network != BitcoinNetwork::Regtest {
+        return Err(input("Unsupported Bitcoin network."));
+    }
+    let url = validated_url(&indexer_url, &["ssl", "tcp"], true)?;
     let (Some(host), Some(port)) = (url.host_str(), url.port()) else {
         return Err(input("The Electrum endpoint requires an explicit host and port."));
     };
@@ -54,23 +66,30 @@ mod tests {
 
     #[test]
     fn admits_only_electrum_with_plain_tcp_restricted_to_regtest() {
-        assert!(indexer("tcp://127.0.0.1:48001".into(), None, true).is_ok());
-        assert!(indexer("ssl://example.test:50002".into(), None, false).is_ok());
+        let regtest = BitcoinNetwork::Regtest;
+        let signet = BitcoinNetwork::Signet;
+        assert!(indexer("tcp://127.0.0.1:48001".into(), None, regtest).is_ok());
+        assert_eq!(indexer(format!("{SIGNET_ELECTRUM}/"), None, signet).unwrap().url(), SIGNET_ELECTRUM);
+        assert!(indexer(SIGNET_ELECTRUM.into(), None, regtest).is_err());
         for url in [
             "tcp://example.test:50001",
+            "tcp://electrum.iriswallet.com:50033",
+            "ssl://electrum.iriswallet.com:50033//",
+            "ssl://electrum.iriswallet.com:50033?",
             "ssl://example.test",
+            "ssl://example.test:50002",
             "ssl://example.test:50002/rpc",
             "ssl://example.test:50002?timeout=0",
             "ssl://name:pw@example.test:50002",
             "https://example.test:443",
             "http://127.0.0.1:8332",
         ] {
-            assert!(indexer(url.into(), None, false).is_err(), "accepted {url}");
+            assert!(indexer(url.into(), None, signet).is_err(), "accepted {url}");
         }
         let credentials = Credentials {
             username: "user".into(),
             password: "pass".into(),
         };
-        assert!(indexer("tcp://127.0.0.1:48001".into(), Some(credentials), true).is_err());
+        assert!(indexer("tcp://127.0.0.1:48001".into(), Some(credentials), regtest).is_err());
     }
 }

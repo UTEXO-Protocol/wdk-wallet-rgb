@@ -5,8 +5,8 @@ The private SDK candidate uses the same watch-only engine for the Node and Bare 
 ## Exact sources
 
 - RGB BFA.5 tag and default branch at `0a9d352f2690902df2b6fae9bca1a6c13c3354d4`.
-- Functional contract-admission and mint-conservation overlay tree `5b7660a66d53da6a5935407bbaf21f7e73636f35`.
-- Embedded integration tree `8dd209a8bb849696e45f301b0ea1b3d4eb0fba06`. Its additional patch removes rgb-lib's wallet-open panic hook. That process-global hook otherwise chains on every reopen and retains the closed wallet logger.
+- Functional contract admission, mint conservation, public Signet and native egress overlay tree `8d04178a740de8ed05cb597251ee162c6e9c8a79`.
+- Embedded integration tree `9c562a793e484c433a6a10ae58a6cd76c8a70b11`. Its additional patch removes rgb-lib's wallet-open panic hook. That process-global hook otherwise chains on every reopen and retains the closed wallet logger.
 - The independent Bare `Cargo.lock` and `Cargo.toml` enable Electrum and omit Esplora and Bitcoin Core indexer features. The lock includes the latest versions resolved for Rust 1.94.0 from the refreshed dependency index. `crypto-common 0.1.7` requires `generic-array =0.14.7`.
 - Build headers `bare-headers@1.35.0` and standalone test CLI `bare@1.36.2`. The macOS CLI run reported runtime `1.36.0`. The Android Bare Kit 3.0.1 worklet reported runtime `1.36.2`. Exact npm tarball integrities are recorded in `package-lock.json`.
 

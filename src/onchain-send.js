@@ -30,6 +30,17 @@ function positiveDecimal (value, maximum, label) {
   return value
 }
 
+export function admitFeeEstimate (result) {
+  const feeRate = result?.feeRate
+  if (typeof feeRate !== 'string' || !/^[1-9][0-9]{0,19}$/.test(feeRate)) {
+    throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid Bitcoin fee estimate')
+  }
+  if (BigInt(feeRate) > MAX_FEE_RATE) {
+    throw new WalletRuntimeError('FEE_UNAVAILABLE', 'The Bitcoin fee estimate exceeds the wallet fee rate limit')
+  }
+  return { feeRate }
+}
+
 function paymentScript (address, network) {
   const params = BITCOIN_NETWORKS.get(network)
   if (!params || typeof address !== 'string' || address.length > 90) {

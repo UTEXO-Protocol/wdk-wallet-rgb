@@ -9,6 +9,7 @@ import { WalletManagerRgb } from '../onchain.js'
 
 const SEED = Uint8Array.from({ length: 64 }, (_, index) => index + 1)
 const INDEXER = 'tcp://127.0.0.1:50001'
+const SIGNET_INDEXER = 'ssl://electrum.iriswallet.com:50033'
 const PROXY = 'rpc://127.0.0.1:3003/json-rpc'
 const BLOCK_HASH = 'ab'.repeat(32)
 const DEFAULTS = {
@@ -19,7 +20,10 @@ const DEFAULTS = {
   authorize: () => assert.fail('Offline operations must not request transaction authorization')
 }
 
-async function managerFor (t, { nativeVersion = 1, ...options } = {}) {
+async function managerFor (t, { nativeVersion = 2, ...options } = {}) {
+  const network = options.network ?? DEFAULTS.network
+  const mode = options.mode ?? 'rgb'
+  const indexer = (options.indexerUrl ?? INDEXER).replace(/\/$/, '')
   const dir = await realpath(await mkdtemp(join(tmpdir(), 'wdk-network-')))
   const worker = join(dir, 'fixture-worker')
   const source = `#!${process.execPath}
@@ -34,13 +38,17 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1,
     indexer: 'electrum-only', runtime: 'node-host-process',
     source: '0a9d352f2690902df2b6fae9bca1a6c13c3354d4',
-    overlayTree: '5b7660a66d53da6a5935407bbaf21f7e73636f35',
-    integrationTree: '8dd209a8bb849696e45f301b0ea1b3d4eb0fba06'
+    overlayTree: '8d04178a740de8ed05cb597251ee162c6e9c8a79',
+    integrationTree: '9c562a793e484c433a6a10ae58a6cd76c8a70b11'
   })
-  if (method === 'open') return reply({ network: params.network, watchOnly: true })
+  if (method === 'open') {
+    assert.equal(params.network, '${network}')
+    assert.equal(params.mode, '${mode}')
+    return reply({ network: params.network, watchOnly: true })
+  }
   if (method === 'bindJournal') return reply({ written: true })
   if (method === 'goOnline') {
-    assert.equal(params.indexerUrl, '${INDEXER}')
+    assert.deepEqual(params, { indexerUrl: '${indexer}' })
     if (++connectionAttempts === 1) return process.stdout.write(JSON.stringify({
       id, error: { code: 'INVALID_INDEXER', message: 'Indexer offline' }
     }) + '\\n')
@@ -51,18 +59,22 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     return reply({ address: 'fixture-connected-address' })
   }
   if (method === 'getBtcBalance') {
-    assert.equal(connectionAttempts, 0)
+    assert.notEqual(connectionAttempts, 1)
     return reply({ vanilla: { spendable: '42' } })
+  }
+  if (method === 'getFeeRate') {
+    assert.equal(connectionAttempts, 2)
+    return reply({ feeRate: { 2: '3900', 6: '1000', 12: '1.5' }[params.blocks] })
   }
   if (method === 'getNetworkInfo') {
     assert.equal(connectionAttempts, 2)
     return reply({
-      network: 'regtest', height: ++tipReads === 1 ? 0 : -1, blockHash: '${BLOCK_HASH}',
+      network: '${network}', height: ++tipReads === 1 ? 123 : -1, blockHash: '${BLOCK_HASH}',
       ignored: true
     })
   }
   if (method === 'checkIndexerUrl') {
-    assert.deepEqual(params, { url: '${INDEXER}' })
+    assert.deepEqual(params, { url: '${indexer}' })
     return reply({ ok: true, indexerProtocol: 'Electrum', private: 'omitted' })
   }
   if (method === 'checkProxyEndpoint') {
@@ -109,15 +121,57 @@ test('offline open supports cached reads and gates address allocation on retryab
   assert.equal(account.getConnectionStatus(), 'connected')
   assert.equal(account.getInfo().ready, true)
   assert.equal(await account.getAddress(), 'fixture-connected-address')
-  assert.deepEqual(await account.getNetworkInfo(), { network: 'regtest', height: 0, blockHash: BLOCK_HASH })
+  assert.deepEqual(await account.getNetworkInfo(), { network: 'regtest', height: 123, blockHash: BLOCK_HASH })
   await assert.rejects(account.getNetworkInfo(), { code: 'NATIVE_PROTOCOL' })
   await manager.shutdown()
   assert.throws(() => account.getConnectionStatus(), { code: 'WALLET_CLOSED' })
 })
 
 test('offline open fails closed if the worker does not attest the network API', async t => {
-  const manager = await managerFor(t, { startupMode: 'offline', nativeVersion: 0 })
+  const manager = await managerFor(t, { startupMode: 'offline', nativeVersion: 1 })
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
+})
+
+test('public Signet uses the pinned TLS endpoint and enables only Bitcoin operations', async t => {
+  const manager = await managerFor(t, {
+    network: 'signet', mode: 'btc-only', startupMode: 'offline', transportEndpoint: undefined,
+    indexerUrl: SIGNET_INDEXER + '/', authorizeMessage: async () => true
+  })
+  const account = await manager.getAccount()
+  assert.deepEqual(account.getInfo(), { ready: false, network: 'signet', protocol: 'BTC_L1', methods: [] })
+  await assert.rejects(account.sync(), { code: 'WALLET_OFFLINE' })
+  assert.throws(() => account.checkIndexerUrl('ssl://electrum.iriswallet.com:50034'), /approved TLS/)
+  assert.deepEqual(await account.checkIndexerUrl(SIGNET_INDEXER), { ok: true, indexerProtocol: 'Electrum' })
+  await assert.rejects(account.connect(), { code: 'INVALID_INDEXER' })
+  await account.connect()
+  assert.deepEqual(await account.sync(), { transfers: [] })
+  await assert.rejects(account.estimateFeeResult(2), { code: 'FEE_UNAVAILABLE' })
+  assert.deepEqual(await account.estimateFeeResult(6), { feeRate: '1000' })
+  await assert.rejects(account.estimateFeeResult(12), { code: 'NATIVE_PROTOCOL' })
+  assert.deepEqual(await account.getNetworkInfo(), { network: 'signet', height: 123, blockHash: BLOCK_HASH })
+  assert.throws(() => account.refresh(), { code: 'RGB_MODE_UNAVAILABLE' })
+  const address = await account.getMessageSigningAddress()
+  assert.match(address, /^tb1p/)
+  const signature = await account.signMessageBip322('public signet', address)
+  assert.equal(await account.verifyMessageBip322('public signet', address, signature), true)
+})
+
+test('public Signet rejects RGB configuration, chain aliases and unapproved Electrum URLs', () => {
+  const config = { ...DEFAULTS, network: 'signet', mode: 'btc-only', indexerUrl: SIGNET_INDEXER, transportEndpoint: undefined }
+  for (const network of ['utexo', 'mainnet', 'testnet', 'testnet4']) {
+    assert.throws(() => new WalletManagerRgb(SEED, { ...config, network }), /Unsupported Bitcoin network/)
+  }
+  for (const options of [
+    { mode: 'rgb' }, { transportEndpoint: PROXY }, { evmRpcUrls: {} }, { proxyAuthKeys: {} }, { burnDestinationRoutes: [] }
+  ]) {
+    assert.throws(() => new WalletManagerRgb(SEED, { ...config, ...options }), /Bitcoin-only/)
+  }
+  for (const value of [
+    'tcp://electrum.iriswallet.com:50033', 'ssl://127.0.0.1:50033', 'ssl://example.test:50033',
+    'ssl://electrum.iriswallet.com:50034', SIGNET_INDEXER + '//', SIGNET_INDEXER + '?', SIGNET_INDEXER + '/rpc'
+  ]) {
+    assert.throws(() => new WalletManagerRgb(SEED, { ...config, indexerUrl: value }), /approved TLS/, value)
+  }
 })
 
 test('only isolated regtest fixture endpoints and matching authentication schemes are admitted', () => {

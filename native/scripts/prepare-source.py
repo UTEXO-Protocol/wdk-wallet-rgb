@@ -12,7 +12,7 @@ SOURCE_URL = "https://github.com/UTEXO-Protocol/rgb-lib-bfa.git"
 PATCH = ROOT / "patches" / "rgb-lib-bfa.5-onchain.patch"
 SHA = "0a9d352f2690902df2b6fae9bca1a6c13c3354d4"
 BASE_TREE = "5b54078be8e447f7959359b10dfb393649ab9840"
-EXPECTED_TREE = "5b7660a66d53da6a5935407bbaf21f7e73636f35"
+EXPECTED_TREE = "8d04178a740de8ed05cb597251ee162c6e9c8a79"
 
 def git(repo, *args):
     return subprocess.check_output(["git", "-c", "core.hooksPath=/dev/null", "-C", str(repo), *args], text=True).strip()
@@ -37,7 +37,11 @@ def main():
     patches = [PATCH]
     if bare:
         patches.append(ROOT / "patches" / "rgb-lib-bfa.5-embedded-lifecycle.patch")
-    expected_tree = "8dd209a8bb849696e45f301b0ea1b3d4eb0fba06" if bare else EXPECTED_TREE
+    patches += [
+        ROOT / "patches" / "rgb-lib-bfa.5-public-signet.patch",
+        ROOT / "patches" / "rgb-lib-bfa.5-native-egress.patch",
+    ]
+    expected_tree = "9c562a793e484c433a6a10ae58a6cd76c8a70b11" if bare else EXPECTED_TREE
     if dest.exists():
         verify(dest, expected_tree)
         return

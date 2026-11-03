@@ -39,21 +39,20 @@ export type Review = Readonly<{
   }>
 }>
 type SharedCandidateConfig = {
-  network: 'regtest'
   startupMode?: 'online' | 'offline'
   dataDir: string
-  indexerUrl: `${'tcp' | 'ssl'}://${string}`
   maxFeeSats: BaseUnits
   authorize(review: Review): boolean | Promise<boolean>
   authorizeMessage?(review: MessageReview): boolean | Promise<boolean>
 }
-type WalletModeConfig = {
+type RgbModeConfig = {
   mode?: 'rgb'
   transportEndpoint: string
   evmRpcUrls?: Record<string, string>
   proxyAuthKeys?: Record<string, string>
   burnDestinationRoutes?: readonly BurnRoute[]
-} | {
+}
+type BtcOnlyModeConfig = {
   /** Choose for seed-only imports. The selected mode is bound to the wallet directory. */
   mode: 'btc-only'
   transportEndpoint?: never
@@ -61,7 +60,15 @@ type WalletModeConfig = {
   proxyAuthKeys?: never
   burnDestinationRoutes?: never
 }
-export type CandidateConfig = SharedCandidateConfig & WalletModeConfig & ({
+type CandidateNetwork = 'regtest' | 'signet'
+type NetworkConfig = ({
+  network: 'regtest'
+  indexerUrl: `${'tcp' | 'ssl'}://${string}`
+} & (RgbModeConfig | BtcOnlyModeConfig)) | ({
+  network: 'signet'
+  indexerUrl: `ssl://electrum.iriswallet.com:50033${'' | '/'}`
+} & BtcOnlyModeConfig)
+export type CandidateConfig = SharedCandidateConfig & NetworkConfig & ({
   nativeExecutable: string
   nativeSha256: string
   androidNativeLibraryDir?: never
@@ -146,11 +153,11 @@ export class WalletAccountRgb {
   dispose(): Promise<void>
   shutdown(): Promise<void>
   isDisposed(): boolean
-  getNetwork(): 'regtest'
+  getNetwork(): CandidateNetwork
   /** Tracks whether an indexer session was established. Call getNetworkInfo for current reachability. */
   getConnectionStatus(): 'offline' | 'connected' | 'unavailable'
   connect(): Promise<void>
-  getNetworkInfo(): Promise<{ network: 'regtest'; height: number; blockHash: string }>
+  getNetworkInfo(): Promise<{ network: CandidateNetwork; height: number; blockHash: string }>
   checkIndexerUrl(url?: string): Promise<{ ok: true; indexerProtocol: 'Electrum' }>
   checkProxyEndpoint(url?: string): Promise<{ ok: true }>
   getInfo(): {
@@ -163,7 +170,7 @@ export class WalletAccountRgb {
     burnRecipientNamespaces?: string[]
   } | {
     ready: boolean
-    network: 'regtest'
+    network: CandidateNetwork
     protocol: 'BTC_L1'
     methods: []
   }

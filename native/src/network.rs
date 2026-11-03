@@ -3,18 +3,36 @@ use super::{
     Empty, Result, Session, Value, bitcoin_chain, decode, fault, json, native, validate_proxy,
 };
 use electrum_client::{Client, ConfigBuilder, ElectrumApi};
+use rgb_lib::BitcoinNetwork;
+use rgb_lib::bitcoin::BlockHash;
 use rgb_lib::bitcoin::constants::genesis_block;
+use rgb_lib::wallet::rust_only::wallet_http_client_for_network;
 use rgb_lib::wallet::{IndexerConfig, IndexerProtocol, TransportEndpoint, check_indexer_url};
 use serde::Deserialize;
 use std::io::Read;
 use std::time::Duration;
 
 const PROXY_INFO_LIMIT: u64 = 16 * 1024;
+const PUBLIC_SIGNET_BLOCK_ONE: &str =
+    "00000086d6b2636cb2a392d45edc4ec544a10024d30141c9adf4bfd9de533b53";
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Endpoint {
     url: String,
+}
+
+fn verify_chain(network: BitcoinNetwork, genesis: BlockHash, block_one: Option<BlockHash>) -> Result<()> {
+    if genesis != genesis_block(bitcoin_chain(network)).block_hash()
+        || (network == BitcoinNetwork::Signet
+            && !block_one.is_some_and(|hash| hash.to_string() == PUBLIC_SIGNET_BLOCK_ONE))
+    {
+        return Err(fault(
+            "INVALID_INDEXER",
+            "The indexer reports a different Bitcoin network.",
+        ));
+    }
+    Ok(())
 }
 
 impl Session {
@@ -42,13 +60,13 @@ impl Session {
                 .build(),
         )
         .map_err(unavailable)?;
-        let expected = genesis_block(bitcoin_chain(self.network)).block_hash();
-        if client.block_header(0).map_err(unavailable)?.block_hash() != expected {
-            return Err(fault(
-                "INVALID_INDEXER",
-                "The indexer reports a different Bitcoin network.",
-            ));
-        }
+        let genesis = client.block_header(0).map_err(unavailable)?.block_hash();
+        let block_one = if self.network == BitcoinNetwork::Signet {
+            Some(client.block_header(1).map_err(unavailable)?.block_hash())
+        } else {
+            None
+        };
+        verify_chain(self.network, genesis, block_one)?;
         let tip = client.block_headers_subscribe().map_err(unavailable)?;
         let height = u32::try_from(tip.height).map_err(|_| {
             fault(
@@ -57,10 +75,12 @@ impl Session {
             )
         })?;
         let block_hash = tip.header.block_hash();
-        if height == 0 && block_hash != expected {
+        if (height == 0 && (block_one.is_some() || block_hash != genesis))
+            || (height == 1 && block_one.is_some_and(|expected| block_hash != expected))
+        {
             return Err(fault(
                 "INVALID_INDEXER",
-                "The indexer returned an invalid genesis tip.",
+                "The indexer returned an invalid Bitcoin chain tip.",
             ));
         }
         Ok(json!({
@@ -72,11 +92,7 @@ impl Session {
 
     pub(super) fn check_indexer(&self, params: Value) -> Result<Value> {
         let p: Endpoint = decode(params)?;
-        let config = crate::profile::indexer(
-            p.url,
-            None,
-            self.network == rgb_lib::BitcoinNetwork::Regtest,
-        )?;
+        let config = crate::profile::indexer(p.url, None, self.network)?;
         let IndexerConfig::Electrum { url } = config else {
             unreachable!("the profile admits only Electrum");
         };
@@ -96,16 +112,15 @@ impl Session {
         let proxy = TransportEndpoint::new(p.url).map_err(native)?;
         // This health probe never follows redirects or transmits proxy authorization.
         // Its own short timeout and response bound keep a bad probe from closing the worker.
-        let client = reqwest::blocking::Client::builder()
-            .no_proxy()
-            .redirect(reqwest::redirect::Policy::none())
-            .retry(reqwest::retry::never())
-            .connect_timeout(Duration::from_secs(3))
-            .build()
-            .map_err(|_| proxy_unavailable())?;
+        let (client, url) = wallet_http_client_for_network(
+            &proxy.endpoint,
+            self.network,
+            Duration::from_secs(3),
+            Duration::from_secs(5),
+        )
+        .map_err(|_| proxy_unavailable())?;
         let response = client
-            .post(&proxy.endpoint)
-            .timeout(Duration::from_secs(5))
+            .post(url)
             .json(&json!({"jsonrpc":"2.0", "id":null, "method":"server.info"}))
             .send()
             .map_err(|_| proxy_unavailable())?;
@@ -156,6 +171,20 @@ fn proxy_protocol(bytes: &[u8]) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn public_signet_chain_check_rejects_custom_signet_with_shared_genesis() {
+        let network = BitcoinNetwork::Signet;
+        let genesis = genesis_block(bitcoin_chain(network)).block_hash();
+        let public = "00000086d6b2636cb2a392d45edc4ec544a10024d30141c9adf4bfd9de533b53".parse().unwrap();
+        let custom = "0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb".parse().unwrap();
+        assert!(verify_chain(network, genesis, Some(public)).is_ok());
+        assert!(verify_chain(network, genesis, Some(custom)).is_err());
+        assert!(verify_chain(network, genesis, None).is_err());
+        let regtest_genesis = genesis_block(bitcoin_chain(BitcoinNetwork::Regtest)).block_hash();
+        assert!(verify_chain(network, regtest_genesis, Some(public)).is_err());
+        assert!(verify_chain(BitcoinNetwork::Regtest, regtest_genesis, None).is_ok());
+    }
 
     #[test]
     fn proxy_check_requires_a_bounded_matching_server_info_envelope() {
