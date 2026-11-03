@@ -1,6 +1,7 @@
 // Copyright 2026 UTEXO. Licensed under the Apache License, Version 2.0.
-import { lstat, readFile, realpath } from 'bare-fs/promises'
+import { lstat, open, realpath } from 'bare-fs/promises'
 import { fileURLToPath } from 'bare-url'
+import { isAbsolute, join } from 'bare-path'
 import { clearTimeout, setTimeout } from 'bare-timers'
 import Worker from 'bare-worker'
 import { sha256 } from '@noble/hashes/sha2.js'
@@ -14,6 +15,30 @@ const MAX_REQUEST_BYTES = 6 * 1024 * 1024
 const MAX_RESPONSE_BYTES = 14 * 1024 * 1024
 const REQUEST_TIMEOUT_MS = 120_000
 
+async function verifyAddon (addon) {
+  const stat = await lstat(addon)
+  if (!stat.isFile() || await realpath(addon) !== addon || (stat.mode & 0o022) !== 0 || stat.size !== manifest.byteLength) {
+    throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Packaged Bare addon failed integrity verification')
+  }
+  const file = await open(addon, 'r')
+  const hash = sha256.create()
+  try {
+    const chunk = new Uint8Array(64 * 1024)
+    let offset = 0
+    while (offset < manifest.byteLength) {
+      const { bytesRead } = await file.read(chunk, 0, chunk.length, offset)
+      if (bytesRead === 0) break
+      hash.update(chunk.subarray(0, bytesRead))
+      offset += bytesRead
+    }
+    if (offset !== manifest.byteLength || hex.encode(hash.digest()) !== manifest.sha256) {
+      throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Packaged Bare addon failed integrity verification')
+    }
+  } finally {
+    await file.close()
+  }
+}
+
 export class OnchainWorker {
   #worker
   #stopped
@@ -21,7 +46,7 @@ export class OnchainWorker {
   #failure
   #nextId = 1
 
-  static async start (executable, expectedSha256) {
+  static async start (executable, expectedSha256, androidNativeLibraryDir) {
     if (executable !== undefined) throw new TypeError('The Bare candidate loads its packaged addon')
     if (expectedSha256 !== undefined && expectedSha256 !== manifest.sha256) {
       throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Native addon does not match the supplied SHA-256 pin')
@@ -29,12 +54,19 @@ export class OnchainWorker {
     if (Bare.Addon.host !== manifest.target) {
       throw new WalletRuntimeError('NATIVE_PLATFORM_UNSUPPORTED', 'No qualified Bare addon for this platform')
     }
-    const addon = fileURLToPath(import.meta.addon.resolve('..'))
-    const stat = await lstat(addon)
-    if (!stat.isFile() || await realpath(addon) !== addon || (stat.mode & 0o022) !== 0 ||
-        stat.size !== manifest.byteLength || hex.encode(sha256(await readFile(addon))) !== manifest.sha256) {
-      throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Packaged Bare addon failed integrity verification')
+    const resolution = import.meta.addon.resolve('..')
+    let addon
+    if (manifest.linkedName) {
+      if (resolution !== 'linked:' + manifest.linkedName ||
+          typeof androidNativeLibraryDir !== 'string' || !isAbsolute(androidNativeLibraryDir) ||
+          await realpath(androidNativeLibraryDir) !== androidNativeLibraryDir) {
+        throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Android addon must resolve from the app native library directory')
+      }
+      addon = join(androidNativeLibraryDir, manifest.linkedName)
+    } else {
+      addon = fileURLToPath(resolution)
     }
+    await verifyAddon(addon)
     const worker = new OnchainWorker()
     try {
       const version = await worker.request('version')

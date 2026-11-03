@@ -94,6 +94,7 @@ function configFor (options) {
     dataDir: options.dataDir,
     nativeExecutable: options.nativeExecutable,
     nativeSha256: options.nativeSha256,
+    androidNativeLibraryDir: options.androidNativeLibraryDir,
     authorize: options.authorize,
     maxFeeSats: u64(options.maxFeeSats, 'Fee cap', 2_100_000_000_000_000n),
     transportEndpoint: httpUrl(options.transportEndpoint, 'RGB proxy endpoint', ['rpc:', 'rpcs:']),
@@ -153,7 +154,7 @@ export class WalletAccountRgb {
   static async open (config, signer, isDisposed) {
     const dataDir = await privateWalletDir(config.dataDir)
     if (isDisposed()) throw new WalletRuntimeError('WALLET_CLOSED', 'Wallet manager is closed')
-    const worker = await OnchainWorker.start(config.nativeExecutable, config.nativeSha256)
+    const worker = await OnchainWorker.start(config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir)
     try {
       const version = await worker.request('version')
       if (version?.protocol !== 1 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||

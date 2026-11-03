@@ -1,6 +1,7 @@
 {
-  "target": "darwin-arm64",
+  "target": "android-arm64",
+  "linkedName": "libutexo__wdk-wallet-rgb.2.1.0-alpha.2.so",
   "integrationTree": "8dd209a8bb849696e45f301b0ea1b3d4eb0fba06",
-  "byteLength": 42097232,
-  "sha256": "00f6d273ad5c4043c8ad1a6cf253d1bb5886a698406b0c9f1a7aae1d62dc67ec"
+  "byteLength": 62732280,
+  "sha256": "0593bc8610fc91a3f85d944519fec5af9a9c0afd2dea508d61e03335e955bfd6"
 }

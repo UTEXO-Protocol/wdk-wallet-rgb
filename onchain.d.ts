@@ -49,6 +49,7 @@ export type CandidateConfig = SharedCandidateConfig & ({
   bitcoindAuth?: { username: string; password: string }
 } | {
   nativeExecutable?: never
+  androidNativeLibraryDir?: string
   nativeSha256?: string
   indexerUrl: `${'tcp' | 'ssl'}://${string}`
   bitcoindAuth?: never
