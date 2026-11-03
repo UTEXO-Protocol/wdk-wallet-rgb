@@ -35,6 +35,11 @@ jobs:
         run: npm test
       - name: Check public types
         run: npm run check:types
+      - name: Bundle WebRGB for Android Bare
+        run: |
+          out=$(mktemp -d)
+          trap 'rm -r "$out"' EXIT
+          node_modules/.bin/bare-pack --host android-arm64 --linked --out "$out/webrgb.bundle" src/onchain-webrgb.js
       - name: Audit runtime dependencies
         run: npm audit --omit=dev --audit-level=moderate
       - name: Check source-only package inventory

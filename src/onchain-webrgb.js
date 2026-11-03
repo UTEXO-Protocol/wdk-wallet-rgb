@@ -257,7 +257,7 @@ export class WebRgbProvider {
     return true
   }
 
-  #require (method, info) {
+  #assertSupported (method, info) {
     if (!this.#supports(method, info)) fail('METHOD_NOT_SUPPORTED')
   }
 
@@ -293,14 +293,14 @@ export class WebRgbProvider {
 
   getAddress () {
     return this.#call('getAddress', async info => {
-      this.#require('getAddress', info)
+      this.#assertSupported('getAddress', info)
       return { address: text(await this.#native('getAddress'), 90, 'INTERNAL_ERROR') }
     })
   }
 
   #receive (method, args) {
     return this.#call(method, async info => {
-      this.#require(method, info)
+      this.#assertSupported(method, info)
       const input = record(args, ['assetId', 'amount', 'durationSeconds', 'minConfirmations'])
       const { assetId = this.#assets.size === 1 ? [...this.#assets][0] : undefined,
         durationSeconds = 7200, minConfirmations: minimum = 3 } = input
@@ -330,7 +330,7 @@ export class WebRgbProvider {
 
   listAssets () {
     return this.#call('listAssets', async info => {
-      this.#require('listAssets', info)
+      this.#assertSupported('listAssets', info)
       const assets = await this.#native('listAssets')
       if (!Array.isArray(assets)) fail('INTERNAL_ERROR')
       return assets.filter(asset => this.#assets.has(asset?.assetId)).map(asset => ({
@@ -345,7 +345,7 @@ export class WebRgbProvider {
 
   getAssetBalance (id) {
     return this.#call('getAssetBalance', async info => {
-      this.#require('getAssetBalance', info)
+      this.#assertSupported('getAssetBalance', info)
       const assetId = this.#asset(id)
       const balance = nativeNumber((await this.#native('getAssetBalance', assetId))?.spendable)
       return { assetId, balance, raw: { spendable: balance } }
@@ -369,14 +369,14 @@ export class WebRgbProvider {
 
   listTransfers (id) {
     return this.#call('listTransfers', info => {
-      this.#require('listTransfers', info)
+      this.#assertSupported('listTransfers', info)
       return this.#transfers(id)
     })
   }
 
   getTransferStatus (id, asset) {
     return this.#call('getTransferStatus', async info => {
-      this.#require('getTransferStatus', info)
+      this.#assertSupported('getTransferStatus', info)
       const transferId = typeof id === 'number' ? String(integer(id, 0, Number.MAX_SAFE_INTEGER)) : text(id, 512)
       const assets = asset === undefined ? this.#assets : [this.#asset(asset)]
       for (const assetId of assets) await this.#native('refreshTransfers', { assetId })
@@ -390,7 +390,7 @@ export class WebRgbProvider {
 
   decodeRgbInvoice (args) {
     return this.#call('decodeRgbInvoice', async info => {
-      this.#require('decodeRgbInvoice', info)
+      this.#assertSupported('decodeRgbInvoice', info)
       const invoice = text(typeof args === 'string' ? args : record(args, ['invoice']).invoice, 8192)
       if (!invoice.startsWith('rgb:') || /\s/.test(invoice)) fail()
       const result = await this.#native('decodeRgbInvoice', invoice)
@@ -449,7 +449,7 @@ export class WebRgbProvider {
 
   burnAsset (args) {
     return this.#call('burnAsset', async info => {
-      this.#require('burnAsset', info)
+      this.#assertSupported('burnAsset', info)
       const { request, operationId, binding } = this.#burnRequest(args, info)
       const saved = await this.#native('getOperation', operationId)
       if (saved !== undefined) {
@@ -473,7 +473,7 @@ export class WebRgbProvider {
   /** Explicit reconciliation of the original RPC. This path never invokes burnAsset. */
   recoverBurn (args) {
     return this.#call('burnAsset', async info => {
-      this.#require('burnAsset', info)
+      this.#assertSupported('burnAsset', info)
       const { request, operationId, binding } = this.#burnRequest(args, info)
       const saved = await this.#native('getOperation', operationId)
       if (!saved) fail('INTERNAL_ERROR')
@@ -489,7 +489,7 @@ export class WebRgbProvider {
 
   getConsignment (args) {
     return this.#call('getConsignment', async info => {
-      this.#require('getConsignment', info)
+      this.#assertSupported('getConsignment', info)
       const input = record(args, ['assetId', 'txid'])
       const assetId = this.#asset(input.assetId, true)
       if (typeof input.txid !== 'string' || !/^[a-fA-F\d]{64}$/.test(input.txid)) fail()

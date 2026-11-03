@@ -1,6 +1,6 @@
 {
   "name": "@utexo/wdk-wallet-rgb",
-  "version": "2.1.0-alpha.4",
+  "version": "2.1.0-alpha.5",
   "description": "Isolated on-chain RGB wallet candidate for WDK.",
   "keywords": [
     "wdk",
@@ -22,6 +22,7 @@
     "check:types": "tsc -p tsconfig.onchain.json"
   },
   "dependencies": {
+    "@noble/curves": "2.4.0",
     "@noble/hashes": "2.4.0",
     "@scure/base": "2.4.0",
     "@scure/bip32": "2.4.0",
@@ -31,11 +32,11 @@
     "bare-path": "3.1.2",
     "bare-timers": "3.2.4",
     "bare-url": "2.5.5",
-    "bare-worker": "4.5.3",
-    "@noble/curves": "2.4.0"
+    "bare-worker": "4.5.3"
   },
   "devDependencies": {
     "bare": "1.36.2",
+    "bare-pack": "3.0.2",
     "typescript": "7.0.2"
   },
   "exports": {
