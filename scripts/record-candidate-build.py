@@ -17,9 +17,16 @@ def command(*args):
     return subprocess.check_output(args, cwd=ROOT, text=True).strip()
 
 
+def stream_sha256(stream):
+    digest = hashlib.sha256()
+    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+        digest.update(chunk)
+    return digest.hexdigest()
+
+
 def sha256(path):
     with path.open("rb") as stream:
-        return hashlib.file_digest(stream, "sha256").hexdigest()
+        return stream_sha256(stream)
 
 
 def cargo_inventory(manifest, platform):
@@ -64,11 +71,11 @@ def main():
     expected = artifacts["addon"]["sha256"]
     with tarfile.open(args.tarball, "r:gz") as tar:
         with tar.extractfile("package/prebuilds/android-arm64/utexo__wdk-wallet-rgb.bare") as addon:
-            if hashlib.file_digest(addon, "sha256").hexdigest() != expected:
+            if stream_sha256(addon) != expected:
                 raise SystemExit("Packed addon does not match the admitted build")
     with zipfile.ZipFile(args.apk) as apk:
         with apk.open("lib/arm64-v8a/" + manifest["linkedName"]) as addon:
-            if hashlib.file_digest(addon, "sha256").hexdigest() != expected:
+            if stream_sha256(addon) != expected:
                 raise SystemExit("APK addon does not match the admitted build")
     npm = []
     for location, pkg in json.loads((ROOT / "package-lock.json").read_text())["packages"].items():
