@@ -7,7 +7,8 @@ import { isAbsolute } from 'node:path'
 import { WalletRuntimeError } from './onchain-runtime-error.js'
 
 // Allows a 10 MiB proof in base64 plus the surrounding response.
-const MAX_LINE_BYTES = 14 * 1024 * 1024
+const MAX_REQUEST_BYTES = 6 * 1024 * 1024
+const MAX_RESPONSE_BYTES = 14 * 1024 * 1024
 const REQUEST_TIMEOUT_MS = 120_000
 
 export const nativeRuntime = 'node-host-process'
@@ -60,7 +61,7 @@ export class OnchainWorker {
     if (this.#pending) return Promise.reject(new WalletRuntimeError('WALLET_BUSY', 'Native wallet is processing a request'))
     const id = String(this.#nextId++)
     const line = JSON.stringify({ id, method, params }) + '\n'
-    if (Buffer.byteLength(line) > MAX_LINE_BYTES) throw new RangeError('Native wallet request is too large')
+    if (Buffer.byteLength(line) > MAX_REQUEST_BYTES) throw new RangeError('Native wallet request is too large')
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => this.#fail('NATIVE_TIMEOUT', 'Native wallet did not respond before the deadline'), REQUEST_TIMEOUT_MS)
       this.#pending = { id, resolve, reject, timer }
@@ -84,7 +85,7 @@ export class OnchainWorker {
   #receive (chunk) {
     if (this.#failure) return
     this.#responseBytes += chunk.length
-    if (this.#responseBytes > MAX_LINE_BYTES) {
+    if (this.#responseBytes > MAX_RESPONSE_BYTES) {
       this.#fail('NATIVE_PROTOCOL', 'Native wallet response exceeds the maximum size')
       return
     }

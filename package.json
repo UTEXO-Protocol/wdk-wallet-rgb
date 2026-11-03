@@ -1,6 +1,6 @@
 {
   "name": "@utexo/wdk-wallet-rgb",
-  "version": "2.1.0-alpha.2",
+  "version": "2.1.0-alpha.3",
   "description": "Isolated on-chain RGB wallet candidate for WDK.",
   "keywords": [
     "wdk",
@@ -31,7 +31,8 @@
     "bare-path": "3.1.2",
     "bare-timers": "3.2.4",
     "bare-url": "2.5.5",
-    "bare-worker": "4.5.3"
+    "bare-worker": "4.5.3",
+    "@noble/curves": "2.4.0"
   },
   "devDependencies": {
     "bare": "1.36.2",
@@ -43,7 +44,12 @@
       "bare": "./onchain.js",
       "node": "./onchain.js"
     },
-    "./package": "./package.json"
+    "./package": "./package.json",
+    "./webrgb": {
+      "types": "./webrgb-onchain.d.ts",
+      "bare": "./src/onchain-webrgb.js",
+      "node": "./src/onchain-webrgb.js"
+    }
   },
   "private": true,
   "engines": {
@@ -57,7 +63,9 @@
     "CANDIDATE.md",
     "src/onchain-bare-thread.cjs",
     "src/onchain-bare-native.json",
-    "prebuilds/android-arm64/*.bare"
+    "prebuilds/android-arm64/*.bare",
+    "webrgb-onchain.d.ts",
+    "QUALIFICATION.md"
   ],
   "imports": {
     "#onchain-io": {

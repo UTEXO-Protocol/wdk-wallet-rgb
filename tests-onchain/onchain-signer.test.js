@@ -172,6 +172,29 @@ test('rejects previous output amount/script or transaction ID inconsistent with 
   }
 })
 
+test('matches a payment by exact script and value regardless of output order, and refuses duplicates', () => {
+  const signer = deriveOnchainSigner(seed, { network: 'regtest' })
+  const destination = key(1, 5, other)
+  const change = key(1, 4)
+  try {
+    const moved = psbt('btc-send', (tx, policy) => {
+      delete policy.approvedOutputs[0].index
+      tx.updateOutput(0, { ...change, amount: 89500n })
+      tx.updateOutput(1, { script: destination.script, amount: 10000n })
+    })
+    assert.deepEqual(signer.inspect(moved.raw, moved.policy).outputs.map(x => x.role), ['vanilla', 'approved'])
+
+    const duplicate = psbt('btc-send', (tx, policy) => {
+      delete policy.approvedOutputs[0].index
+      tx.updateOutput(1, { amount: 79500n })
+      tx.addOutput({ script: destination.script, amount: 10000n })
+    })
+    assert.throws(() => signer.inspect(duplicate.raw, duplicate.policy), { code: 'OUTPUT_MISMATCH' })
+  } finally {
+    signer.destroy()
+  }
+})
+
 test('rejects transport aliases and implicit legacy seed derivation', () => {
   assert.throws(() => deriveOnchainSigner(seed, { network: 'utexo' }), { code: 'INVALID_IDENTITY' })
   assert.throws(() => deriveOnchainSigner(seed.subarray(0, 32), { network: 'signet' }), { code: 'INVALID_IDENTITY' })

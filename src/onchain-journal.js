@@ -4,7 +4,7 @@ import { WalletRuntimeError } from './onchain-runtime-error.js'
 
 const ID = /^[a-z0-9][a-z0-9-]{15,79}$/
 const BLOCKING = new Set(['starting', 'prepared', 'submitting'])
-const STAGES = new Set([...BLOCKING, 'declined', 'submitted'])
+const STAGES = new Set([...BLOCKING, 'declined', 'submitted', 'failed'])
 
 export function checkOperationId (id) {
   if (typeof id !== 'string' || !ID.test(id)) throw new TypeError('A stable, unique operation ID is required')

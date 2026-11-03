@@ -1,0 +1,37 @@
+[package]
+name = "utexo-rgb-native"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94.0"
+publish = false
+
+[dependencies]
+rgb-lib = { path = ".sources/rgb-lib-bfa-bare", default-features = false, features = ["electrum", "camel_case"] }
+rgb-invoicing = { version = "=0.11.2-rc.1", default-features = false }
+base64 = "0.23.1"
+fs2 = "0.4.3"
+libc = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+zeroize = "1.8"
+tempfile = "3.27.0"
+sha2 = "0.11.1"
+url = "2.5"
+
+
+[patch.crates-io]
+rgb-consensus = { git = "https://github.com/UTEXO-Protocol/rgb-consensus-s-bfa.git", rev = "af0b751dc9e51547cd57e025fdc3508e120ddf8a" }
+rgb-ops = { git = "https://github.com/UTEXO-Protocol/rgb-ops-s-bfa.git", rev = "ed1d60df69f9e4db65640c0ac61a5779ba9c018c" }
+rgb-invoicing = { git = "https://github.com/UTEXO-Protocol/rgb-ops-s-bfa.git", rev = "ed1d60df69f9e4db65640c0ac61a5779ba9c018c" }
+rgb-psbt-utils = { git = "https://github.com/UTEXO-Protocol/rgb-api-s-bfa.git", rev = "8e2f515d0f6445e88d3c794a4b592f7bdd3a12df" }
+rgb-schemas = { git = "https://github.com/UTEXO-Protocol/rgb-schemas-s-bfa.git", rev = "641a06f31cd277c42222504c8040055c8cbafca5" }
+rgb-strict-encoding = { git = "https://github.com/rgb-protocol/rgb-strict-encoding", rev = "e12b9944b30171950de03778d6666b24bc33d994" }
+rgb-strict-encoding-derive = { git = "https://github.com/rgb-protocol/rgb-strict-encoding", rev = "e12b9944b30171950de03778d6666b24bc33d994" }
+rgb-strict-types = { git = "https://github.com/rgb-protocol/rgb-strict-types", rev = "8714cdcc8af25333c27214cdf9f42a6388d484ff" }
+
+[profile.release]
+opt-level = 1
+debug = 0
+strip = "debuginfo"
+# Preserve the upstream rgb-lib release invariant, including for the dependency graph.
+overflow-checks = true

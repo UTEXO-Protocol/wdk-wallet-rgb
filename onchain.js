@@ -2,3 +2,4 @@
 export { WalletManagerRgb as default, WalletManagerRgb, WalletAccountRgb } from './src/onchain-wallet.js'
 export { WalletRuntimeError } from './src/onchain-runtime-error.js'
 export { burnDestinationFor, burnDestinationHash, createBurnPackage } from './src/burn-destination.js'
+export { createWorkletApproval } from './src/onchain-approval.js'

@@ -9,6 +9,8 @@ import { burnDestinationFor, burnDestinationHash, MAX_BURN_PROOF_BYTES, validate
 import { checkOperationId, OnchainJournal, privateWalletDir } from './onchain-journal.js'
 import { deriveOnchainSigner } from './onchain-signer.js'
 import { WalletRuntimeError } from './onchain-runtime-error.js'
+import { BIP322_CAPABILITIES, bip322MessageBytes, verifyMessageBip322 } from './onchain-message.js'
+import { admitSendStatus, checkFeeBlocks, checkRgbInvoice, prepareBtcSend, prepareRgbSend, sendRecoveryParams } from './onchain-send.js'
 
 const ROUTES = new Map([
   ['eip155:42161', 0],
@@ -22,6 +24,7 @@ const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
 const NATIVE_SOURCE = '0a9d352f2690902df2b6fae9bca1a6c13c3354d4'
 const NATIVE_OVERLAY = '5b7660a66d53da6a5935407bbaf21f7e73636f35'
+const NATIVE_INTEGRATION = '8dd209a8bb849696e45f301b0ea1b3d4eb0fba06'
 const PROOF_MAGIC = [82, 71, 66, 0, 84, 70, 82]
 
 function sha256 (bytes) { return hex.encode(hashSha256(bytes)) }
@@ -44,14 +47,24 @@ function checkAsset (value) {
   return value
 }
 
+function assertMutationAuthorized (check) {
+  if (check === undefined) return
+  if (typeof check !== 'function') throw new TypeError('Mutation guard must be a synchronous assertion')
+  const result = check()
+  if (result === undefined) return
+  if (typeof result?.then === 'function') Promise.resolve(result).catch(() => {})
+  throw new WalletRuntimeError('NOT_ENABLED', 'Mutation authorization is no longer active')
+}
+
 function checkTxid (txid) {
   if (typeof txid !== 'string' || !HEX_32.test(txid)) throw new TypeError('Invalid transaction ID')
   return txid
 }
 
 function httpUrl (value, name, protocols = ['http:', 'https:']) {
+  if (typeof value !== 'string' || value.length > 2048) throw new TypeError('Invalid ' + name)
   const url = new URL(value)
-  if (!protocols.includes(url.protocol) || url.username || url.password || url.hash) {
+  if (!protocols.includes(url.protocol) || url.username || url.password || url.hash || url.search) {
     throw new TypeError('Invalid ' + name)
   }
   if (!['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)) {
@@ -63,19 +76,22 @@ function httpUrl (value, name, protocols = ['http:', 'https:']) {
 function configFor (options) {
   if (options?.network !== 'regtest') throw new TypeError('The candidate supports isolated regtest only')
   if (typeof options.authorize !== 'function') throw new TypeError('A transaction authorization callback is required')
+  if (options.authorizeMessage !== undefined && typeof options.authorizeMessage !== 'function') {
+    throw new TypeError('Invalid message authorization callback')
+  }
   const routes = (options.burnDestinationRoutes ?? []).map(({ chainId, dstEid }) => {
     if (!ROUTES.has(chainId) || ROUTES.get(chainId) !== dstEid) throw new TypeError('Unknown V1 bridge route')
     return Object.freeze({ chainId, dstEid })
   })
   if (new Set(routes.map(route => route.chainId)).size !== routes.length) throw new TypeError('Duplicate V1 bridge route')
 
-  const electrumOnly = nativeRuntime === 'bare-in-process'
-  const indexerProtocols = electrumOnly ? ['tcp:', 'ssl:'] : ['http:', 'https:', 'tcp:', 'ssl:']
-  const online = { indexerUrl: httpUrl(options.indexerUrl, 'indexer endpoint', indexerProtocols) }
-  if (options.bitcoindAuth) {
-    if (electrumOnly) throw new TypeError('The Bare candidate accepts only Electrum configuration')
-    online.bitcoindAuth = { ...options.bitcoindAuth }
+  if (options.bitcoindAuth !== undefined) throw new TypeError('The wallet accepts only Electrum configuration')
+  const indexerUrl = httpUrl(options.indexerUrl, 'indexer endpoint', ['tcp:', 'ssl:'])
+  const indexer = new URL(indexerUrl)
+  if (!indexer.port || !['', '/'].includes(indexer.pathname)) {
+    throw new TypeError('Electrum requires an explicit port and no path')
   }
+  const online = { indexerUrl }
   if (options.evmRpcUrls) {
     online.evmRpcUrls = Object.fromEntries(Object.entries(options.evmRpcUrls).map(([id, url]) => {
       u64(id, 'EVM chain ID')
@@ -96,6 +112,7 @@ function configFor (options) {
     nativeSha256: options.nativeSha256,
     androidNativeLibraryDir: options.androidNativeLibraryDir,
     authorize: options.authorize,
+    authorizeMessage: options.authorizeMessage,
     maxFeeSats: u64(options.maxFeeSats, 'Fee cap', 2_100_000_000_000_000n),
     transportEndpoint: httpUrl(options.transportEndpoint, 'RGB proxy endpoint', ['rpc:', 'rpcs:']),
     routes,
@@ -134,6 +151,20 @@ export class WalletManagerRgb extends WalletManager {
     return this.#opening
   }
 
+  getAccountByPath (path) {
+    if (path !== "0'/0/0") return Promise.reject(new RangeError("RGB supports only the default path 0'/0/0"))
+    return this.getAccount()
+  }
+
+  async getFeeRates () {
+    const account = await this.getAccount()
+    const normal = await account.estimateFeeResult(6)
+    const fast = await account.estimateFeeResult(2)
+    return { normal: BigInt(normal.feeRate), fast: BigInt(fast.feeRate) }
+  }
+
+  shutdown () { return this.dispose() }
+
   dispose () {
     if (this.#closing) return this.#closing
     super.dispose()
@@ -150,6 +181,8 @@ export class WalletAccountRgb {
   #journal
   #busy = false
   #closed = false
+  #address
+  #prepared
 
   static async open (config, signer, isDisposed) {
     const dataDir = await privateWalletDir(config.dataDir)
@@ -157,8 +190,8 @@ export class WalletAccountRgb {
     const worker = await OnchainWorker.start(config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir)
     try {
       const version = await worker.request('version')
-      if (version?.protocol !== 1 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
-        version.runtime !== nativeRuntime) {
+      if (version?.protocol !== 2 || version.indexer !== 'electrum-only' || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
+        version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
       const identity = signer.identity
@@ -185,10 +218,17 @@ export class WalletAccountRgb {
   }
 
   get disposed () { return this.#closed }
+  get path () { return "0'/0/0" }
+  get keyPair () { return null }
+
+  isDisposed () { return this.#closed }
+  getNetwork () { return this.#config.network }
+  shutdown () { return this.dispose() }
 
   async dispose () {
     if (!this.#closed) this.#closed = true
     this.#signer.destroy()
+    this.#prepared = undefined
     await this.#worker.close()
   }
 
@@ -210,7 +250,7 @@ export class WalletAccountRgb {
   getInfo () {
     this.#assertOpen()
     const burnDestinationRoutes = [...this.#config.routes]
-    const methods = ['getInfo', 'getAssetBalance', 'blindReceive']
+    const methods = ['getInfo', 'getAddress', 'listAssets', 'getAssetBalance', 'listTransfers', 'blindReceive', 'decodeRgbInvoice']
     if (burnDestinationRoutes.length) methods.push('burnAsset', 'getConsignment')
     return {
       ready: this.#worker.available,
@@ -225,15 +265,96 @@ export class WalletAccountRgb {
     }
   }
 
-  async getAddress () {
-    const { address } = await this.#read('getAddress')
+  getAddress () {
+    return this.#run(async () => this.#address ?? await this.#allocateAddress())
+  }
+
+  getNewAddress () { return this.#run(() => this.#allocateAddress()) }
+
+  async #allocateAddress () {
+    const { address } = await this.#worker.request('getAddress')
+    this.#assertOpen()
+    if (typeof address !== 'string' || !address) throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid receive address')
+    this.#address = address
     return address
   }
 
+  getCapabilities () {
+    this.#assertOpen()
+    return Object.freeze({
+      bip322: this.#config.authorizeMessage
+        ? BIP322_CAPABILITIES
+        : Object.freeze({ status: 'unavailable', reason: 'Message authorization is not configured' })
+    })
+  }
+
+  async getMessageSigningAddress () {
+    this.#assertOpen()
+    return this.#signer.getMessageSigningAddress()
+  }
+
+  signMessageBip322 (message, address) {
+    return this.#run(async () => {
+      const messageBytes = bip322MessageBytes(message)
+      if (address !== this.#signer.getMessageSigningAddress()) throw new TypeError('Message signing address is not owned by this account')
+      const approval = Object.freeze({ kind: 'bip322', message, address, messageSha256: sha256(messageBytes) })
+      if (await this.#config.authorizeMessage?.(approval) !== true) {
+        throw new WalletRuntimeError('AUTHORIZATION_DECLINED', 'Message signing was declined')
+      }
+      this.#assertOpen()
+      return this.#signer.signMessageBip322(message, address)
+    })
+  }
+
+  async verifyMessageBip322 (message, address, signature) {
+    this.#assertOpen()
+    return verifyMessageBip322(message, address, signature, this.#config.network)
+  }
+
   getBtcBalance () { return this.#read('getBtcBalance') }
+  getBalanceDetails () { return this.getBtcBalance() }
+  async getBalance () { return BigInt((await this.getBtcBalance()).vanilla.spendable) }
   getAssetBalance (assetId) { return this.#read('getAssetBalance', { assetId: checkAsset(assetId) }) }
+  async getTokenBalance (assetId) { return BigInt((await this.getAssetBalance(assetId)).spendable) }
+  listAssets () { return this.#read('listAssets') }
+  getTransactions () { return this.#read('listTransactions') }
+  getAssetMetadata (assetId) { return this.#read('getAssetMetadata', { assetId: checkAsset(assetId) }) }
+
+  estimateFeeResult (blocks = 6) { return this.#read('getFeeRate', { blocks: checkFeeBlocks(blocks) }) }
+
+  decodeRgbInvoice (invoice) { return this.#read('decodeInvoice', { invoice: checkRgbInvoice(invoice) }) }
+
+  sendBtc (request) {
+    const { args, expectations } = prepareBtcSend(request, this.#config.network)
+    return this.#transact(request.operationId, 'btc-send', args, expectations, 'sendBtc')
+  }
+
+  sendRgbInvoice (request) {
+    checkOperationId(request.operationId)
+    const invoice = checkRgbInvoice(request.invoice)
+    const copy = { ...request, invoice }
+    return this.#run(async () => {
+      const decoded = await this.#worker.request('decodeInvoice', { invoice })
+      const { args, expectations } = prepareRgbSend(copy, decoded, this.#config)
+      return this.#authorizeAndSubmit(await this.#prepare(copy.operationId, 'rgb-send', args, expectations, 'sendRgb'))
+    })
+  }
+
+  recoverSend (operationId) {
+    return this.#run(async () => {
+      const record = await this.#journal.get(operationId)
+      const params = sendRecoveryParams(record)
+      if (record.stage === 'failed') return { state: 'failed', txid: params.txid, batchTransferIdx: params.batchTransferIdx }
+      const status = admitSendStatus(await this.#worker.request('getSendStatus', params), params)
+      if (status.state !== 'unresolved' && status.state !== record.stage) {
+        await this.#journal.save({ ...record, stage: status.state })
+      }
+      return status
+    })
+  }
+
   getReceivedMint (recipientId) {
-    if (typeof recipientId !== 'string' || recipientId.length === 0 || recipientId.length > 1024) {
+    if (typeof recipientId !== 'string' || recipientId.length === 0 || recipientId.length > 512) {
       throw new TypeError('Invalid RGB recipient ID')
     }
     return this.#read('getReceivedMint', { recipientId })
@@ -252,6 +373,12 @@ export class WalletAccountRgb {
     return this.#read('refresh', assetId === undefined ? {} : { assetId: checkAsset(assetId) })
   }
 
+  refreshTransfers (options = {}) { return this.refresh(options.assetId) }
+
+  sync () { return this.refresh() }
+
+  importRgbContract (options) { return this.registerAssetContract(options) }
+
   registerAssetContract ({ contract, assetId, sha256: expectedSha256 }) {
     if (!(contract instanceof Uint8Array) || contract.length === 0 || contract.length > MAX_CONTRACT_BYTES ||
       typeof expectedSha256 !== 'string' || sha256(contract) !== expectedSha256) {
@@ -264,7 +391,17 @@ export class WalletAccountRgb {
     })
   }
 
-  blindReceive ({ assetId, amount, expirationSeconds = 7200, minConfirmations = 3 } = {}) {
+  blindReceive (options) { return this.#receive('blindReceive', options) }
+
+  witnessReceive (options) { return this.#receive('witnessReceive', options) }
+
+  createRgbInvoice ({ mode = 'blind', ...options } = {}) {
+    if (mode === 'blind') return this.blindReceive(options)
+    if (mode === 'witness') return this.witnessReceive(options)
+    throw new TypeError('Unknown RGB receive mode')
+  }
+
+  #receive (method, { assetId, amount, expirationSeconds = 7200, minConfirmations = 3 } = {}) {
     const params = {
       transportEndpoints: [this.#config.transportEndpoint],
       expirationTimestamp: String(Math.floor(Date.now() / 1000) + smallInteger(expirationSeconds, 'invoice expiry', 3600, 604800)),
@@ -272,21 +409,103 @@ export class WalletAccountRgb {
     }
     if (assetId !== undefined) params.assetId = checkAsset(assetId)
     if (amount !== undefined) params.amount = u64(amount, 'Invoice amount')
-    return this.#read('blindReceive', params)
+    return this.#read(method, params)
   }
 
-  createUtxos ({ operationId, count, size, feeRate }) {
+  async getInvoiceStatus (recipientId) {
+    if (typeof recipientId !== 'string' || recipientId.length === 0 || recipientId.length > 512) {
+      throw new TypeError('Invalid RGB recipient ID')
+    }
+    const matches = (await this.listTransfers()).filter(row => row.recipientId === recipientId &&
+      ['ReceiveBlind', 'ReceiveWitness', 'Mint'].includes(row.kind))
+    if (matches.length > 1) throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Multiple transfers match this recipient')
+    return matches[0] ?? null
+  }
+
+  #outputPlan ({ count, size, feeRate }) {
     const args = {
       count: smallInteger(count, 'output count', 1, 20),
       size: u64(size, 'Output size', 1_000_000n),
       feeRate: u64(feeRate, 'Fee rate', 1_000n)
     }
-    return this.#transact(operationId, 'rgb-output', args, {
-      expectedColorableOutputs: { count: args.count, amountSats: args.size }
-    }, 'createUtxos')
+    return { args, expectations: { expectedColorableOutputs: { count: args.count, amountSats: args.size } } }
   }
 
-  burnAsset ({ operationId, assetId, amount, feeRate, minConfirmations = 6, burnRecipient, burnDestination }) {
+  createUtxos (options) {
+    const { args, expectations } = this.#outputPlan(options)
+    return this.#transact(options.operationId, 'rgb-output', args, expectations, 'createUtxos')
+  }
+
+  prepareCreateUtxos (options) {
+    const { args, expectations } = this.#outputPlan(options)
+    return this.#run(async () => (await this.#prepare(options.operationId, 'rgb-output', args, expectations, 'createUtxos')).review)
+  }
+
+  commitPreparedCreateUtxos ({ operationId, psbtSha256 }) {
+    return this.#run(() => this.#authorizeAndSubmit(this.#requireOutputPlan(operationId, psbtSha256)))
+  }
+
+  cancelCreateUtxosPlan ({ operationId, psbtSha256 }) {
+    return this.#run(async () => {
+      const record = await this.#journal.get(operationId)
+      if (record?.kind !== 'rgb-output' || record.stage !== 'prepared' ||
+          !HEX_32.test(psbtSha256) || record.psbtSha256 !== psbtSha256) {
+        throw new WalletRuntimeError('NO_PREPARED_OPERATION', 'Output plan identity does not match')
+      }
+      if (this.#prepared) {
+        await this.#discard(this.#requireOutputPlan(operationId, psbtSha256))
+      } else {
+        await this.#worker.request('cancelAbandonedOutputs', { txid: checkTxid(record.txid) })
+        await this.#journal.save({ ...record, stage: 'declined' })
+      }
+    })
+  }
+
+  #requireOutputPlan (operationId, psbtSha256) {
+    const plan = this.#prepared
+    if (plan?.record.kind !== 'rgb-output' || plan.record.id !== operationId || plan.plan.psbtSha256 !== psbtSha256) {
+      throw new WalletRuntimeError('NO_PREPARED_OPERATION', 'Output plan identity does not match this wallet session')
+    }
+    return plan
+  }
+
+  getCreateUtxosOperation (operationId) {
+    return this.#run(async () => {
+      const record = await this.#journal.get(operationId)
+      return record?.kind === 'rgb-output' ? record : undefined
+    })
+  }
+
+  listCreateUtxosOperations () {
+    return this.#run(async () => (await this.#journal.records()).filter(record => record.kind === 'rgb-output'))
+  }
+
+  recoverCreateUtxos (operationId) {
+    return this.#run(async () => {
+      const record = await this.#journal.get(operationId)
+      if (record?.kind !== 'rgb-output' || !['submitting', 'submitted'].includes(record.stage)) {
+        throw new WalletRuntimeError('OPERATION_UNRESOLVED', 'No submitted RGB output operation is recorded')
+      }
+      if (record.stage === 'submitted') return record
+      const txid = checkTxid(record.txid)
+      const rows = await this.#worker.request('listTransactions')
+      if (!rows.some(row => row.txid === txid && row.type === 'CreateUtxos')) {
+        throw new WalletRuntimeError('OPERATION_UNRESOLVED', 'The original RGB output transaction was not found')
+      }
+      const submitted = { ...record, stage: 'submitted' }
+      await this.#journal.save(submitted)
+      return submitted
+    })
+  }
+
+  burnAsset ({ operationId, assetId, amount, feeRate, minConfirmations = 6, burnRecipient, burnDestination, assertAuthorized, webRgbBinding }) {
+    let binding
+    if (webRgbBinding !== undefined) {
+      const { scopeKey, requestKey } = webRgbBinding
+      if (typeof assertAuthorized !== 'function' || typeof scopeKey !== 'string' || !HEX_32.test(scopeKey) ||
+          typeof requestKey !== 'string' || !HEX_32.test(requestKey)) throw new TypeError('Invalid WebRGB burn binding')
+      binding = { scopeKey, requestKey }
+    }
     const recipient = { chainId: burnRecipient?.chainId, address: burnRecipient?.address }
     const destination = burnDestinationFor(recipient, this.#config.routes)
     const expectedHash = burnDestinationHash(destination)
@@ -300,75 +519,138 @@ export class WalletAccountRgb {
       minConfirmations: smallInteger(minConfirmations, 'minimum burn confirmations', 6, 255),
       commitment: expectedHash
     }
-    return this.#transact(operationId, 'rgb-burn', args, {}, 'burn', { destination, recipient })
+    return this.#transact(operationId, 'rgb-burn', args, {}, 'burn', { destination, recipient, assertAuthorized, binding })
   }
 
   #transact (id, kind, args, expectations, method, burn) {
     checkOperationId(id)
-    return this.#run(async () => {
-      if (await this.#journal.get(id)) {
-        throw new WalletRuntimeError('OPERATION_EXISTS', 'Operation ID was already recorded. Use recovery to inspect its result.')
-      }
-      await this.#journal.assertAvailable()
-      const record = { id, kind, args, ...(burn && { burnDestination: burn.destination, burnRecipient: { ...burn.recipient } }), stage: 'starting' }
-      await this.#journal.save(record)
-      this.#assertOpen()
-      const prepared = await this.#worker.request(method + 'Begin', args)
-      const txid = checkTxid(prepared.txid)
-      const expectation = { kind, maxFeeSats: this.#config.maxFeeSats, approvedOutputs: [], ...expectations }
-      Object.assign(record, { txid, stage: 'prepared', batchTransferIdx: prepared.batchTransferIdx })
-      await this.#journal.save(record)
-      this.#assertOpen()
+    return this.#run(async () => this.#authorizeAndSubmit(await this.#prepare(id, kind, args, expectations, method, burn)))
+  }
 
-      let plan
-      let approved
-      let rejection
-      try {
-        plan = this.#signer.inspect(prepared.psbt, expectation)
-        if (plan.txid !== txid) throw new WalletRuntimeError('PSBT_MISMATCH', 'Native transaction ID does not match the reviewed PSBT')
-        approved = await this.#config.authorize(Object.freeze({
-          operationId: id,
-          ...args,
-          ...(burn && { burnDestination: burn.destination, burnRecipient: Object.freeze({ ...burn.recipient }) }),
-          plan
-        }))
-      } catch (error) {
-        rejection = error
-      }
+  async #prepare (id, kind, args, expectations, method, burn) {
+    checkOperationId(id)
+    assertMutationAuthorized(burn?.assertAuthorized)
+    if (await this.#journal.get(id)) {
+      throw new WalletRuntimeError('OPERATION_EXISTS', 'Operation ID was already recorded. Use recovery to inspect its result.')
+    }
+    await this.#journal.assertAvailable()
+    const record = {
+      id, kind, args, stage: 'starting',
+      ...(burn && { burnDestination: burn.destination, burnRecipient: { ...burn.recipient } }),
+      ...(burn?.binding && { webRgbBinding: burn.binding })
+    }
+    await this.#journal.save(record)
+    try {
       this.#assertOpen()
-      if (approved !== true) {
-        await this.#worker.request('discardPrepared', { txid })
+      assertMutationAuthorized(burn?.assertAuthorized)
+    } catch (error) {
+      // No native Begin was invoked. The durable ID remains consumed, but
+      // this record cannot block future independent wallet operations.
+      await this.#journal.save({ ...record, stage: 'declined' })
+      throw error
+    }
+    let draft
+    try {
+      draft = await this.#worker.request(method + 'Begin', args)
+    } catch (error) {
+      if (['btc-send', 'rgb-send'].includes(kind) && ['SEND_NOT_PREPARED', 'SEND_PLAN_REJECTED'].includes(error.code)) {
         await this.#journal.save({ ...record, stage: 'declined' })
-        throw rejection ?? new WalletRuntimeError('AUTHORIZATION_DECLINED', 'Transaction was declined')
       }
-
-      const signedPsbt = this.#signer.sign(prepared.psbt, expectation, plan)
-      await this.#journal.save({ ...record, stage: 'submitting' })
+      throw error
+    }
+    const { txid, psbt, batchTransferIdx } = draft
+    checkTxid(txid)
+    const expectation = { kind, maxFeeSats: this.#config.maxFeeSats, approvedOutputs: [], ...expectations }
+    Object.assign(record, { txid, stage: 'prepared', batchTransferIdx })
+    try {
+      const plan = this.#signer.inspect(psbt, expectation)
+      if (plan.txid !== txid) throw new WalletRuntimeError('PSBT_MISMATCH', 'Native transaction ID does not match the reviewed PSBT')
+      record.psbtSha256 = plan.psbtSha256
+      await this.#journal.save(record)
       this.#assertOpen()
-      const result = await this.#worker.request(method + 'End', { signedPsbt })
-      if (result?.txid !== txid) throw new WalletRuntimeError('TXID_MISMATCH', 'Submitted transaction did not match the reviewed transaction')
-      await this.#journal.save({ ...record, stage: 'submitted' })
-      return {
-        ...result,
-        ...(burn && {
-          assetId: args.assetId,
-          amount: args.amount,
-          minConfirmations: args.minConfirmations,
-          burnDestination: burn.destination,
-          burnRecipient: { ...burn.recipient }
-        })
-      }
-    })
+      const review = Object.freeze({
+        operationId: id,
+        ...args,
+        ...(burn && { burnDestination: burn.destination, burnRecipient: Object.freeze({ ...burn.recipient }) }),
+        plan
+      })
+      const prepared = { record, psbt, expectation, method, burn, plan, review }
+      this.#prepared = prepared
+      return prepared
+    } catch (error) {
+      this.#assertOpen()
+      await this.#worker.request('discardPrepared', { txid })
+      await this.#journal.save({ ...record, stage: 'declined' })
+      throw error
+    }
+  }
+
+  async #discard ({ record }) {
+    this.#prepared = undefined
+    this.#assertOpen()
+    await this.#worker.request('discardPrepared', { txid: record.txid })
+    await this.#journal.save({ ...record, stage: 'declined' })
+  }
+
+  async #authorizeAndSubmit (prepared) {
+    const { record, psbt, expectation, plan, review, method, burn } = prepared
+    let approved
+    let rejection
+    try {
+      approved = await this.#config.authorize(review)
+    } catch (error) {
+      rejection = error
+    }
+    this.#assertOpen()
+    if (approved !== true) {
+      await this.#discard(prepared)
+      throw rejection ?? new WalletRuntimeError('AUTHORIZATION_DECLINED', 'Transaction was declined')
+    }
+
+    let signedPsbt
+    try {
+      assertMutationAuthorized(burn?.assertAuthorized)
+      signedPsbt = this.#signer.sign(psbt, expectation, plan)
+    } catch (error) {
+      await this.#discard(prepared)
+      throw error
+    }
+    this.#prepared = undefined
+    await this.#journal.save({ ...record, stage: 'submitting' })
+    this.#assertOpen()
+    try {
+      assertMutationAuthorized(burn?.assertAuthorized)
+    } catch (error) {
+      await this.#discard(prepared)
+      throw error
+    }
+    const result = await this.#worker.request(method + 'End', { signedPsbt })
+    if (result?.txid !== record.txid) throw new WalletRuntimeError('TXID_MISMATCH', 'Submitted transaction did not match the reviewed transaction')
+    await this.#journal.save({ ...record, stage: 'submitted' })
+    return {
+      ...result,
+      ...(burn && {
+        assetId: record.args.assetId,
+        amount: record.args.amount,
+        minConfirmations: record.args.minConfirmations,
+        burnDestination: burn.destination,
+        burnRecipient: { ...burn.recipient }
+      })
+    }
   }
 
   getOperation (id) { return this.#run(() => this.#journal.get(id)) }
 
-  getConsignment ({ assetId, txid }) {
+  getConsignment ({ assetId, txid, webRgbScopeKey }) {
     checkAsset(assetId)
     checkTxid(txid)
+    if (webRgbScopeKey !== undefined && (typeof webRgbScopeKey !== 'string' || !HEX_32.test(webRgbScopeKey))) {
+      throw new TypeError('Invalid WebRGB proof scope')
+    }
     return this.#run(async () => {
       const records = await this.#journal.records()
-      const record = records.find(item => item.kind === 'rgb-burn' && item.args?.assetId === assetId && item.txid === txid)
+      const record = records.find(item => item.kind === 'rgb-burn' && item.args?.assetId === assetId && item.txid === txid &&
+        (webRgbScopeKey === undefined || item.webRgbBinding?.scopeKey === webRgbScopeKey))
       return (await this.#proof(record)).proof
     })
   }

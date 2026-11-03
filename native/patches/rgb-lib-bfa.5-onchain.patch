@@ -1,0 +1,201 @@
+--- a/src/wallet/offline.rs
++++ b/src/wallet/offline.rs
+@@ -12,6 +12,23 @@
+ pub(crate) const CONSIGNMENT_RCV_FILE: &str = "rcv_compose.rgbc";
+ 
+ const ASSET_ID_PREFIX: &str = "rgb:";
++
++/// Contract registration must never ask a network resolver or panic on untrusted history.
++struct ContractRegistrationResolver(ChainNet);
++
++impl ResolveWitness for ContractRegistrationResolver {
++    fn resolve_witness(&self, _: RgbTxid) -> Result<WitnessStatus, WitnessResolverError> {
++        Err(WitnessResolverError::NotSupported)
++    }
++
++    fn check_chain_net(&self, network: ChainNet) -> Result<(), WitnessResolverError> {
++        if network == self.0 {
++            Ok(())
++        } else {
++            Err(WitnessResolverError::WrongChainNet)
++        }
++    }
++}
+ 
+ pub(crate) const UDA_FIXED_INDEX: u32 = 0;
+ 
+@@ -3022,6 +3039,80 @@
+ 
+ /// Offline operations for a wallet.
+ pub trait RgbWalletOpsOffline: WalletOffline + WalletBackup {
++    /// Validate and register a standalone RGB contract without accepting a transfer.
++    ///
++    /// Only a contract file containing genesis data is accepted. Its schema and Bitcoin
++    /// network must match this wallet. If supplied, `expected_asset_id` is checked before
++    /// any wallet state is changed. Registering an already known valid contract is a no-op.
++    /// This operation creates neither a transfer nor spendable allocations; online transfer
++    /// validation still checks witnesses, external anchors and the current reject list.
++    fn import_contract(
++        &mut self,
++        contract_path: String,
++        expected_asset_id: Option<String>,
++    ) -> Result<String, Error> {
++        use rgbstd::validation::ValidationConfig;
++
++        check_file_exists(&contract_path)?;
++        let contract = match UniversalFile::load_file(&contract_path) {
++            Ok(UniversalFile::Contract(contract)) => contract,
++            _ => return Err(Error::InvalidConsignment),
++        };
++        // A standalone registration must not become an alternative transfer acceptance path.
++        if contract.bundled_witnesses().next().is_some() {
++            return Err(Error::InvalidConsignment);
++        }
++        let asset_id = contract.contract_id().to_string();
++        if let Some(expected) = expected_asset_id
++            && expected != asset_id
++        {
++            return Err(Error::ContractIdMismatch {
++                expected,
++                actual: asset_id,
++            });
++        }
++        let schema = AssetSchema::try_from(contract.schema_id())?;
++        self.check_schema_support(&schema)?;
++        let config = ValidationConfig {
++            chain_net: self.chain_net(),
++            ..Default::default()
++        };
++        let resolver = ContractRegistrationResolver(self.chain_net());
++        let mut pending = contract
++            .validate_deterministic(&schema.schema_rules(), &config)
++            .map_err(|e| Error::ConsignmentValidationFailed {
++                details: e.to_string(),
++            })?;
++        if pending.pending().unresolved_anchors().next().is_some() {
++            return Err(Error::InvalidConsignment);
++        }
++        // Genesis-only contracts cannot require witness or external-chain resolution.
++        pending.pending().resolve_all(&resolver).map_err(|e| {
++            Error::ConsignmentValidationFailed {
++                details: e.to_string(),
++            }
++        })?;
++        let valid = pending.finalize();
++        let contract_id = valid.contract_id();
++        let txn = self.database().begin_transaction()?;
++        let mut stock = self.rgb_stock(&txn)?;
++        if txn.get_asset(asset_id.clone())?.is_some() {
++            // A metadata row alone is not evidence that the wallet has its RGB genesis.
++            stock.genesis(contract_id)?;
++            txn.commit()?;
++            return Ok(asset_id);
++        }
++        stock
++            .import_contract(valid.clone(), &resolver)
++            .map_err(|e| Error::ConsignmentValidationFailed {
++                details: e.to_string(),
++            })?;
++        self.save_new_asset_internal(&txn, &stock, contract_id, schema, valid, None)?;
++        self.update_backup_info(&txn, false)?;
++        txn.commit()?;
++        Ok(asset_id)
++    }
++
+     /// Return the data that defines the wallet.
+     fn get_wallet_data(&self) -> WalletData {
+         self.wallet_data().clone()
+--- a/src/error.rs
++++ b/src/error.rs
+@@ -99,6 +99,15 @@
+     ConsignmentValidationFailed {
+         /// Error details
+         details: String,
++    },
++
++    /// A valid standalone contract differs from the asset requested by the caller.
++    #[error("Contract asset ID mismatch: expected {expected}, got {actual}")]
++    ContractIdMismatch {
++        /// Requested asset ID
++        expected: String,
++        /// Validated file asset ID
++        actual: String,
+     },
+ 
+     /// A database error has been encountered
+--- a/src/wallet/online.rs
++++ b/src/wallet/online.rs
+@@ -81,6 +81,26 @@
+     })?;
+ 
+     Ok(indexer_config.protocol())
++}
++
++// A mint with a concealed or unrelated extra output must never cause the recipient to
++// acknowledge a lock larger than the amount it receives.
++fn mint_amount_matches(requested: Option<u64>, amounts: impl Iterator<Item = u64>, total: u64) -> bool {
++    total != 0
++        && requested.is_none_or(|amount| amount == total)
++        && amounts.into_iter().try_fold(0u64, u64::checked_add) == Some(total)
++}
++
++#[cfg(test)]
++#[test]
++fn mint_conservation_requires_full_fixed_and_amountless_receipt() {
++    assert!(mint_amount_matches(Some(10), [4, 6].into_iter(), 10));
++    assert!(mint_amount_matches(None, [10].into_iter(), 10));
++    assert!(!mint_amount_matches(Some(9), [9].into_iter(), 10));
++    assert!(!mint_amount_matches(None, [9].into_iter(), 10));
++    assert!(!mint_amount_matches(Some(11), [10].into_iter(), 10));
++    assert!(!mint_amount_matches(None, [u64::MAX, 2].into_iter(), 1));
++    assert!(!mint_amount_matches(None, [0].into_iter(), 0));
+ }
+ 
+ /// Parse and validate the [`OnlineOptions::proxy_auth_keys`], keying them by proxy URL.
+@@ -2765,16 +2785,18 @@
+         Ok(Some((valid_consignment, validation_status, receiving)))
+     }
+ 
+-    /// Whether a received mint pays the amount requested by the invoice, if it requests one: the
+-    /// lock on the external chain has to match the amount minted, so a mint of another amount
+-    /// than the agreed one is refused before the lock is made.
+-    fn mint_pays_requested(transfer: &DbTransfer, receiving: &HashMap<Opout, Assignment>) -> bool {
+-        match transfer.requested_assignment {
+-            Some(Assignment::Fungible(requested)) => {
+-                receiving.values().map(|a| a.main_amount()).sum::<u64>() == requested
+-            }
+-            _ => true,
+-        }
++    /// Require the receiver to get the entire externally backed mint, and match a fixed
++    /// invoice amount when supplied. An amountless invoice never waives conservation.
++    fn mint_pays_requested(
++        transfer: &DbTransfer,
++        receiving: &HashMap<Opout, Assignment>,
++        total_minted: u64,
++    ) -> bool {
++        let requested = match transfer.requested_assignment {
++            Some(Assignment::Fungible(requested)) => Some(requested),
++            _ => None,
++        };
++        mint_amount_matches(requested, receiving.values().map(Assignment::main_amount), total_minted)
+     }
+ 
+     fn save_received_mint(
+@@ -3135,7 +3157,7 @@
+                             updated_batch_transfer,
+                         );
+                     };
+-                    if !Self::mint_pays_requested(transfer, &receiving) {
++                    if !Self::mint_pays_requested(transfer, &receiving, received_mint.amount) {
+                         return self.refuse_consignment(
+                             txn,
+                             &mode,
+@@ -3172,7 +3194,7 @@
+             );
+         };
+         if let Some(received_mint) = &received_mint {
+-            if !Self::mint_pays_requested(transfer, &receiving) {
++            if !Self::mint_pays_requested(transfer, &receiving, received_mint.amount) {
+                 return self.refuse_consignment(
+                     txn,
+                     &mode,

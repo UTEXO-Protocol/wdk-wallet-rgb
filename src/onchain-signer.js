@@ -6,6 +6,7 @@ import { HDKey } from '@scure/bip32'
 import { p2tr, Transaction } from '@scure/btc-signer'
 import { RawPSBTV0 } from '@scure/btc-signer/psbt.js'
 import { sha256 } from '@noble/hashes/sha2.js'
+import { bip322MessageBytes, bip322Network, signTaprootBip322 } from './onchain-message.js'
 
 const HARDENED = 0x80000000
 const MAX_INDEX = HARDENED - 1
@@ -74,12 +75,12 @@ function branchKey (root, coin) {
   }
 }
 
-function publicPaymentScript (script) {
+export function publicPaymentScript (script) {
   return /^(?:0014[0-9a-f]{40}|0020[0-9a-f]{64}|5120[0-9a-f]{64}|76a914[0-9a-f]{40}88ac|a914[0-9a-f]{40}87)$/.test(script)
 }
 
 /**
- * @typedef {{index: number, scriptHex: string, amountSats: string}} ApprovedOutput
+ * @typedef {{index?: number, scriptHex: string, amountSats: string}} ApprovedOutput
  * @typedef {{
  *   kind: 'btc-send'|'rgb-output'|'rgb-send'|'rgb-burn',
  *   maxFeeSats: string,
@@ -97,7 +98,8 @@ function normalizeExpectation (expectation) {
   const { kind } = expectation
   const maxFee = amount(expectation.maxFeeSats, 'INVALID_EXPECTATION', true)
   const approved = Array.from(expectation.approvedOutputs, output => {
-    if (!output || !Number.isInteger(output.index) || output.index < 0 || output.index >= MAX_ITEMS ||
+    if (!output || (output.index !== undefined &&
+        (!Number.isInteger(output.index) || output.index < 0 || output.index >= MAX_ITEMS)) ||
         typeof output.scriptHex !== 'string' || !publicPaymentScript(output.scriptHex)) {
       refuse('INVALID_EXPECTATION', 'The reviewed payment output is invalid.')
     }
@@ -166,11 +168,14 @@ export function deriveOnchainSigner (seedBytes, { network } = {}) {
   let vanilla
   let colored
   let fingerprint
+  let messagePayment
   try {
     root = HDKey.fromMasterSeed(seed, versions)
     fingerprint = root.fingerprint
     vanilla = branchKey(root, coins.vanilla)
     colored = branchKey(root, coins.colored)
+    const messageKey = ownedChild(vanilla.publicKey, 0).publicKey.subarray(1)
+    messagePayment = p2tr(messageKey, undefined, bip322Network(network))
   } catch {
     vanilla?.privateKey?.wipePrivateData()
     colored?.privateKey?.wipePrivateData()
@@ -230,6 +235,7 @@ export function deriveOnchainSigner (seedBytes, { network } = {}) {
     const rgb = policy.kind === 'rgb-burn' || policy.kind === 'rgb-send'
     let markerCount = 0
     let colorableCount = 0
+    let approvedCount = 0
     let totalInput = BigInt(0)
     let totalOutput = BigInt(0)
     for (let i = 0; i < tx.inputsLength; i++) {
@@ -272,12 +278,14 @@ export function deriveOnchainSigner (seedBytes, { network } = {}) {
       checkAmountSum(totalOutput)
       const scriptHex = hex.encode(output.script)
       const amountSats = output.amount.toString()
-      const approved = policy.approved.find(entry => entry.index === i)
+      const approved = policy.approved.find(entry => entry.index === i ||
+        (entry.index === undefined && entry.scriptHex === scriptHex && entry.amountSats === amountSats))
       let role
       if (approved) {
         if (approved.scriptHex !== scriptHex || approved.amountSats !== amountSats) {
           refuse('OUTPUT_MISMATCH', 'A payment output differs from the reviewed destination or amount.')
         }
+        approvedCount++
         role = 'approved'
       } else if (scriptHex.startsWith('6a')) {
         if (!rgb || i !== 0 || !/^6a20[0-9a-f]{64}$/.test(scriptHex) || output.amount !== BigInt(0)) {
@@ -299,7 +307,7 @@ export function deriveOnchainSigner (seedBytes, { network } = {}) {
       }
       outputs.push(Object.freeze({ index: i, scriptHex, amountSats, role }))
     }
-    if (policy.approved.some(entry => entry.index >= tx.outputsLength) ||
+    if (approvedCount !== policy.approved.length ||
         markerCount !== (rgb ? 1 : 0) ||
         (policy.colorable && policy.colorable.count !== colorableCount)) {
       refuse('OUTPUT_MISMATCH', 'The transaction is missing an output required by the review.')
@@ -325,6 +333,27 @@ export function deriveOnchainSigner (seedBytes, { network } = {}) {
 
   return Object.freeze({
     identity,
+    getMessageSigningAddress () {
+      assertActive()
+      return messagePayment.address
+    },
+    signMessageBip322 (message, address) {
+      assertActive()
+      if (address !== messagePayment.address) {
+        refuse('MESSAGE_ADDRESS_MISMATCH', 'The address is not the wallet message-signing address.')
+      }
+      const bytes = bip322MessageBytes(message)
+      const child = ownedChild(vanilla.privateKey, 0)
+      const secret = child.privateKey
+      try {
+        return signTaprootBip322(bytes, messagePayment.script, secret)
+      } catch {
+        refuse('SIGNING_FAILED', 'The reviewed message could not be signed safely.')
+      } finally {
+        secret?.fill(0)
+        child.wipePrivateData()
+      }
+    },
     /** @param {string} psbt @param {OnchainSigningExpectation} expectation */
     inspect (psbt, expectation) {
       const admitted = evaluate(psbt, expectation)

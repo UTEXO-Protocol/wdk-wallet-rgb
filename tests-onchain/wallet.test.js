@@ -96,14 +96,14 @@ test('manager requires a loopback fixture profile and owns a copied seed', async
   const seed = Uint8Array.from({ length: 64 }, (_, i) => i + 1)
   const config = {
     network: 'regtest',
-    indexerUrl: 'http://127.0.0.1:3002',
+    indexerUrl: 'tcp://127.0.0.1:50001',
     transportEndpoint: 'rpc://127.0.0.1:3003/json-rpc',
     maxFeeSats: '2000',
     authorize: () => false,
     burnDestinationRoutes: routes
   }
   assert.throws(() => new WalletManagerRgb(seed, { ...config, network: 'signet' }), /isolated regtest/)
-  assert.throws(() => new WalletManagerRgb(seed, { ...config, indexerUrl: 'https://example.com' }), /loopback/)
+  assert.throws(() => new WalletManagerRgb(seed, { ...config, indexerUrl: 'ssl://example.com:50002' }), /loopback/)
   assert.throws(() => new WalletManagerRgb(seed, { ...config, burnDestinationRoutes: [{ chainId: 'eip155:1', dstEid: 0 }] }), /route/)
   const manager = new WalletManagerRgb(seed, config)
   assert.equal(manager.seed, undefined)

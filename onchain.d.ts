@@ -13,6 +13,10 @@ export type Proof = {
 }
 export type Review = Readonly<{
   operationId: string
+  address?: string
+  invoice?: string
+  recipientId?: string
+  witnessAmountSat?: string
   burnDestination?: BurnDestination
   burnRecipient?: BurnRecipient
   assetId?: string
@@ -23,7 +27,7 @@ export type Review = Readonly<{
   feeRate: string
   minConfirmations?: number
   plan: Readonly<{
-    kind: 'rgb-output' | 'rgb-burn'
+    kind: 'rgb-output' | 'rgb-burn' | 'btc-send' | 'rgb-send'
     txid: string
     psbtSha256: string
     feeSats: string
@@ -35,27 +39,83 @@ export type Review = Readonly<{
 type SharedCandidateConfig = {
   network: 'regtest'
   dataDir: string
+  indexerUrl: `${'tcp' | 'ssl'}://${string}`
   transportEndpoint: string
   maxFeeSats: BaseUnits
   evmRpcUrls?: Record<string, string>
   proxyAuthKeys?: Record<string, string>
   burnDestinationRoutes?: readonly BurnRoute[]
   authorize(review: Review): boolean | Promise<boolean>
+  authorizeMessage?(review: MessageReview): boolean | Promise<boolean>
 }
 export type CandidateConfig = SharedCandidateConfig & ({
   nativeExecutable: string
   nativeSha256: string
-  indexerUrl: string
-  bitcoindAuth?: { username: string; password: string }
+  androidNativeLibraryDir?: never
 } | {
   nativeExecutable?: never
   androidNativeLibraryDir?: string
   nativeSha256?: string
-  indexerUrl: `${'tcp' | 'ssl'}://${string}`
-  bitcoindAuth?: never
 })
-type Balance = { settled: string; future: string; spendable: string }
+export type MessageReview = Readonly<{ kind: 'bip322'; message: string; address: string; messageSha256: string }>
+export type Balance = { settled: string; future: string; spendable: string }
+export type AssetView = {
+  assetId: string
+  schema: 'Nia' | 'Uda' | 'Cfa' | 'Ifa' | 'Bfa'
+  name: string
+  ticker: string | null
+  precision: number
+  balance: Balance
+}
+export type WalletTransaction = {
+  type: 'RgbSend' | 'Drain' | 'CreateUtxos' | 'SendBtc' | 'Incoming'
+  txid: string
+  received: string
+  sent: string
+  fee: string
+  confirmationTime: { height: number; timestamp: string } | null
+}
+export type Transfer = {
+  idx: number
+  batchTransferIdx: number
+  status: string
+  kind: string
+  txid: string | null
+  recipientId: string | null
+  assignments: Record<string, string | true>[]
+}
+export type RefreshResult = { transfers: {
+  batchTransferIdx: number
+  status: string | null
+  failure: { code: string; message: string } | null
+}[] }
+export type ReceiveRequest = { assetId?: string; amount?: BaseUnits; expirationSeconds?: number; minConfirmations?: number }
+export type ReceiveInvoice = {
+  invoice: string; recipientId: string; expirationTimestamp: string; batchTransferIdx: number; publicKey?: string
+}
+export type DecodedInvoice = {
+  recipientId: string; assetId: string | null; network: string; schema: string | null;
+  assignment: Record<string, string | true>; expirationTimestamp: string | null;
+  transportEndpoints: string[]; publicKey: string | null;
+  recipientType: 'Blind' | 'Witness'; witnessScriptHex: string | null
+}
 type Operation = { txid: string; batchTransferIdx?: number; created?: number }
+export type OperationRecord = {
+  id: string
+  kind: Review['plan']['kind']
+  stage: 'starting' | 'prepared' | 'submitting' | 'declined' | 'submitted' | 'failed'
+  txid?: string
+  psbtSha256?: string
+  batchTransferIdx?: number
+}
+export type OutputRequest = { operationId: string; count: number; size: BaseUnits; feeRate: BaseUnits }
+export type PreparedOutputIdentity = { operationId: string; psbtSha256: string }
+export type BtcSendRequest = { operationId: string; address: string; amount: BaseUnits; feeRate: BaseUnits }
+export type RgbSendRequest = {
+  operationId: string; invoice: string; assetId: string; amount: BaseUnits; feeRate: BaseUnits;
+  minConfirmations?: number; witnessAmountSats?: BaseUnits
+}
+export type SendStatus = { state: 'submitted' | 'failed' | 'unresolved'; txid: string; batchTransferIdx?: number }
 export type BurnRequest = {
   operationId: string
   assetId: string
@@ -68,7 +128,12 @@ export type BurnRequest = {
 export class WalletAccountRgb {
   private constructor()
   readonly disposed: boolean
+  readonly path: "0'/0/0"
+  readonly keyPair: null
   dispose(): Promise<void>
+  shutdown(): Promise<void>
+  isDisposed(): boolean
+  getNetwork(): 'regtest'
   getInfo(): {
     ready: boolean
     network: 'regtest'
@@ -79,23 +144,49 @@ export class WalletAccountRgb {
     burnRecipientNamespaces?: string[]
   }
   getAddress(): Promise<string>
+  getNewAddress(): Promise<string>
+  getCapabilities(): { bip322: { signing: true; verification: true; protocol: 'bip322-simple'; specVersion: '2.0.0'; addressTypes: readonly string[]; verificationAddressTypes: readonly string[] } | { status: 'unavailable'; reason: string } }
+  getMessageSigningAddress(): Promise<string>
+  signMessageBip322(message: string, address: string): Promise<string>
+  verifyMessageBip322(message: string, address: string, signature: string): Promise<boolean>
+  getBalance(): Promise<bigint>
+  getTokenBalance(assetId: string): Promise<bigint>
+  getBalanceDetails(): Promise<{ vanilla: Balance; colored: Balance }>
+  listAssets(): Promise<AssetView[]>
+  getTransactions(): Promise<WalletTransaction[]>
+  getAssetMetadata(assetId: string): Promise<unknown>
+  estimateFeeResult(blocks?: number): Promise<{ feeRate: string }>
+  decodeRgbInvoice(invoice: string): Promise<DecodedInvoice>
+  sendBtc(request: BtcSendRequest): Promise<Operation>
+  sendRgbInvoice(request: RgbSendRequest): Promise<Operation>
+  recoverSend(operationId: string): Promise<SendStatus>
   getBtcBalance(): Promise<{ vanilla: Balance; colored: Balance }>
   getAssetBalance(assetId: string): Promise<Balance>
   getReceivedMint(recipientId: string): Promise<{
     opid: string; amount: string; beforeBlock: string; evmChainId: string; bridgeContract: string
   } | null>
   listUnspents(): Promise<unknown[]>
-  listTransfers(filter?: { assetId?: string; txid?: string }): Promise<unknown[]>
-  refresh(assetId?: string): Promise<unknown>
+  listTransfers(filter?: { assetId?: string; txid?: string }): Promise<Transfer[]>
+  refresh(assetId?: string): Promise<RefreshResult>
+  refreshTransfers(options?: { assetId?: string }): Promise<RefreshResult>
+  sync(): Promise<RefreshResult>
   registerAssetContract(options: { contract: Uint8Array; assetId: string; sha256: string }): Promise<{ assetId: string }>
-  blindReceive(options?: { assetId?: string; amount?: BaseUnits; expirationSeconds?: number; minConfirmations?: number }): Promise<{
-    invoice: string; recipientId: string; expirationTimestamp: string; batchTransferIdx: number; publicKey?: string
-  }>
-  createUtxos(options: { operationId: string; count: number; size: BaseUnits; feeRate: BaseUnits }): Promise<Operation>
+  importRgbContract(options: { contract: Uint8Array; assetId: string; sha256: string }): Promise<{ assetId: string }>
+  blindReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>
+  witnessReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>
+  createRgbInvoice(options?: ReceiveRequest & { mode?: 'blind' | 'witness' }): Promise<ReceiveInvoice>
+  getInvoiceStatus(recipientId: string): Promise<Transfer | null>
+  createUtxos(options: OutputRequest): Promise<Operation>
+  prepareCreateUtxos(options: OutputRequest): Promise<Review>
+  commitPreparedCreateUtxos(options: PreparedOutputIdentity): Promise<Operation>
+  cancelCreateUtxosPlan(options: PreparedOutputIdentity): Promise<void>
+  getCreateUtxosOperation(operationId: string): Promise<OperationRecord | undefined>
+  listCreateUtxosOperations(): Promise<OperationRecord[]>
+  recoverCreateUtxos(operationId: string): Promise<OperationRecord>
   burnAsset(options: BurnRequest): Promise<Operation & {
     assetId: string; amount: string; minConfirmations: number; burnRecipient: BurnRecipient; burnDestination: BurnDestination
   }>
-  getOperation(operationId: string): Promise<unknown>
+  getOperation(operationId: string): Promise<OperationRecord | undefined>
   getConsignment(options: { assetId: string; txid: string }): Promise<Proof>
   recoverBurn(operationId: string): Promise<{ txid: string; assetId: string; burnDestination: BurnDestination; proof: Proof }>
 }
@@ -103,6 +194,9 @@ export class WalletManagerRgb {
   constructor(seed: string | Uint8Array, options: CandidateConfig)
   readonly disposed: boolean
   getAccount(index?: 0): Promise<WalletAccountRgb>
+  getAccountByPath(path: "0'/0/0"): Promise<WalletAccountRgb>
+  getFeeRates(): Promise<{ normal: bigint; fast: bigint }>
+  shutdown(): Promise<void>
   dispose(): Promise<void>
   static getRandomSeedPhrase(wordCount?: 12 | 24): string
   static isValidSeedPhrase(seedPhrase: string): boolean
@@ -114,3 +208,15 @@ export class WalletRuntimeError extends Error {
 export function burnDestinationFor(payout: BurnRecipient, routes: readonly BurnRoute[]): BurnDestination
 export function burnDestinationHash(value: BurnDestination): string
 export function createBurnPackage(proof: Uint8Array, value: BurnDestination): string
+
+export type ApprovalTicket = Readonly<{ generation: string; token: string; digest: string }>
+export function createWorkletApproval(options: {
+  generation: string
+  timeoutMs?: number
+  onRequest(request: ApprovalTicket & { readonly review: Review | MessageReview }): void | Promise<void>
+}): Readonly<{
+  authorize(review: Review): Promise<boolean>
+  authorizeMessage(review: MessageReview): Promise<boolean>
+  respond(decision: ApprovalTicket & { approved: boolean }): boolean
+  close(): void
+}>

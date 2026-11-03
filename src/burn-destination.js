@@ -1,8 +1,8 @@
 // Copyright 2026 UTEXO. Licensed under the Apache License, Version 2.0.
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3.js'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js'
-import { base58check, base64 } from '@scure/base'
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js'
+import { ascii, base58check, base64 } from '@scure/base'
 
 export const MAX_BURN_PROOF_BYTES = 10 * 1024 * 1024
 const TYPE = 'UtexoBurnDestinationV1(uint64 destinationChainId,uint32 dstEid,bytes recipient)'
@@ -19,7 +19,7 @@ function payoutRecipient (chainId, address) {
     }
     const body = address.slice(2)
     if (body !== body.toLowerCase() && body !== body.toUpperCase()) {
-      const hash = bytesToHex(keccak256(utf8ToBytes(body.toLowerCase())))
+      const hash = bytesToHex(keccak256(ascii.decode(body.toLowerCase())))
       if ([...body].some((letter, index) => /[a-f]/i.test(letter) &&
         (Number.parseInt(hash[index], 16) >= 8 ? letter !== letter.toUpperCase() : letter !== letter.toLowerCase()))) {
         throw new TypeError('Invalid EVM payout address checksum')
@@ -61,7 +61,7 @@ export function validateBurnDestination (value) {
 export function burnDestinationHash (value) {
   const destination = validateBurnDestination(value)
   const encoded = new Uint8Array(128)
-  encoded.set(keccak256(utf8ToBytes(TYPE)))
+  encoded.set(keccak256(ascii.decode(TYPE)))
   const view = new DataView(encoded.buffer)
   view.setBigUint64(56, BigInt(destination.destinationChainId))
   view.setUint32(92, destination.dstEid)
