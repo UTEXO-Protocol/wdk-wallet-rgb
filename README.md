@@ -1,5 +1,9 @@
 # @utexo/wdk-wallet-rgb
 
+> **Local on-chain candidate**
+> The private `2.1.0-alpha.0` tarball uses the new Node regtest runtime. See [CANDIDATE.md](CANDIDATE.md) for its API, native build and verification. The documentation below describes the previous package line.
+
+
 [![Built with WDK](./assets/built-with-wdk.png)](https://github.com/tetherto/wdk)
 
 > **Beta notice:** This package is currently in beta. Please test thoroughly in development environments before using in production.
