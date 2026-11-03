@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""Run the prepared RGB overlay's local Electrum test with the SDK Cargo lock."""
+
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parent.parent
+PREPARED = ROOT / ".sources" / "rgb-lib-bfa-bare"
+
+
+def run_loopback_test(work):
+    fixture_rgb = work / ".sources" / PREPARED.name
+    shutil.copytree(PREPARED, fixture_rgb, ignore=shutil.ignore_patterns(".git", "target"))
+    # Give both test packages their own Cargo identity. A shared target cache
+    # must never supply this fixture's RGB library or stub main to a real build.
+    rgb_manifest = fixture_rgb / "Cargo.toml"
+    rgb_manifest.write_text(
+        rgb_manifest.read_text().replace('name = "rgb-lib"', 'name = "rgb-lib-dev-fixture"', 1)
+    )
+    manifest = (ROOT / "Cargo.toml").read_text()
+    (work / "Cargo.toml").write_text(
+        manifest.replace('name = "utexo-rgb-native"', 'name = "utexo-rgb-native-dev-fixture"', 1)
+        .replace("rgb-lib = { path = ", 'rgb-lib = { package = "rgb-lib-dev-fixture", path = ', 1)
+    )
+    lock = (ROOT / "Cargo.lock").read_text()
+    (work / "Cargo.lock").write_text(
+        lock.replace('"rgb-lib"', '"rgb-lib-dev-fixture"')
+        .replace('"utexo-rgb-native"', '"utexo-rgb-native-dev-fixture"')
+    )
+    (work / "src").mkdir()
+    (work / "src/main.rs").write_text("fn main() {}\n")
+    (work / "tests").mkdir()
+    (work / "tests/checkpoint.rs").write_text(
+        "#[test]\nfn rgb_dev_checkpoint() { rgb_lib::no_wallet::run_dev_signet_fixture(); }\n"
+    )
+
+    validation = fixture_rgb / "src/no_wallet/validation.rs"
+    source = validation.read_text()
+    # Cargo builds rgb-lib as a dependency without cfg(test). Expose its existing
+    # loopback-only exception in this temporary fixture copy.
+    transport = '    #[cfg(test)]\n    if url.starts_with("tcp://127.0.0.1:")'
+    if source.count(transport) != 1:
+        raise SystemExit("The prepared overlay does not contain the expected loopback guard.")
+    source = source.replace(transport, transport.split("\n", 1)[1])
+    constants = "\n".join(
+        next(line for line in source.splitlines() if line.startswith(f"    const {name}:"))
+        for name in ("DEV_HEADER", "PUBLIC_HEADER")
+    )
+    signature = "    #[test]\n    fn dev_signet_checkpoint_checks_indexer_and_witness_resolver_independently()"
+    start = source.index('    #[cfg(feature = "electrum")]\n' + signature)
+    fixture = source[start:source.rindex("\n}")].replace(signature, "    pub(crate) fn run()", 1)
+    validation.write_text(
+        source + '\n#[cfg(feature = "electrum")]\npub(crate) mod dev_signet_fixture {\n'
+        + "    use super::*;\n" + constants + "\n" + fixture + "\n}\n"
+    )
+    module = fixture_rgb / "src/no_wallet/mod.rs"
+    module.write_text(
+        module.read_text()
+        + "\n#[doc(hidden)]\npub fn run_dev_signet_fixture() { validation::dev_signet_fixture::run(); }\n"
+    )
+    subprocess.run(
+        [
+            "cargo", "+1.94.0", "test", "--release", "--offline", "--locked", "-j", "2",
+            "--manifest-path", str(work / "Cargo.toml"), "--test", "checkpoint",
+        ],
+        check=True,
+    )
+
+
+if __name__ == "__main__":
+    if not PREPARED.is_dir():
+        raise SystemExit("Prepare the pinned Bare RGB source before running this offline check.")
+    subprocess.run([sys.executable, str(ROOT / "scripts/prepare-source.py"), "--bare"], check=True)
+    with tempfile.TemporaryDirectory(prefix="iris-rgb-checkpoint-test.") as scratch:
+        run_loopback_test(Path(scratch))

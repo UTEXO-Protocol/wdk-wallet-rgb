@@ -40,7 +40,7 @@ mod journal;
 mod send;
 
 const SOURCE: &str = "0a9d352f2690902df2b6fae9bca1a6c13c3354d4";
-const OVERLAY: &str = "be8930be04b8d65a704333fe7c215ba1f2186c35";
+const OVERLAY: &str = "355066212303a8a67fe42d507891a22764aedbd8";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -285,6 +285,7 @@ struct Session {
     journal_identity: String,
     journal_mode: journal::Mode,
     network: BitcoinNetwork,
+    profile: Option<crate::profile::Profile>,
     online: Option<Online>,
     indexer_url: Option<String>,
     prepared: Option<Prepared>,
@@ -559,12 +560,18 @@ impl Worker {
                 }
                 let p: Open = decode(params)?;
                 let network = chain(&p.network)?;
-                let staging = network == BitcoinNetwork::Signet && p.mode == journal::Mode::Rgb;
-                if staging && p.profile.is_none() {
-                    return Err(fault("RGB_MODE_UNAVAILABLE", "Signet RGB requires the explicit staging profile."));
+                let signet_rgb = network == BitcoinNetwork::Signet && p.mode == journal::Mode::Rgb;
+                if signet_rgb && p.profile.is_none() {
+                    return Err(fault(
+                        "RGB_MODE_UNAVAILABLE",
+                        "Signet RGB requires an explicit profile.",
+                    ));
                 }
-                if !staging && p.profile.is_some() {
-                    return Err(input("The staging profile requires a Signet RGB wallet."));
+                if let Some(profile) = p.profile {
+                    if !signet_rgb {
+                        return Err(input("The selected profile requires a Signet RGB wallet."));
+                    }
+                    profile.services()?;
                 }
                 if !lower_hex(&p.master_fingerprint, 8)
                     || !(100..=120).contains(&p.account_xpub_vanilla.len())
@@ -634,6 +641,7 @@ impl Worker {
                     journal_identity,
                     journal_mode: p.mode,
                     network,
+                    profile: p.profile,
                     online: None,
                     indexer_url: None,
                     prepared: None,
@@ -660,8 +668,14 @@ impl Worker {
 
 impl Session {
     fn validate_wallet_proxy(&self, endpoint: &str) -> Result<()> {
-        if self.network == BitcoinNetwork::Signet && endpoint != crate::profile::STAGING_PROXY {
-            return Err(input("The wallet requires the approved staging RGB proxy."));
+        if self.network == BitcoinNetwork::Signet {
+            let services = self
+                .profile
+                .ok_or_else(|| input("RGB proxy requires a Signet RGB profile."))?
+                .services()?;
+            if endpoint != services.proxy {
+                return Err(input("The wallet requires the approved RGB proxy for its Signet profile."));
+            }
         }
         validate_proxy(endpoint, self.network == BitcoinNetwork::Regtest)
     }
@@ -841,11 +855,13 @@ impl Session {
     fn go_online(&mut self, mut p: GoOnline) -> Result<Value> {
         self.idle()?;
         let regtest = self.network == BitcoinNetwork::Regtest;
-        let config = crate::profile::indexer(p.indexer_url, p.bitcoind_auth.take(), self.network)?;
-        let rgb_lib::wallet::IndexerConfig::Electrum { url: indexer_url } = &config else {
-            unreachable!("the profile admits only Electrum");
-        };
-        let indexer_url = indexer_url.clone();
+        let config = crate::profile::indexer(
+            p.indexer_url,
+            p.bitcoind_auth.take(),
+            self.network,
+            self.profile,
+        )?;
+        let indexer_url = config.url().to_owned();
         if self.journal_mode == journal::Mode::BtcOnly
             && (!p.evm_rpc_urls.is_empty() || !p.proxy_auth_keys.is_empty())
         {
@@ -854,15 +870,17 @@ impl Session {
             }
             return Err(input("Bitcoin-only mode does not accept RGB service configuration."));
         }
-        if self.network == BitcoinNetwork::Signet && self.journal_mode == journal::Mode::Rgb
-            && (p.evm_rpc_urls.len() != 1
-                || p.evm_rpc_urls.get("42161").map(String::as_str) != Some(crate::profile::STAGING_ARBITRUM_RPC)
-                || !p.proxy_auth_keys.is_empty())
-        {
-            for secret in p.proxy_auth_keys.values_mut() {
-                secret.zeroize();
+        if let Some(profile) = self.profile {
+            let services = profile.services()?;
+            if p.evm_rpc_urls.len() != 1
+                || p.evm_rpc_urls.get("42161").map(String::as_str) != Some(services.arbitrum_rpc)
+                || !p.proxy_auth_keys.is_empty()
+            {
+                for secret in p.proxy_auth_keys.values_mut() {
+                    secret.zeroize();
+                }
+                return Err(input("Signet RGB requires the approved Arbitrum RPC without proxy credentials."));
             }
-            return Err(input("Staging requires its approved Arbitrum RPC without proxy credentials."));
         }
         if p.evm_rpc_urls.len() > 16 || p.proxy_auth_keys.len() > 16 {
             return Err(input("Too many network endpoints."));
@@ -1574,6 +1592,20 @@ mod tests {
         assert_eq!(worker.dispatch("discardUnsubmitted", json!({
             "kind": "rgb-output", "checkpoint": [],
         })).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
+    }
+
+    #[test]
+    fn dev_signet_open_is_rejected_before_creating_wallet_state() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut params = open_params(dir.path(), "signet");
+        params["profile"] = json!("dev");
+        let mut worker = Worker::default();
+
+        let error = worker.dispatch("open", params).unwrap_err();
+        assert_eq!(error.code, "INVALID_PARAMS");
+        assert_eq!(error.message, "Dev Signet hosted access is disabled.");
+        assert!(worker.session.is_none());
+        assert!(dir.path().read_dir().unwrap().next().is_none());
     }
 
     #[test]

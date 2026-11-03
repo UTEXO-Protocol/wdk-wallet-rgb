@@ -20,6 +20,7 @@ const libraries = ['libc.so', 'libdl.so', 'liblog.so', 'libm.so']
 const exportsExpected = ['bare_get_module_name_v0', 'bare_register_module_v0']
 const soname = `libutexo__wdk-wallet-rgb.${version}.so`
 const expectedCargoLock = 'ce7ea2cc6419c07d2625ba642e6e6ff84f7390362864734d2f7c97209df1b42e'
+const expectedIntegrationTree = '6d46c5d44748e713fc5acfcef014fd7077261380'
 const page = 16 * 1024
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
 const ensure = (condition, message) => {
@@ -60,8 +61,9 @@ function exportsOf (elf) {
     .map(symbol => symbol.Name.Name.replace('@@', '@')))
 }
 
-const elf = readElf(addon)
 const bytes = readFileSync(addon)
+ensure(bytes.includes(Buffer.from(expectedIntegrationTree)), 'The addon does not contain the expected native tree identity')
+const elf = readElf(addon)
 ensure(elf.FileSummary.Format === 'elf64-littleaarch64' && elf.ElfHeader.Type === 'SharedObject (0x3)' &&
   elf.FileSummary.LoadName === soname, 'Unexpected AArch64 addon format or SONAME')
 const loads = segments(elf, 'PT_LOAD')
@@ -121,7 +123,7 @@ console.log(JSON.stringify({
   nativeEngineSha256: hash(readFileSync(join(root, 'src/engine.rs'))),
   rgb: {
     revision: '0a9d352f2690902df2b6fae9bca1a6c13c3354d4',
-    integrationTree: '3697d02a29d126acb22aaf9ac19cccf9412cce84',
+    integrationTree: expectedIntegrationTree,
     features: ['electrum', 'camel_case']
   },
   loadAlignments: loads.map(load => load.Alignment),

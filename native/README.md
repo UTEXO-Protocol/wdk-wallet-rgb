@@ -2,7 +2,30 @@
 
 This directory contains the watch-only RGB engine and its host adapters. Node launches the worker over private pipes. Bare loads an in-process Electrum-only addon on a dedicated JS worker thread. The host owns transaction authorization, the signer and the durable operation journal. See [Bare build and qualification](bare/README.md) for that profile.
 
-The exact private source base is [rgb-lib-bfa BFA.5](https://github.com/UTEXO-Protocol/rgb-lib-bfa/releases/tag/v0.3.0-beta.7-upstream-dev-bfa.5), commit `0a9d352f2690902df2b6fae9bca1a6c13c3354d4`, base tree `5b54078be8e447f7959359b10dfb393649ab9840`. The local candidate patch registers a validated genesis-only contract using the narrow part of [RGB #4](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/4) and applies full mint conservation from [RGB #8](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/8) with checked addition to both receive paths. The overlay carries only the on-chain changes needed by this engine. The resulting Git tree is `be8930be04b8d65a704333fe7c215ba1f2186c35`. The functional patches are `patches/rgb-lib-bfa.5-onchain.patch`, `patches/rgb-lib-bfa.5-public-signet.patch`, `patches/rgb-lib-bfa.5-native-egress.patch` and `patches/rgb-lib-bfa.5-staging-evm-egress.patch`. Public networks require HTTPS for peer proxy, issuer reject-list and EVM RPC requests. The shared HTTP connector rejects non-public literals and DNS answers, disables redirects, environment proxies and transport retries, and preserves loopback endpoints for Regtest. The private source checkout stays under the ignored build-only `.sources` directory.
+The exact private source base is [rgb-lib-bfa BFA.5](https://github.com/UTEXO-Protocol/rgb-lib-bfa/releases/tag/v0.3.0-beta.7-upstream-dev-bfa.5), commit `0a9d352f2690902df2b6fae9bca1a6c13c3354d4`, base tree `5b54078be8e447f7959359b10dfb393649ab9840`. The local candidate patch registers a validated genesis-only contract using the narrow part of [RGB #4](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/4) and applies full mint conservation from [RGB #8](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/8) with checked addition to both receive paths. The overlay carries only the on-chain changes needed by this engine. The Dev checkpoint candidate uses functional tree `355066212303a8a67fe42d507891a22764aedbd8` and Bare tree `6d46c5d44748e713fc5acfcef014fd7077261380`. The functional patches are `patches/rgb-lib-bfa.5-onchain.patch`, `patches/rgb-lib-bfa.5-public-signet.patch`, `patches/rgb-lib-bfa.5-native-egress.patch`, `patches/rgb-lib-bfa.5-staging-evm-egress.patch` and `patches/rgb-lib-bfa.5-dev-signet.patch`. Public networks require HTTPS for peer proxy, issuer reject-list and EVM RPC requests. The shared HTTP connector rejects non-public literals and DNS answers, disables redirects, environment proxies and transport retries, and preserves loopback endpoints for Regtest. The private source checkout stays under the ignored build-only `.sources` directory.
+
+## Dev checkpoint candidate
+
+The Dev profile binds both Electrum clients to Signet genesis and Dev block one
+(`0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb`). The
+witness resolver checks verbose transaction support using a transaction from
+Dev's block one. The native profile has no admitted Dev services, so opening it
+fails before wallet storage or network access. Activation needs the confirmed
+Dev deployment, issuer-approved USDT export and TLS Electrum endpoint.
+
+This source candidate has new native tree identities. The existing alpha.7 pack
+and Iris APK use the earlier qualified identities. A candidate worker cannot pass
+their identity checks. Android repacking and Iris admission belong to the Dev
+activation step.
+
+The loopback matrix uses the historical Dev and public Signet headers. Run it
+after preparing the pinned Bare RGB source. The script uses the SDK lockfile and
+gives the temporary test packages separate Cargo identities.
+
+```sh
+env MACOSX_DEPLOYMENT_TARGET=11.0 CARGO_TARGET_DIR="$PWD/target/dev-signet-host" \
+  python3 scripts/check-dev-signet.py
+```
 
 ## Build
 

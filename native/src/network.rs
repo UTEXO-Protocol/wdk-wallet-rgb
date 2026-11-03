@@ -6,15 +6,14 @@ use electrum_client::{Client, ConfigBuilder, ElectrumApi};
 use rgb_lib::BitcoinNetwork;
 use rgb_lib::bitcoin::BlockHash;
 use rgb_lib::bitcoin::constants::genesis_block;
+use rgb_lib::no_wallet::SignetCheckpoint;
 use rgb_lib::wallet::rust_only::wallet_http_client_for_network;
-use rgb_lib::wallet::{IndexerConfig, IndexerProtocol, TransportEndpoint, check_indexer_url};
+use rgb_lib::wallet::{IndexerProtocol, TransportEndpoint, check_indexer_config};
 use serde::Deserialize;
 use std::io::Read;
 use std::time::Duration;
 
 const PROXY_INFO_LIMIT: u64 = 16 * 1024;
-const PUBLIC_SIGNET_BLOCK_ONE: &str =
-    "00000086d6b2636cb2a392d45edc4ec544a10024d30141c9adf4bfd9de533b53";
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -22,10 +21,15 @@ struct Endpoint {
     url: String,
 }
 
-fn verify_chain(network: BitcoinNetwork, genesis: BlockHash, block_one: Option<BlockHash>) -> Result<()> {
+fn verify_chain(
+    network: BitcoinNetwork,
+    checkpoint: SignetCheckpoint,
+    genesis: BlockHash,
+    block_one: Option<BlockHash>,
+) -> Result<()> {
     if genesis != genesis_block(bitcoin_chain(network)).block_hash()
         || (network == BitcoinNetwork::Signet
-            && !block_one.is_some_and(|hash| hash.to_string() == PUBLIC_SIGNET_BLOCK_ONE))
+            && !block_one.is_some_and(|hash| hash.to_string() == checkpoint.block_one()))
     {
         return Err(fault(
             "INVALID_INDEXER",
@@ -66,7 +70,12 @@ impl Session {
         } else {
             None
         };
-        verify_chain(self.network, genesis, block_one)?;
+        verify_chain(
+            self.network,
+            crate::profile::signet_checkpoint(self.profile),
+            genesis,
+            block_one,
+        )?;
         let tip = client.block_headers_subscribe().map_err(unavailable)?;
         let height = u32::try_from(tip.height).map_err(|_| {
             fault(
@@ -92,11 +101,8 @@ impl Session {
 
     pub(super) fn check_indexer(&self, params: Value) -> Result<Value> {
         let p: Endpoint = decode(params)?;
-        let config = crate::profile::indexer(p.url, None, self.network)?;
-        let IndexerConfig::Electrum { url } = config else {
-            unreachable!("the profile admits only Electrum");
-        };
-        if check_indexer_url(&url, None, self.network).map_err(native)? != IndexerProtocol::Electrum
+        let config = crate::profile::indexer(p.url, None, self.network, self.profile)?;
+        if check_indexer_config(&config, self.network).map_err(native)? != IndexerProtocol::Electrum
         {
             return Err(fault(
                 "INVALID_INDEXER",
@@ -173,17 +179,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn public_signet_chain_check_rejects_custom_signet_with_shared_genesis() {
+    fn signet_profiles_require_their_own_block_one_and_the_signet_genesis() {
         let network = BitcoinNetwork::Signet;
         let genesis = genesis_block(bitcoin_chain(network)).block_hash();
         let public = "00000086d6b2636cb2a392d45edc4ec544a10024d30141c9adf4bfd9de533b53".parse().unwrap();
-        let custom = "0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb".parse().unwrap();
-        assert!(verify_chain(network, genesis, Some(public)).is_ok());
-        assert!(verify_chain(network, genesis, Some(custom)).is_err());
-        assert!(verify_chain(network, genesis, None).is_err());
+        let dev = "0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb".parse().unwrap();
         let regtest_genesis = genesis_block(bitcoin_chain(BitcoinNetwork::Regtest)).block_hash();
-        assert!(verify_chain(network, regtest_genesis, Some(public)).is_err());
-        assert!(verify_chain(BitcoinNetwork::Regtest, regtest_genesis, None).is_ok());
+        for (profile, expected, other) in [
+            (None, public, dev),
+            (Some(crate::profile::Profile::Staging), public, dev),
+            (Some(crate::profile::Profile::Dev), dev, public),
+        ] {
+            let checkpoint = crate::profile::signet_checkpoint(profile);
+            assert!(verify_chain(network, checkpoint, genesis, Some(expected)).is_ok());
+            assert!(verify_chain(network, checkpoint, genesis, Some(other)).is_err());
+            assert!(verify_chain(network, checkpoint, genesis, None).is_err());
+            assert!(verify_chain(network, checkpoint, regtest_genesis, Some(expected)).is_err());
+        }
+        assert!(
+            verify_chain(
+                BitcoinNetwork::Regtest,
+                SignetCheckpoint::Public,
+                regtest_genesis,
+                None,
+            )
+            .is_ok()
+        );
     }
 
     #[test]
