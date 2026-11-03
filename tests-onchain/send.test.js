@@ -68,6 +68,20 @@ test('RGB send binds a proxy invoice with exact recipient type, amount and expir
   assert.doesNotThrow(() => prepareRgbSend(request, { ...invoice, assignment: { any: true }, assetId: null }, target, 1000))
 })
 
+test('staging send accepts only public Signet invoices on the exact staging proxy', () => {
+  const transportEndpoint = 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
+  const staging = { network: 'signet', transportEndpoint }
+  const publicInvoice = { ...invoice, network: 'signet', recipientId: 'sb:utxob:fixture', transportEndpoints: [transportEndpoint] }
+  assert.equal(prepareRgbSend(request, publicInvoice, staging, 1000).args.recipientId, 'sb:utxob:fixture')
+  for (const decoded of [
+    { ...publicInvoice, network: 'signetcustom', recipientId: 'sbc:utxob:fixture' },
+    { ...publicInvoice, transportEndpoints: ['rpcs://rgb-proxy.utexo.com/json-rpc'] },
+    { ...publicInvoice, transportEndpoints: [transportEndpoint, invoice.transportEndpoints[0]] }
+  ]) {
+    assert.throws(() => prepareRgbSend(request, decoded, staging, 1000), /outside this wallet profile/)
+  }
+})
+
 test('send recovery accepts evidence only for the same durable transaction and RGB batch', () => {
   const txid = 'ab'.repeat(32)
   const record = {

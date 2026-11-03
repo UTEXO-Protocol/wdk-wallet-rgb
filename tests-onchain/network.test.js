@@ -11,6 +11,12 @@ const SEED = Uint8Array.from({ length: 64 }, (_, index) => index + 1)
 const INDEXER = 'tcp://127.0.0.1:50001'
 const SIGNET_INDEXER = 'ssl://electrum.iriswallet.com:50033'
 const PROXY = 'rpc://127.0.0.1:3003/json-rpc'
+const STAGING_PROXY = 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
+const ARBITRUM_RPC = 'https://arb1.arbitrum.io/rpc'
+const STAGING = {
+  network: 'signet', mode: 'rgb', profile: 'staging', indexerUrl: SIGNET_INDEXER,
+  transportEndpoint: STAGING_PROXY, evmRpcUrls: { 42161: ARBITRUM_RPC }
+}
 const BLOCK_HASH = 'ab'.repeat(32)
 const DEFAULTS = {
   network: 'regtest',
@@ -20,10 +26,12 @@ const DEFAULTS = {
   authorize: () => assert.fail('Offline operations must not request transaction authorization')
 }
 
-async function managerFor (t, { nativeVersion = 2, ...options } = {}) {
+async function managerFor (t, { nativeVersion = 3, ...options } = {}) {
   const network = options.network ?? DEFAULTS.network
   const mode = options.mode ?? 'rgb'
   const indexer = (options.indexerUrl ?? INDEXER).replace(/\/$/, '')
+  const expectedOnline = { indexerUrl: indexer, ...(options.evmRpcUrls && { evmRpcUrls: options.evmRpcUrls }) }
+  const proxy = options.transportEndpoint ?? PROXY
   const dir = await realpath(await mkdtemp(join(tmpdir(), 'wdk-network-')))
   const worker = join(dir, 'fixture-worker')
   const source = `#!${process.execPath}
@@ -38,17 +46,18 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1,
     indexer: 'electrum-only', runtime: 'node-host-process',
     source: '0a9d352f2690902df2b6fae9bca1a6c13c3354d4',
-    overlayTree: '8d04178a740de8ed05cb597251ee162c6e9c8a79',
-    integrationTree: '9c562a793e484c433a6a10ae58a6cd76c8a70b11'
+    overlayTree: 'be8930be04b8d65a704333fe7c215ba1f2186c35',
+    integrationTree: '3697d02a29d126acb22aaf9ac19cccf9412cce84'
   })
   if (method === 'open') {
     assert.equal(params.network, '${network}')
     assert.equal(params.mode, '${mode}')
-    return reply({ network: params.network, watchOnly: true })
+    assert.equal(params.profile, ${JSON.stringify(options.profile)})
+    return reply({ network: params.network, profile: params.profile, watchOnly: true })
   }
   if (method === 'bindJournal') return reply({ written: true })
   if (method === 'goOnline') {
-    assert.deepEqual(params, { indexerUrl: '${indexer}' })
+    assert.deepEqual(params, ${JSON.stringify(expectedOnline)})
     if (++connectionAttempts === 1) return process.stdout.write(JSON.stringify({
       id, error: { code: 'INVALID_INDEXER', message: 'Indexer offline' }
     }) + '\\n')
@@ -78,7 +87,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     return reply({ ok: true, indexerProtocol: 'Electrum', private: 'omitted' })
   }
   if (method === 'checkProxyEndpoint') {
-    assert.deepEqual(params, { url: '${PROXY}' })
+    assert.deepEqual(params, { url: '${proxy}' })
     return reply({ ok: true, private: 'omitted' })
   }
   assert.fail('Unexpected worker method: ' + method)
@@ -171,6 +180,50 @@ test('public Signet rejects RGB configuration, chain aliases and unapproved Elec
     'ssl://electrum.iriswallet.com:50034', SIGNET_INDEXER + '//', SIGNET_INDEXER + '?', SIGNET_INDEXER + '/rpc'
   ]) {
     assert.throws(() => new WalletManagerRgb(SEED, { ...config, indexerUrl: value }), /approved TLS/, value)
+  }
+})
+
+test('explicit staging opens a public Signet RGB account with the exact staged services', async t => {
+  const manager = await managerFor(t, { ...STAGING, startupMode: 'offline' })
+  const account = await manager.getAccount()
+  const info = account.getInfo()
+  assert.equal(info.network, 'signet')
+  assert.equal(info.protocol, 'RGB_L1')
+  assert.equal(info.ready, false)
+  assert.ok(info.methods.includes('witnessReceive'))
+  assert.ok(!info.methods.includes('burnAsset'))
+  assert.equal(info.burnDestinationRoutes, undefined)
+  assert.throws(() => account.checkProxyEndpoint(PROXY), /configured/)
+  assert.deepEqual(await account.checkProxyEndpoint(), { ok: true })
+  await assert.rejects(account.connect(), { code: 'INVALID_INDEXER' })
+  await account.connect()
+  assert.equal(account.getInfo().ready, true)
+})
+
+test('staging advertises a V1 burn route only when the exact direct Arbitrum route is configured', async t => {
+  const routes = [{ chainId: 'eip155:42161', dstEid: 0 }]
+  const manager = await managerFor(t, { ...STAGING, startupMode: 'offline', burnDestinationRoutes: routes })
+  const info = (await manager.getAccount()).getInfo()
+  assert.ok(info.methods.includes('burnAsset'))
+  assert.ok(info.methods.includes('getConsignment'))
+  assert.equal(info.burnDestinationVersion, 1)
+  assert.deepEqual(info.burnDestinationRoutes, routes)
+  assert.deepEqual(info.burnRecipientNamespaces, ['eip155'])
+})
+
+test('staging rejects unqualified service, profile and payout combinations', () => {
+  for (const options of [
+    { profile: undefined }, { profile: 'dev' }, { network: 'regtest' }, { network: 'utexo' }, { mode: 'btc-only' },
+    { indexerUrl: INDEXER }, { transportEndpoint: PROXY }, { transportEndpoint: STAGING_PROXY + '?' },
+    { transportEndpoint: 'rpcs://rgb-proxy.utexo.com/json-rpc' },
+    { transportEndpoint: 'rpcs://x@staging.rgb-proxy.utexo.com/json-rpc' },
+    { proxyAuthKeys: {} }, { evmRpcUrls: undefined }, { evmRpcUrls: { 42161: ARBITRUM_RPC + '/' } },
+    { evmRpcUrls: { 42161: 'http://arb1.arbitrum.io/rpc' } }, { evmRpcUrls: { 42161: 'https://x@arb1.arbitrum.io/rpc' } },
+    { evmRpcUrls: { 42161: ARBITRUM_RPC, 1: ARBITRUM_RPC } }, { evmRpcUrls: { 1: ARBITRUM_RPC } },
+    { burnDestinationRoutes: [{ chainId: 'eip155:1', dstEid: 30101 }] },
+    { burnDestinationRoutes: [{ chainId: 'eip155:42161', dstEid: 30110 }] }
+  ]) {
+    assert.throws(() => new WalletManagerRgb(SEED, { ...DEFAULTS, ...STAGING, ...options }), TypeError, JSON.stringify(options))
   }
 })
 

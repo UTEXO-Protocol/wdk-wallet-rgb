@@ -40,7 +40,7 @@ mod journal;
 mod send;
 
 const SOURCE: &str = "0a9d352f2690902df2b6fae9bca1a6c13c3354d4";
-const OVERLAY: &str = "8d04178a740de8ed05cb597251ee162c6e9c8a79";
+const OVERLAY: &str = "be8930be04b8d65a704333fe7c215ba1f2186c35";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -159,6 +159,7 @@ struct Open {
     master_fingerprint: String,
     #[serde(default)]
     mode: journal::Mode,
+    profile: Option<crate::profile::Profile>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -302,7 +303,7 @@ fn chain(network: &str) -> Result<BitcoinNetwork> {
 }
 
 fn public_signet_btc_only() -> Fault {
-    fault("RGB_MODE_UNAVAILABLE", "Public Signet supports Bitcoin-only wallets.")
+    fault("RGB_MODE_UNAVAILABLE", "This Signet wallet is configured for Bitcoin only.")
 }
 fn bitcoin_chain(network: BitcoinNetwork) -> Bitcoin {
     match network {
@@ -382,14 +383,18 @@ fn open_root(path: &str) -> Result<(PathBuf, File)> {
 
 fn bind_identity(root: &Path, params: &Open, network: BitcoinNetwork) -> Result<()> {
     let path = root.join(IDENTITY_FILE);
-    let expected = serde_json::to_vec(&json!({
+    let mut identity = json!({
         "backend": "rgb-l1-v1",
         "network": format!("{network:?}"),
         "accountXpubVanilla": params.account_xpub_vanilla,
         "accountXpubColored": params.account_xpub_colored,
         "masterFingerprint": params.master_fingerprint,
-    }))
-    .map_err(|_| fault("INTERNAL", "Could not encode wallet identity."))?;
+    });
+    if let Some(profile) = params.profile {
+        identity["profile"] = json!(profile);
+    }
+    let expected = serde_json::to_vec(&identity)
+        .map_err(|_| fault("INTERNAL", "Could not encode wallet identity."))?;
     match read_bounded(&path, 4096) {
         Ok(existing) if existing == expected => Ok(()),
         Ok(_) => Err(fault(
@@ -554,8 +559,12 @@ impl Worker {
                 }
                 let p: Open = decode(params)?;
                 let network = chain(&p.network)?;
-                if network == BitcoinNetwork::Signet && p.mode != journal::Mode::BtcOnly {
-                    return Err(public_signet_btc_only());
+                let staging = network == BitcoinNetwork::Signet && p.mode == journal::Mode::Rgb;
+                if staging && p.profile.is_none() {
+                    return Err(fault("RGB_MODE_UNAVAILABLE", "Signet RGB requires the explicit staging profile."));
+                }
+                if !staging && p.profile.is_some() {
+                    return Err(input("The staging profile requires a Signet RGB wallet."));
                 }
                 if !lower_hex(&p.master_fingerprint, 8)
                     || !(100..=120).contains(&p.account_xpub_vanilla.len())
@@ -576,7 +585,9 @@ impl Worker {
                     p.account_xpub_colored.as_str(),
                     p.master_fingerprint.as_str(),
                 ];
-                if p.mode == journal::Mode::BtcOnly {
+                if let Some(profile) = p.profile {
+                    identity_fields.push(profile.as_str());
+                } else if p.mode == journal::Mode::BtcOnly {
                     identity_fields.push(p.mode.as_str());
                 }
                 let journal_identity = sha256(&serde_json::to_vec(&identity_fields)
@@ -627,7 +638,11 @@ impl Worker {
                     indexer_url: None,
                     prepared: None,
                 });
-                Ok(json!({"network":p.network,"watchOnly":true}))
+                let mut opened = json!({"network":p.network,"watchOnly":true});
+                if let Some(profile) = p.profile {
+                    opened["profile"] = json!(profile);
+                }
+                Ok(opened)
             }
             "close" => {
                 let _: Empty = decode(params)?;
@@ -644,6 +659,13 @@ impl Worker {
 }
 
 impl Session {
+    fn validate_wallet_proxy(&self, endpoint: &str) -> Result<()> {
+        if self.network == BitcoinNetwork::Signet && endpoint != crate::profile::STAGING_PROXY {
+            return Err(input("The wallet requires the approved staging RGB proxy."));
+        }
+        validate_proxy(endpoint, self.network == BitcoinNetwork::Regtest)
+    }
+
     fn online(&self) -> Result<Online> {
         self.online.ok_or_else(|| {
             fault(
@@ -832,6 +854,16 @@ impl Session {
             }
             return Err(input("Bitcoin-only mode does not accept RGB service configuration."));
         }
+        if self.network == BitcoinNetwork::Signet && self.journal_mode == journal::Mode::Rgb
+            && (p.evm_rpc_urls.len() != 1
+                || p.evm_rpc_urls.get("42161").map(String::as_str) != Some(crate::profile::STAGING_ARBITRUM_RPC)
+                || !p.proxy_auth_keys.is_empty())
+        {
+            for secret in p.proxy_auth_keys.values_mut() {
+                secret.zeroize();
+            }
+            return Err(input("Staging requires its approved Arbitrum RPC without proxy credentials."));
+        }
         if p.evm_rpc_urls.len() > 16 || p.proxy_auth_keys.len() > 16 {
             return Err(input("Too many network endpoints."));
         }
@@ -875,6 +907,7 @@ impl Session {
         }
         if p.transport_endpoints.is_empty()
             || p.transport_endpoints.len() > 3
+            || (self.network == BitcoinNetwork::Signet && p.transport_endpoints.len() != 1)
             || p.min_confirmations == 0
         {
             return Err(input(
@@ -882,7 +915,7 @@ impl Session {
             ));
         }
         for endpoint in &p.transport_endpoints {
-            validate_proxy(endpoint, self.network == BitcoinNetwork::Regtest)?;
+            self.validate_wallet_proxy(endpoint)?;
         }
         let expiry = positive(&p.expiration_timestamp, i64::MAX as u64)?;
         let now = SystemTime::now()
@@ -1080,7 +1113,7 @@ impl Session {
         Ok(json!({"assetId":asset_id}))
     }
     fn dispatch(&mut self, method: &str, params: Value) -> Result<Value> {
-        if self.network == BitcoinNetwork::Signet
+        if self.network == BitcoinNetwork::Signet && self.journal_mode == journal::Mode::BtcOnly
             && matches!(method,
                 "checkProxyEndpoint" | "refresh" | "blindReceive" | "witnessReceive" |
                 "createUtxosBegin" | "createUtxosEnd" | "cancelAbandonedOutputs" |

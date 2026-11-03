@@ -46,6 +46,7 @@ type SharedCandidateConfig = {
   authorizeMessage?(review: MessageReview): boolean | Promise<boolean>
 }
 type RgbModeConfig = {
+  profile?: never
   mode?: 'rgb'
   transportEndpoint: string
   evmRpcUrls?: Record<string, string>
@@ -53,12 +54,21 @@ type RgbModeConfig = {
   burnDestinationRoutes?: readonly BurnRoute[]
 }
 type BtcOnlyModeConfig = {
+  profile?: never
   /** Choose for seed-only imports. The selected mode is bound to the wallet directory. */
   mode: 'btc-only'
   transportEndpoint?: never
   evmRpcUrls?: never
   proxyAuthKeys?: never
   burnDestinationRoutes?: never
+}
+type StagingRgbModeConfig = {
+  profile: 'staging'
+  mode: 'rgb'
+  transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
+  evmRpcUrls: { readonly '42161': 'https://arb1.arbitrum.io/rpc' }
+  proxyAuthKeys?: never
+  burnDestinationRoutes?: readonly [] | readonly [{ chainId: 'eip155:42161'; dstEid: 0 }]
 }
 type CandidateNetwork = 'regtest' | 'signet'
 type NetworkConfig = ({
@@ -67,7 +77,7 @@ type NetworkConfig = ({
 } & (RgbModeConfig | BtcOnlyModeConfig)) | ({
   network: 'signet'
   indexerUrl: `ssl://electrum.iriswallet.com:50033${'' | '/'}`
-} & BtcOnlyModeConfig)
+} & (BtcOnlyModeConfig | StagingRgbModeConfig))
 export type CandidateConfig = SharedCandidateConfig & NetworkConfig & ({
   nativeExecutable: string
   nativeSha256: string

@@ -198,10 +198,10 @@ require('node:readline').createInterface({ input: process.stdin }).on('line', li
   const { id, method, params } = JSON.parse(line)
   const reply = result => process.stdout.write(JSON.stringify({ id, result }) + '\n')
   if (method === 'version') return reply({
-    protocol: 2, unsignedRecovery: 1, journalWrites: 1, networkChecks: 2, runtime: 'node-host-process',
+    protocol: 2, unsignedRecovery: 1, journalWrites: 1, networkChecks: 3, runtime: 'node-host-process',
     indexer: 'electrum-only', source: '0a9d352f2690902df2b6fae9bca1a6c13c3354d4',
-    overlayTree: '8d04178a740de8ed05cb597251ee162c6e9c8a79',
-    integrationTree: '9c562a793e484c433a6a10ae58a6cd76c8a70b11'
+    overlayTree: 'be8930be04b8d65a704333fe7c215ba1f2186c35',
+    integrationTree: '3697d02a29d126acb22aaf9ac19cccf9412cce84'
   })
   if (method === 'open') return reply({ network: params.network, watchOnly: true })
   if (method === 'bindJournal') return reply({ written: true })

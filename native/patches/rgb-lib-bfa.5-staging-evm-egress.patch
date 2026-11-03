@@ -1,0 +1,100 @@
+diff --git a/src/api/evm.rs b/src/api/evm.rs
+index 7c18336..c8abaf7 100644
+--- a/src/api/evm.rs
++++ b/src/api/evm.rs
+@@ -226,14 +226,22 @@ struct BlockHeader {
+ }
+ 
+ impl EvmClient {
++    #[cfg(test)]
+     pub(crate) fn new(rpc_url: &str) -> Result<Self, Error> {
+-        let client = RestClient::builder()
+-            .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT))
+-            .timeout(Duration::from_secs(READ_WRITE_TIMEOUT))
+-            .build()?;
++        Self::for_network(rpc_url, BitcoinNetwork::Regtest)
++    }
++
++    pub(crate) fn for_network(rpc_url: &str, network: BitcoinNetwork) -> Result<Self, Error> {
++        let (client, rpc_url) = super::egress::wallet_http_client_for_network(
++            rpc_url,
++            network,
++            Duration::from_secs(CONNECT_TIMEOUT),
++            Duration::from_secs(READ_WRITE_TIMEOUT),
++        )
++        .map_err(|_| Self::req_err("endpoint is outside the network policy"))?;
+         Ok(Self {
+             client,
+-            rpc_url: rpc_url.to_string(),
++            rpc_url: rpc_url.into(),
+         })
+     }
+ 
+diff --git a/src/no_wallet/validation.rs b/src/no_wallet/validation.rs
+index b571be7..10a8ef5 100644
+--- a/src/no_wallet/validation.rs
++++ b/src/no_wallet/validation.rs
+@@ -856,7 +856,7 @@ impl RemoteRejectListResolver<'_> {
+             ),
+             RejectListSource::Evm(contract) => (
+                 RejectList::from_evm(
+-                    &checked_evm_client(self.evm_rpc_urls, contract.chain_id)?,
++                    &checked_evm_client(self.evm_rpc_urls, contract.chain_id, self.bitcoin_network)?,
+                     &contract.address,
+                 )?,
+                 0,
+@@ -1003,7 +1003,8 @@ pub(crate) fn validate_consignment_internal<const TRANSFER: bool>(
+                 let evm_rpc_url = evm_rpc_urls.get(chain_id).ok_or(Error::NoEvmRpcUrl {
+                     chain_id: *chain_id,
+                 })?;
+-                let evm_client = EvmClient::new(evm_rpc_url)?;
++                let network = BitcoinNetwork::try_from(validation_config.chain_net)?;
++                let evm_client = EvmClient::for_network(evm_rpc_url, network)?;
+                 let mint_resolver = MintAnchorResolver::new(&evm_client);
+                 let anchor_resolver = CheckedAnchorResolver::with(&mint_resolver, bridge_location)?;
+                 resolve_anchors(&mut pending, &anchor_resolver, &anchors, |opid| {
+@@ -1176,11 +1177,12 @@ pub(crate) fn rejected_by_reject_list(
+ pub(crate) fn checked_evm_client(
+     evm_rpc_urls: &HashMap<u64, String>,
+     chain_id: u64,
++    bitcoin_network: BitcoinNetwork,
+ ) -> Result<EvmClient, Error> {
+     let evm_rpc_url = evm_rpc_urls
+         .get(&chain_id)
+         .ok_or(Error::NoEvmRpcUrl { chain_id })?;
+-    let evm_client = EvmClient::new(evm_rpc_url)?;
++    let evm_client = EvmClient::for_network(evm_rpc_url, bitcoin_network)?;
+     let actual = evm_client.evm_chain_id()?;
+     if actual != chain_id {
+         return Err(Error::EvmChainIdMismatch {
+diff --git a/src/wallet/online.rs b/src/wallet/online.rs
+index 34067b8..46f1bb2 100644
+--- a/src/wallet/online.rs
++++ b/src/wallet/online.rs
+@@ -1334,7 +1334,7 @@ pub trait WalletOnline: WalletOffline {
+             return Ok(HashMap::new());
+         }
+         for (chain_id, evm_rpc_url) in &online_options.evm_rpc_urls {
+-            let evm_client = EvmClient::new(evm_rpc_url)?;
++            let evm_client = EvmClient::for_network(evm_rpc_url, self.bitcoin_network())?;
+             let actual = evm_client.chain_id().map_err(|e| Error::InvalidEvmRpcUrl {
+                 details: e.to_string(),
+             })?;
+@@ -3089,7 +3089,7 @@ pub trait WalletOnline: WalletOffline {
+                 );
+                 return Ok(None);
+             };
+-            let evm_client = EvmClient::new(evm_rpc_url)?;
++            let evm_client = EvmClient::for_network(evm_rpc_url, self.bitcoin_network())?;
+             let mint_resolver = MintAnchorResolver::new(&evm_client);
+             let anchor_resolver = match CheckedAnchorResolver::with(&mint_resolver, bridge_location)
+             {
+@@ -7514,7 +7514,7 @@ pub trait WalletOnline: WalletOffline {
+     /// The EVM RPC client configured for the chain with the given `chain_id`, checked to be
+     /// connected to it.
+     fn checked_evm_client_for_chain(&self, chain_id: u64) -> Result<EvmClient, Error> {
+-        checked_evm_client(self.evm_rpc_urls(), chain_id).inspect_err(|e| {
++        checked_evm_client(self.evm_rpc_urls(), chain_id, self.bitcoin_network()).inspect_err(|e| {
+             if let Error::NoEvmRpcUrl { .. } = e {
+                 error!(
+                     self.logger(),

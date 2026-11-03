@@ -23,9 +23,11 @@ const HEX_32 = /^[a-f0-9]{64}$/
 const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
 const NATIVE_SOURCE = '0a9d352f2690902df2b6fae9bca1a6c13c3354d4'
-const NATIVE_OVERLAY = '8d04178a740de8ed05cb597251ee162c6e9c8a79'
-const NATIVE_INTEGRATION = '9c562a793e484c433a6a10ae58a6cd76c8a70b11'
+const NATIVE_OVERLAY = 'be8930be04b8d65a704333fe7c215ba1f2186c35'
+const NATIVE_INTEGRATION = '3697d02a29d126acb22aaf9ac19cccf9412cce84'
 const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
+const STAGING_PROXY = 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
+const STAGING_ARBITRUM_RPC = 'https://arb1.arbitrum.io/rpc'
 const PROOF_MAGIC = [82, 71, 66, 0, 84, 70, 82]
 const SPEND_KINDS = new Set(['rgb-output', 'btc-send', 'rgb-send', 'rgb-burn'])
 const OPEN_WALLET_DIRECTORIES = new Set()
@@ -95,7 +97,11 @@ function configFor (options) {
   if (options?.network !== 'regtest' && options?.network !== 'signet') throw new TypeError('Unsupported Bitcoin network')
   const mode = options.mode === undefined ? 'rgb' : options.mode
   if (mode !== 'rgb' && mode !== 'btc-only') throw new TypeError('Invalid wallet mode')
-  if (options.network === 'signet' && mode !== 'btc-only') throw new TypeError('Public Signet supports Bitcoin-only wallets')
+  const staging = options.network === 'signet' && mode === 'rgb' && options.profile === 'staging'
+  if (options.profile !== undefined && !staging) throw new TypeError('The staging profile requires a Signet RGB wallet')
+  if (options.network === 'signet' && mode !== 'btc-only' && !staging) {
+    throw new TypeError('Public Signet requires Bitcoin-only mode or the explicit staging RGB profile')
+  }
   if (mode === 'btc-only' && ['transportEndpoint', 'evmRpcUrls', 'proxyAuthKeys', 'burnDestinationRoutes'].some(key => options[key] !== undefined)) {
     throw new TypeError('Bitcoin-only mode does not accept RGB service configuration')
   }
@@ -113,7 +119,20 @@ function configFor (options) {
 
   if (options.bitcoindAuth !== undefined) throw new TypeError('The wallet accepts only Electrum configuration')
   const online = { indexerUrl: indexerUrl(options.indexerUrl, options.network) }
-  if (options.evmRpcUrls) {
+  let transportEndpoint
+  if (staging) {
+    const entries = Object.entries(options.evmRpcUrls ?? {})
+    if (options.transportEndpoint !== STAGING_PROXY || entries.length !== 1 ||
+        entries[0][0] !== '42161' || entries[0][1] !== STAGING_ARBITRUM_RPC || options.proxyAuthKeys !== undefined ||
+        routes.some(route => route.chainId !== 'eip155:42161')) {
+      throw new TypeError('Staging requires its approved RGB proxy and Arbitrum RPC without credentials or unrelated burn routes')
+    }
+    transportEndpoint = STAGING_PROXY
+    online.evmRpcUrls = { 42161: STAGING_ARBITRUM_RPC }
+  } else if (mode === 'rgb') {
+    transportEndpoint = httpUrl(options.transportEndpoint, 'RGB proxy endpoint', ['rpc:', 'rpcs:'])
+  }
+  if (!staging && options.evmRpcUrls) {
     online.evmRpcUrls = Object.fromEntries(Object.entries(options.evmRpcUrls).map(([id, url]) => {
       u64(id, 'EVM chain ID')
       return [id, httpUrl(url, 'EVM RPC endpoint')]
@@ -129,6 +148,7 @@ function configFor (options) {
   return {
     network: options.network,
     mode,
+    profile: options.profile,
     startupMode,
     dataDir: options.dataDir,
     nativeExecutable: options.nativeExecutable,
@@ -137,7 +157,7 @@ function configFor (options) {
     authorize: options.authorize,
     authorizeMessage: options.authorizeMessage,
     maxFeeSats: u64(options.maxFeeSats, 'Fee cap', 2_100_000_000_000_000n),
-    transportEndpoint: mode === 'rgb' ? httpUrl(options.transportEndpoint, 'RGB proxy endpoint', ['rpc:', 'rpcs:']) : undefined,
+    transportEndpoint,
     routes,
     online
   }
@@ -222,20 +242,23 @@ export class WalletAccountRgb {
     try {
       worker = await OnchainWorker.start(config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir)
       const version = await worker.request('version')
-      if (version?.protocol !== 2 || version.indexer !== 'electrum-only' || version.networkChecks !== 2 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
+      if (version?.protocol !== 2 || version.indexer !== 'electrum-only' || version.networkChecks !== 3 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
         version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION || version.unsignedRecovery !== 1 || version.journalWrites !== 1) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
       const identity = signer.identity
-      const opened = await worker.request('open', { ...identity, network: config.network, mode: config.mode, dataDir })
-      if (opened?.watchOnly !== true || opened.network !== config.network) {
-        throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Native wallet did not attest the requested watch-only network')
+      const opened = await worker.request('open', {
+        ...identity, network: config.network, mode: config.mode, profile: config.profile, dataDir
+      })
+      if (opened?.watchOnly !== true || opened.network !== config.network || opened.profile !== config.profile) {
+        throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Native wallet did not attest the requested watch-only profile')
       }
       const journal = new OnchainJournal(dataDir, { worker })
       const invoices = new OnchainJournal(dataDir, { invoices: true, worker })
       const identityFields = [config.network, identity.accountXpubVanilla, identity.accountXpubColored, identity.masterFingerprint]
-      // Domain-separate BTC-only storage so older SDKs cannot open it as RGB.
-      if (config.mode === 'btc-only') identityFields.push(config.mode)
+      // Domain-separate staging and BTC-only storage from the legacy RGB profile.
+      if (config.profile) identityFields.push(config.profile)
+      else if (config.mode === 'btc-only') identityFields.push(config.mode)
       const journalIdentity = sha256(new TextEncoder().encode(JSON.stringify(identityFields)))
       await journal.bind(journalIdentity, config.mode)
       await invoices.bind(journalIdentity, config.mode)
@@ -291,7 +314,7 @@ export class WalletAccountRgb {
     this.#assertOpen()
     if (this.#config.mode === 'btc-only') {
       const message = this.#config.network === 'signet'
-        ? 'Public Signet supports Bitcoin-only wallets.'
+        ? 'This Signet wallet is configured for Bitcoin only.'
         : 'This wallet was restored for Bitcoin only. RGB state requires a verified wallet backup.'
       throw new WalletRuntimeError('RGB_MODE_UNAVAILABLE', message)
     }

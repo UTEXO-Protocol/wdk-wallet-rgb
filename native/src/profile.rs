@@ -2,20 +2,37 @@
 use crate::engine::{Credentials, Result, input, validated_url};
 use rgb_lib::BitcoinNetwork;
 use rgb_lib::wallet::IndexerConfig;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use zeroize::Zeroize;
 
 const SIGNET_ELECTRUM: &str = "ssl://electrum.iriswallet.com:50033";
+pub(crate) const STAGING_PROXY: &str = "rpcs://staging.rgb-proxy.utexo.com/json-rpc";
+pub(crate) const STAGING_ARBITRUM_RPC: &str = "https://arb1.arbitrum.io/rpc";
+
+#[derive(Clone, Copy, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum Profile {
+    Staging,
+}
+
+impl Profile {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::Staging => "staging",
+        }
+    }
+}
 
 pub(crate) fn version(source: &str, overlay: &str) -> Value {
     json!({
         "protocol": 2,
         "source": source,
         "overlayTree": overlay,
-        "integrationTree": "9c562a793e484c433a6a10ae58a6cd76c8a70b11",
+        "integrationTree": "3697d02a29d126acb22aaf9ac19cccf9412cce84",
         "runtime": crate::RUNTIME,
         "indexer": "electrum-only",
-        "networkChecks": 2,
+        "networkChecks": 3,
         "unsignedRecovery": 1,
         "journalWrites": 1,
     })

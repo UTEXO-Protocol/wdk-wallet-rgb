@@ -74,7 +74,10 @@ fn added_reservation<'a>(
 
 impl Session {
     fn unsigned_reservations(&self, kind: Kind) -> Result<BTreeSet<Reservation>> {
-        if self.network == rgb_lib::BitcoinNetwork::Signet && kind != Kind::Btc {
+        if self.network == rgb_lib::BitcoinNetwork::Signet
+            && self.journal_mode == super::journal::Mode::BtcOnly
+            && kind != Kind::Btc
+        {
             return Err(super::public_signet_btc_only());
         }
         let rows: BTreeSet<_> = match kind {

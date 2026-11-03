@@ -196,11 +196,8 @@ impl Session {
         self.idle()?;
         let online = self.online()?;
         require_asset(&p.asset_id).map_err(|err| not_prepared(err.message))?;
-        validate_proxy(
-            &p.sender_transport_endpoint,
-            self.network == BitcoinNetwork::Regtest,
-        )
-        .map_err(|err| not_prepared(err.message))?;
+        self.validate_wallet_proxy(&p.sender_transport_endpoint)
+            .map_err(|err| not_prepared(err.message))?;
         let decoded = invoice(&p.invoice).map_err(|_| not_prepared("Invalid RGB invoice."))?;
         if decoded.network != self.network
             || decoded.recipient_id != p.recipient_id

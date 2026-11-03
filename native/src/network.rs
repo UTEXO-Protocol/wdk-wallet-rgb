@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 use super::{
-    Empty, Result, Session, Value, bitcoin_chain, decode, fault, json, native, validate_proxy,
+    Empty, Result, Session, Value, bitcoin_chain, decode, fault, json, native,
 };
 use electrum_client::{Client, ConfigBuilder, ElectrumApi};
 use rgb_lib::BitcoinNetwork;
@@ -108,7 +108,7 @@ impl Session {
 
     pub(super) fn check_proxy(&self, params: Value) -> Result<Value> {
         let p: Endpoint = decode(params)?;
-        validate_proxy(&p.url, self.network == rgb_lib::BitcoinNetwork::Regtest)?;
+        self.validate_wallet_proxy(&p.url)?;
         let proxy = TransportEndpoint::new(p.url).map_err(native)?;
         // This health probe never follows redirects or transmits proxy authorization.
         // Its own short timeout and response bound keep a bad probe from closing the worker.
