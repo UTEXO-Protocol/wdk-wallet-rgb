@@ -2,7 +2,7 @@
 import { sha256 } from '@noble/hashes/sha2.js'
 import { keccak_256 } from '@noble/hashes/sha3.js'
 import { ascii, base64, hex } from '@scure/base'
-import { URL } from '#onchain-io'
+import { URL } from '#onchain-webrgb-url'
 import { burnDestinationFor, burnDestinationHash, MAX_BURN_PROOF_BYTES, validateBurnDestination } from './burn-destination.js'
 
 export { burnDestinationFor, burnDestinationHash, createBurnPackage, MAX_BURN_PROOF_BYTES, validateBurnDestination } from './burn-destination.js'

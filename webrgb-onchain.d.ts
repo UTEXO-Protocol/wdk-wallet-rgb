@@ -1,7 +1,7 @@
-import type { BurnDestination, BurnRecipient, BurnRoute, Proof, WalletAccountRgb } from './onchain.js'
+import type { AssetView, BurnDestination, BurnRecipient, DecodedInvoice, Proof, Transfer, WalletAccountRgb } from './onchain.js'
 
 export type { BurnDestination, BurnRecipient }
-export type BurnDestinationRoute = BurnRoute
+export type BurnDestinationRoute = Readonly<{ chainId: string; dstEid: number }>
 export { burnDestinationFor, burnDestinationHash, createBurnPackage } from './onchain.js'
 export function validateBurnDestination(value: unknown): BurnDestination
 export const MAX_BURN_PROOF_BYTES: number
@@ -93,9 +93,22 @@ export type WebRgbTransfer = {
   amountBaseUnits?: string
 }
 
+export type WebRgbWallet = {
+  readonly disposed: boolean
+  getInfo(): { ready: boolean; network: WebRgbNetwork; protocol: string; methods: readonly string[] }
+  getAddress(): Promise<string>
+  listAssets(): Promise<Pick<AssetView, 'assetId' | 'name' | 'ticker' | 'precision' | 'schema'>[]>
+  getAssetBalance(assetId: string): Promise<{ spendable: string | number }>
+  listTransfers(filter: { assetId: string; txid?: string }): Promise<Pick<Transfer,
+    'idx' | 'status' | 'kind' | 'txid' | 'recipientId' | 'requestedAssignment' | 'assignments'>[]>
+  refreshTransfers(filter: { assetId: string }): Promise<unknown>
+  decodeRgbInvoice(invoice: string): Promise<Pick<DecodedInvoice,
+    'assetId' | 'assignment' | 'recipientId' | 'expirationTimestamp' | 'network' | 'transportEndpoints'>>
+} & Partial<Pick<WalletAccountRgb, 'receiveWebRgbInvoice' | 'burnAsset' | 'getConsignment' | 'getOperation' | 'recoverBurn'>>
+
 /** An already-authorized, host-only facade. Create one per authenticated RPC. */
 export class WebRgbProvider {
-  constructor(wallet: WalletAccountRgb, options: {
+  constructor(wallet: WebRgbWallet, options: {
     scope: WebRgbRequestScope
     policy?: WebRgbPolicy
     confirm(approval: WebRgbApproval): boolean | Promise<boolean>

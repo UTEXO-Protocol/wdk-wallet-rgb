@@ -112,6 +112,7 @@ export type Transfer = {
   kind: string
   txid: string | null
   recipientId: string | null
+  requestedAssignment: Record<string, string | true> | null
   assignments: Record<string, string | true>[]
 }
 export type RefreshResult = { transfers: {
@@ -172,7 +173,7 @@ export class WalletAccountRgb {
   checkProxyEndpoint(url?: string): Promise<{ ok: true }>
   getInfo(): {
     ready: boolean
-    network: 'regtest'
+    network: CandidateNetwork
     protocol: 'RGB_L1'
     methods: string[]
     burnDestinationVersion?: 1
@@ -257,7 +258,7 @@ export default WalletManagerRgb
 export class WalletRuntimeError extends Error {
   readonly code: string
 }
-export function burnDestinationFor(payout: BurnRecipient, routes: readonly BurnRoute[]): BurnDestination
+export function burnDestinationFor(payout: { chainId: string; address: string }, routes: readonly { chainId: string; dstEid: number }[]): BurnDestination
 export function burnDestinationHash(value: BurnDestination): string
 export function createBurnPackage(proof: Uint8Array, value: BurnDestination): string
 

@@ -48,6 +48,7 @@
     "./package": "./package.json",
     "./webrgb": {
       "types": "./webrgb-onchain.d.ts",
+      "react-native": "./src/onchain-webrgb.js",
       "bare": "./src/onchain-webrgb.js",
       "node": "./src/onchain-webrgb.js"
     }
@@ -69,6 +70,10 @@
     "QUALIFICATION.md"
   ],
   "imports": {
+    "#onchain-webrgb-url": {
+      "bare": "./src/onchain-io-bare.js",
+      "default": "./src/onchain-webrgb-url.js"
+    },
     "#onchain-io": {
       "bare": "./src/onchain-io-bare.js",
       "node": "./src/onchain-io-node.js"
