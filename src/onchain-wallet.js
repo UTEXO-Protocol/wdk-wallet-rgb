@@ -1,11 +1,14 @@
 // Copyright 2026 UTEXO. Licensed under the Apache License, Version 2.0.
-import { createHash } from 'node:crypto'
 import WalletManager from '@tetherto/wdk-wallet'
+import { sha256 as hashSha256 } from '@noble/hashes/sha2.js'
 import { keccak_256 } from '@noble/hashes/sha3.js'
+import { base64, hex } from '@scure/base'
+import { URL } from '#onchain-io'
+import { OnchainWorker, nativeRuntime } from '#onchain-worker'
 import { burnDestinationFor, burnDestinationHash, MAX_BURN_PROOF_BYTES, validateBurnDestination } from './burn-destination.js'
 import { checkOperationId, OnchainJournal, privateWalletDir } from './onchain-journal.js'
 import { deriveOnchainSigner } from './onchain-signer.js'
-import { OnchainWorker, WalletRuntimeError } from './onchain-worker.js'
+import { WalletRuntimeError } from './onchain-runtime-error.js'
 
 const ROUTES = new Map([
   ['eip155:42161', 0],
@@ -19,9 +22,9 @@ const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
 const NATIVE_SOURCE = '0a9d352f2690902df2b6fae9bca1a6c13c3354d4'
 const NATIVE_OVERLAY = '5b7660a66d53da6a5935407bbaf21f7e73636f35'
-const PROOF_MAGIC = Buffer.from('RGB\0TFR')
+const PROOF_MAGIC = [82, 71, 66, 0, 84, 70, 82]
 
-function sha256 (bytes) { return createHash('sha256').update(bytes).digest('hex') }
+function sha256 (bytes) { return hex.encode(hashSha256(bytes)) }
 
 function u64 (value, label, maximum = MAX_U64) {
   if (typeof value === 'bigint') value = value.toString()
@@ -66,8 +69,13 @@ function configFor (options) {
   })
   if (new Set(routes.map(route => route.chainId)).size !== routes.length) throw new TypeError('Duplicate V1 bridge route')
 
-  const online = { indexerUrl: httpUrl(options.indexerUrl, 'indexer endpoint', ['http:', 'https:', 'tcp:', 'ssl:']) }
-  if (options.bitcoindAuth) online.bitcoindAuth = { ...options.bitcoindAuth }
+  const electrumOnly = nativeRuntime === 'bare-in-process'
+  const indexerProtocols = electrumOnly ? ['tcp:', 'ssl:'] : ['http:', 'https:', 'tcp:', 'ssl:']
+  const online = { indexerUrl: httpUrl(options.indexerUrl, 'indexer endpoint', indexerProtocols) }
+  if (options.bitcoindAuth) {
+    if (electrumOnly) throw new TypeError('The Bare candidate accepts only Electrum configuration')
+    online.bitcoindAuth = { ...options.bitcoindAuth }
+  }
   if (options.evmRpcUrls) {
     online.evmRpcUrls = Object.fromEntries(Object.entries(options.evmRpcUrls).map(([id, url]) => {
       u64(id, 'EVM chain ID')
@@ -149,7 +157,7 @@ export class WalletAccountRgb {
     try {
       const version = await worker.request('version')
       if (version?.protocol !== 1 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
-        version.runtime !== 'node-host-process') {
+        version.runtime !== nativeRuntime) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
       const identity = signer.identity
@@ -158,7 +166,7 @@ export class WalletAccountRgb {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Native wallet did not attest the requested watch-only network')
       }
       const journal = new OnchainJournal(dataDir)
-      await journal.bind(sha256(JSON.stringify([config.network, identity.accountXpubVanilla, identity.accountXpubColored, identity.masterFingerprint])))
+      await journal.bind(sha256(new TextEncoder().encode(JSON.stringify([config.network, identity.accountXpubVanilla, identity.accountXpubColored, identity.masterFingerprint]))))
       await worker.request('goOnline', config.online)
       if (isDisposed()) throw new WalletRuntimeError('WALLET_CLOSED', 'Wallet manager is closed')
       return new WalletAccountRgb(worker, signer, config, journal)
@@ -249,7 +257,7 @@ export class WalletAccountRgb {
       throw new TypeError('Contract bytes must match the configured SHA-256')
     }
     return this.#read('importContract', {
-      contractBase64: Buffer.from(contract).toString('base64'),
+      contractBase64: base64.encode(contract),
       expectedAssetId: checkAsset(assetId),
       sha256: expectedSha256
     })
@@ -381,9 +389,10 @@ export class WalletAccountRgb {
       typeof result.data !== 'string' || result.data.length > Math.ceil(MAX_BURN_PROOF_BYTES / 3) * 4) {
       throw new WalletRuntimeError('PROOF_MISMATCH', 'Burn proof does not match the wallet operation')
     }
-    const bytes = Buffer.from(result.data, 'base64')
-    if (bytes.length <= PROOF_MAGIC.length || bytes.length > MAX_BURN_PROOF_BYTES ||
-      !bytes.subarray(0, PROOF_MAGIC.length).equals(PROOF_MAGIC) || bytes.toString('base64') !== result.data || sha256(bytes) !== result.sha256) {
+    let bytes
+    try { bytes = base64.decode(result.data) } catch {}
+    if (!bytes || bytes.length <= PROOF_MAGIC.length || bytes.length > MAX_BURN_PROOF_BYTES ||
+      !PROOF_MAGIC.every((byte, index) => byte === bytes[index]) || base64.encode(bytes) !== result.data || sha256(bytes) !== result.sha256) {
       throw new WalletRuntimeError('PROOF_INVALID', 'Native wallet returned an invalid burn proof')
     }
     if (record.stage === 'submitting') await this.#journal.save({ ...record, stage: 'submitted' })
@@ -397,7 +406,7 @@ export class WalletAccountRgb {
         encoding: 'base64',
         byteLength: bytes.length,
         data: result.data,
-        digest: { algorithm: 'keccak256', value: '0x' + Buffer.from(keccak_256(bytes)).toString('hex') }
+        digest: { algorithm: 'keccak256', value: '0x' + hex.encode(keccak_256(bytes)) }
       }
     }
   }

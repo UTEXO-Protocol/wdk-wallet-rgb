@@ -1,6 +1,6 @@
 {
   "name": "@utexo/wdk-wallet-rgb",
-  "version": "2.1.0-alpha.0",
+  "version": "2.1.0-alpha.1",
   "description": "Isolated on-chain RGB wallet candidate for WDK.",
   "keywords": [
     "wdk",
@@ -26,14 +26,21 @@
     "@scure/base": "2.4.0",
     "@scure/bip32": "2.4.0",
     "@scure/btc-signer": "2.4.1",
-    "@tetherto/wdk-wallet": "1.0.0-beta.25"
+    "@tetherto/wdk-wallet": "1.0.0-beta.25",
+    "bare-fs": "4.8.4",
+    "bare-path": "3.1.2",
+    "bare-timers": "3.2.4",
+    "bare-url": "2.5.5",
+    "bare-worker": "4.5.3"
   },
   "devDependencies": {
+    "bare": "1.36.2",
     "typescript": "7.0.2"
   },
   "exports": {
     ".": {
       "types": "./onchain.d.ts",
+      "bare": "./onchain.js",
       "node": "./onchain.js"
     },
     "./package": "./package.json"
@@ -47,6 +54,19 @@
     "onchain.d.ts",
     "src/onchain-*.js",
     "src/burn-destination.js",
-    "CANDIDATE.md"
-  ]
+    "CANDIDATE.md",
+    "src/onchain-bare-thread.cjs",
+    "src/onchain-bare-native.json",
+    "prebuilds/darwin-arm64/*.bare"
+  ],
+  "imports": {
+    "#onchain-io": {
+      "bare": "./src/onchain-io-bare.js",
+      "node": "./src/onchain-io-node.js"
+    },
+    "#onchain-worker": {
+      "bare": "./src/onchain-bare-worker.js",
+      "node": "./src/onchain-worker.js"
+    }
+  }
 }

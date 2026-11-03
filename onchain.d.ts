@@ -32,20 +32,27 @@ export type Review = Readonly<{
     outputs: readonly Readonly<{ index: number; scriptHex: string; amountSats: string; role: string }>[]
   }>
 }>
-export type CandidateConfig = {
+type SharedCandidateConfig = {
   network: 'regtest'
   dataDir: string
-  nativeExecutable: string
-  nativeSha256: string
-  indexerUrl: string
   transportEndpoint: string
   maxFeeSats: BaseUnits
-  bitcoindAuth?: { username: string; password: string }
   evmRpcUrls?: Record<string, string>
   proxyAuthKeys?: Record<string, string>
   burnDestinationRoutes?: readonly BurnRoute[]
   authorize(review: Review): boolean | Promise<boolean>
 }
+export type CandidateConfig = SharedCandidateConfig & ({
+  nativeExecutable: string
+  nativeSha256: string
+  indexerUrl: string
+  bitcoindAuth?: { username: string; password: string }
+} | {
+  nativeExecutable?: never
+  nativeSha256?: string
+  indexerUrl: `${'tcp' | 'ssl'}://${string}`
+  bitcoindAuth?: never
+})
 type Balance = { settled: string; future: string; spendable: string }
 type Operation = { txid: string; batchTransferIdx?: number; created?: number }
 export type BurnRequest = {

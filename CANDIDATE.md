@@ -1,13 +1,16 @@
 # On-chain WDK candidate
 
-The private `@utexo/wdk-wallet-rgb@2.1.0-alpha.0` pack is a macOS ARM64 Node regtest candidate. It uses a watch-only native RGB wallet. The app-owned signer holds only the derived signing keys, reviews the PSBT and actual miner fee, and adds Taproot witnesses after explicit authorization. The worker receives public account identity and signed PSBTs. Neither the package nor the worker links RLN or LDK.
+The private `@utexo/wdk-wallet-rgb@2.1.0-alpha.1` pack supports host qualification on macOS ARM64. Bare uses a packaged Electrum-only addon on a dedicated worker thread. Node uses the separate host executable from alpha.0. It uses a watch-only native RGB wallet. The app-owned signer holds only the derived signing keys, reviews the PSBT and actual miner fee, and adds Taproot witnesses after explicit authorization. The worker receives public account identity and signed PSBTs. Neither the package nor the worker links RLN or LDK.
 
 | Component | Exact source or version |
 | --- | --- |
 | WDK starting source | `6d28bc9ff35a7863cd21b21e62a7c03a9b794066` |
+| Bare CLI / embedded runtime | `1.36.2` / `1.36.0` |
+| Bare headers | `1.35.0` |
 | Tether WDK Wallet | `1.0.0-beta.25` |
 | RGB library | `v0.3.0-beta.7-upstream-dev-bfa.5`, `0a9d352f2690902df2b6fae9bca1a6c13c3354d4` |
 | Native local overlay | Git tree `5b7660a66d53da6a5935407bbaf21f7e73636f35` |
+| Bare integration overlay | Git tree `8dd209a8bb849696e45f301b0ea1b3d4eb0fba06` |
 | Signing dependencies | `@scure/btc-signer@2.4.1`, `@scure/bip32@2.4.0`, `@scure/base@2.4.0`, `@noble/hashes@2.4.0` |
 | Fixture proxy | RGB Tools proxy server `v0.4.0`, protocol 1.0 |
 
@@ -15,20 +18,21 @@ The native overlay ports validated registration of a public contract from [RGB #
 
 ## Build and use
 
-From the candidate source workspace:
+Build the host addon and stage it against the exact candidate manifest from the candidate source workspace:
 
 ```sh
-cd native
-python3 scripts/prepare-source.py
-cargo +1.94.0 build --release --locked
-cd ../wdk-wallet-rgb
+./native/scripts/build-bare.sh
+cd wdk-wallet-rgb
 npm ci --ignore-scripts
 npm test
 npm run check:types
+node scripts/stage-bare.mjs ../native/target/bare-addon/utexo__wdk-wallet-rgb.bare
 npm pack --ignore-scripts
 ```
 
-Install the tarball in a separate Node project and supply the native worker's canonical absolute path and verified SHA-256. The worker verifies the network, public account identity and exclusive directory access. Use a fresh, canonical mode-0700 data directory, a disposable 24-word mnemonic and explicit loopback URLs for the indexer, RGB proxy and EVM validation RPC. `WalletManagerRgb` opens the single account asynchronously. Always await `dispose()` to release the native file lock. Treat the entire wallet directory as required state.
+Install the tarball in a separate project and run it with Bare. The package checks the prebuild's SHA-256, target and native source profile. An optional `nativeSha256` configuration pin allows the consumer to check the expected addon independently of the package. Bare accepts a loopback Electrum URL with an explicit port and a `tcp:` or `ssl:` scheme. For the Node entry point, supply the separate worker's canonical absolute path and verified SHA-256.
+
+Use a fresh, canonical mode-0700 data directory, a disposable 24-word mnemonic and explicit loopback URLs for the RGB proxy and EVM validation RPC. `WalletManagerRgb` opens the single account asynchronously. Always await `dispose()` to release the native file lock. Closing a wallet during a native mutation cancels the local wait. The already-dispatched native operation can still finish, and disposal waits for the worker to release the lock. Treat the entire wallet directory as required state.
 
 `registerAssetContract` accepts public contract bytes, the configured native asset ID and SHA-256. `blindReceive` can then make a typed amountless invoice. A caller can read the validated predeposit mint with `getReceivedMint`, and must wait for chain settlement before spending.
 
@@ -38,4 +42,4 @@ Install the tarball in a separate Node project and supply the native worker's ca
 
 ## Qualification scope
 
-The host worker and packed consumer qualify the local on-chain path. This candidate does not provide a Bare mobile addon, a React Native wallet integration, VSS or a WalletConnect session controller. Its fixture checks EVM funds locking, RGB receipt and the confirmed V1 burn proof. Hosted mint, payout settlement and mobile device qualification require their own deployment and acceptance runs. The package is private and requires a deliberate release review before changing distribution.
+The macOS ARM64 Bare candidate covers the local on-chain path. Its fixture checks EVM funds locking, RGB receipt and the confirmed V1 burn proof. Mobile addons, React Native wallet integration, VSS and WalletConnect session support are separate scopes. Hosted mint, payout settlement and mobile device qualification require their own deployment and acceptance runs. The package is private and requires a deliberate release review before changing distribution.

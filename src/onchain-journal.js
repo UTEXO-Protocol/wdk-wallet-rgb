@@ -1,8 +1,6 @@
 // Copyright 2026 UTEXO. Licensed under the Apache License, Version 2.0.
-import { randomUUID } from 'node:crypto'
-import { lstat, mkdir, open, readdir, readFile, realpath, rename, unlink } from 'node:fs/promises'
-import { isAbsolute, join } from 'node:path'
-import { WalletRuntimeError } from './onchain-worker.js'
+import { fs, isAbsolute, join } from '#onchain-io'
+import { WalletRuntimeError } from './onchain-runtime-error.js'
 
 const ID = /^[a-z0-9][a-z0-9-]{15,79}$/
 const BLOCKING = new Set(['starting', 'prepared', 'submitting'])
@@ -15,31 +13,41 @@ export function checkOperationId (id) {
 
 export async function privateWalletDir (path) {
   if (typeof path !== 'string' || !isAbsolute(path)) throw new TypeError('An absolute wallet directory is required')
-  await mkdir(path, { mode: 0o700, recursive: true })
-  const stat = await lstat(path)
-  if (!stat.isDirectory() || await realpath(path) !== path || (stat.mode & 0o077) !== 0) {
+  await fs.mkdir(path, { mode: 0o700, recursive: true })
+  const stat = await fs.lstat(path)
+  if (!stat.isDirectory() || await fs.realpath(path) !== path || (stat.mode & 0o077) !== 0) {
     throw new TypeError('Wallet directory must be private and canonical')
   }
   return path
 }
 
 async function writeAtomically (dir, name, value) {
-  const temp = join(dir, '.' + randomUUID() + '.tmp')
+  // An exclusive private directory also works on Bare, where 'wx' currently
+  // does not set O_EXCL. Keep the staged file on the same filesystem.
+  const staging = await fs.mkdtemp(join(dir, '.stage-'))
+  const temp = join(staging, 'record')
   try {
-    const file = await open(temp, 'wx', 0o600)
+    const file = await fs.open(temp, 'w', 0o600)
     try {
-      await file.writeFile(JSON.stringify(value) + '\n')
+      const bytes = new TextEncoder().encode(JSON.stringify(value) + '\n')
+      let offset = 0
+      while (offset < bytes.length) {
+        const { bytesWritten } = await file.write(bytes, offset, bytes.length - offset, offset)
+        if (bytesWritten <= 0 || bytesWritten > bytes.length - offset) throw new Error('Incomplete wallet journal write')
+        offset += bytesWritten
+      }
       await file.sync()
     } finally {
       await file.close()
     }
-    await rename(temp, join(dir, name))
-    const directory = await open(dir, 'r')
+    await fs.rename(temp, join(dir, name))
+    const directory = await fs.open(dir, 'r')
     try { await directory.sync() } finally { await directory.close() }
   } finally {
-    await unlink(temp).catch(error => {
+    await fs.unlink(temp).catch(error => {
       if (error.code !== 'ENOENT') throw error
     })
+    await fs.rmdir(staging)
   }
 }
 
@@ -53,7 +61,7 @@ export class OnchainJournal {
     const name = 'identity.json'
     const saved = await this.#read(name)
     if (saved === undefined) {
-      const files = await readdir(this.#dir)
+      const files = await fs.readdir(this.#dir)
       if (files.some(file => file.endsWith('.json'))) throw new Error('Operation journal has no wallet identity')
       await writeAtomically(this.#dir, name, { identity })
     } else if (saved?.identity !== identity) {
@@ -70,7 +78,7 @@ export class OnchainJournal {
   }
 
   async records () {
-    const files = await readdir(this.#dir)
+    const files = await fs.readdir(this.#dir)
     return Promise.all(files.filter(file => file !== 'identity.json' && file.endsWith('.json')).map(file => this.get(file.slice(0, -5))))
   }
 
@@ -87,11 +95,11 @@ export class OnchainJournal {
   async #read (name) {
     try {
       const path = join(this.#dir, name)
-      const stat = await lstat(path)
+      const stat = await fs.lstat(path)
       if (!stat.isFile() || (stat.mode & 0o077) !== 0 || stat.size > 32_768) {
         throw new Error('Unsafe wallet journal entry')
       }
-      return JSON.parse(await readFile(path, 'utf8'))
+      return JSON.parse(await fs.readFile(path, 'utf8'))
     } catch (error) {
       if (error.code === 'ENOENT') return undefined
       throw error

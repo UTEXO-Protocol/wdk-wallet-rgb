@@ -2,3 +2,5 @@ node_modules
 coverage
 examples/
 package-lock.json
+
+/prebuilds/

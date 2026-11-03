@@ -4,18 +4,13 @@ import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { lstat, realpath } from 'node:fs/promises'
 import { isAbsolute } from 'node:path'
+import { WalletRuntimeError } from './onchain-runtime-error.js'
 
 // Allows a 10 MiB proof in base64 plus the surrounding response.
 const MAX_LINE_BYTES = 14 * 1024 * 1024
 const REQUEST_TIMEOUT_MS = 120_000
 
-export class WalletRuntimeError extends Error {
-  constructor (code, message, options) {
-    super(message, options)
-    this.name = 'WalletRuntimeError'
-    this.code = code
-  }
-}
+export const nativeRuntime = 'node-host-process'
 
 export class OnchainWorker {
   #child
