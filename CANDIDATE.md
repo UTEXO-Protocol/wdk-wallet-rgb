@@ -5,7 +5,7 @@ The private `@utexo/wdk-wallet-rgb@2.1.0-alpha.2` pack targets Android ARM64 Bar
 | Component | Exact source or version |
 | --- | --- |
 | WDK starting source | `6d28bc9ff35a7863cd21b21e62a7c03a9b794066` |
-| Android embedded runtime | Bare Kit `3.0.1` / Bare `1.36.0` |
+| Android embedded runtime | Bare Kit `3.0.1` / Bare `1.36.2` |
 | Bare headers | `1.35.0` |
 | Tether WDK Wallet | `1.0.0-beta.25` |
 | RGB library | `v0.3.0-beta.7-upstream-dev-bfa.5`, `0a9d352f2690902df2b6fae9bca1a6c13c3354d4` |
