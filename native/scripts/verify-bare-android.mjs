@@ -19,7 +19,7 @@ const system = resolve(ndk, 'sysroot/usr/lib/aarch64-linux-android/26')
 const libraries = ['libc.so', 'libdl.so', 'liblog.so', 'libm.so']
 const exportsExpected = ['bare_get_module_name_v0', 'bare_register_module_v0']
 const soname = `libutexo__wdk-wallet-rgb.${version}.so`
-const expectedCargoLock = 'eadb8fbc61f5bf7282db1decdfc500eab5db0db700133bbfeb135babf9417448'
+const expectedCargoLock = 'ce7ea2cc6419c07d2625ba642e6e6ff84f7390362864734d2f7c97209df1b42e'
 const page = 16 * 1024
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
 const ensure = (condition, message) => {

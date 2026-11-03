@@ -4572,8 +4572,10 @@ name = "utexo-rgb-native"
 version = "0.1.0"
 dependencies = [
  "base64 0.23.1",
+ "electrum-client",
  "fs2",
  "libc",
+ "reqwest",
  "rgb-invoicing",
  "rgb-lib",
  "serde",

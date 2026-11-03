@@ -243,6 +243,9 @@ export class WebRgbProvider {
     if (method === 'enable' || method === 'getInfo') return true
     if (info.ready !== true || !this.#assets.size) return false
     if (method === 'getTransferStatus') return typeof this.#wallet.listTransfers === 'function' && typeof this.#wallet.refreshTransfers === 'function'
+    if (method === 'blindReceive' || method === 'witnessReceive') {
+      return typeof this.#wallet.receiveWebRgbInvoice === 'function' && Array.isArray(info.methods) && info.methods.includes(method)
+    }
     if (typeof this.#wallet[method] !== 'function') return false
     if (method === 'getConsignment' || method === 'burnAsset') {
       if (!this.#burnAssets.size || !Array.isArray(info.methods) || !info.methods.includes(method)) return false
@@ -305,10 +308,14 @@ export class WebRgbProvider {
       const amount = input.amount === undefined ? undefined : integer(input.amount, 1, Number.MAX_SAFE_INTEGER)
       integer(durationSeconds, 3600, 604800)
       const minConfirmations = Math.max(3, integer(minimum, 0, 255))
-      await this.#approve(method, Object.freeze({ assetId, amount, durationSeconds, minConfirmations }))
-      const result = await this.#native(method, {
-        assetId, ...(amount !== undefined && { amount: String(amount) }),
-        expirationSeconds: durationSeconds, minConfirmations
+      const request = Object.freeze({ assetId, amount, durationSeconds, minConfirmations })
+      const operationId = 'webrgb-invoice-' + hash(['utexo-webrgb-rpc-v1', this.#scopeKey, this.#identity.id])
+      const requestKey = hash([this.#identity.fingerprint, method, request])
+      const result = await this.#native('receiveWebRgbInvoice', {
+        method, operationId, requestKey,
+        options: { assetId, ...(amount !== undefined && { amount: String(amount) }), expirationSeconds: durationSeconds, minConfirmations },
+        assertAuthorized: () => this.#guard(),
+        approve: () => this.#approve(method, request)
       })
       return {
         invoice: text(result?.invoice, 8192, 'INTERNAL_ERROR'),

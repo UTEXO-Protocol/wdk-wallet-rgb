@@ -7,6 +7,8 @@ import { spawnSync } from 'node:child_process'
 import { join, resolve } from 'node:path'
 import WalletManagerRgb, { burnDestinationFor } from '@utexo/wdk-wallet-rgb'
 
+const { OnchainWorker } = await import(new URL('./src/onchain-worker.js', import.meta.resolve('@utexo/wdk-wallet-rgb')))
+
 const [nativeFile, fixtureRoot, outputDir] = process.argv.slice(2)
 assert(nativeFile && fixtureRoot && outputDir, 'Pass native executable, isolated fixture, and fresh output directory')
 const nativeExecutable = await fs.realpath(resolve(nativeFile))
@@ -73,23 +75,22 @@ async function restart (name) {
   await managers.get(name).dispose()
   return open(name)
 }
-async function loseResponse (name, id, submit) {
-  const path = join(out, name, '.wdk-onchain-journal-v1', id + '.json')
-  const original = fs.rename
+async function interruptAfterSubmission (id, submit) {
+  const request = OnchainWorker.prototype.request
   let injected = false
-  fs.rename = async (from, to) => {
-    if (to === path && (await fs.readFile(from, 'utf8')).includes('"stage":"submitted"')) {
+  OnchainWorker.prototype.request = function (method, params) {
+    if (method === 'writeJournalRecord' && params?.record?.id === id && params.record.stage === 'submitted') {
       injected = true
-      throw Object.assign(new Error('Fixture acknowledgement loss'), { code: 'EIO' })
+      return Promise.reject(Object.assign(new Error('Fixture interrupted before final journal write'), { code: 'EIO' }))
     }
-    return original(from, to)
+    return request.call(this, method, params)
   }
   try {
     await assert.rejects(submit(), { code: 'EIO' })
   } finally {
-    fs.rename = original
+    OnchainWorker.prototype.request = request
   }
-  assert(injected, path)
+  assert(injected, id)
 }
 async function waitFor (description, condition) {
   for (let attempt = 0; attempt < 12; attempt++) {
@@ -135,7 +136,7 @@ try {
   await assert.rejects(sender.sendBtc({ ...btcRequest, operationId: insufficient, amount: 3_000_000n }), { code: 'SEND_NOT_PREPARED' })
   assert.equal((await sender.getOperation(insufficient)).stage, 'declined')
   assert.equal(reviewed.has(insufficient), false)
-  await loseResponse('sender', btcOperationId, () => sender.sendBtc(btcRequest))
+  await interruptAfterSubmission(btcOperationId, () => sender.sendBtc(btcRequest))
   const btcPending = await sender.getOperation(btcOperationId)
   assert.equal(btcPending.stage, 'submitting')
   assert(mempool().includes(btcPending.txid))
@@ -192,7 +193,7 @@ try {
   const blindInvoice = await receiver.blindReceive({ assetId, amount: 200_000n })
   const blind = { ...decline, operationId: blindId, invoice: blindInvoice.invoice }
   assert.equal((await sender.decodeRgbInvoice(blind.invoice)).recipientType, 'Blind')
-  await loseResponse('sender', blindId, () => sender.sendRgbInvoice(blind))
+  await interruptAfterSubmission(blindId, () => sender.sendRgbInvoice(blind))
   const blindPending = await sender.getOperation(blindId)
   assert.equal(blindPending.stage, 'submitting')
   sender = await restart('sender')
@@ -218,7 +219,7 @@ try {
 
   const burnId = 'funded-burn-recover-01'
   const burn = { operationId: burnId, assetId, amount: 500_000n, feeRate: 2n, minConfirmations: 6, burnRecipient, burnDestination }
-  await loseResponse('sender', burnId, () => sender.burnAsset(burn))
+  await interruptAfterSubmission(burnId, () => sender.burnAsset(burn))
   const burnPending = await sender.getOperation(burnId)
   assert.equal(burnPending.stage, 'submitting')
   assert(mempool().includes(burnPending.txid))

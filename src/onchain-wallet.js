@@ -1,5 +1,5 @@
 // Copyright 2026 UTEXO. Licensed under the Apache License, Version 2.0.
-import WalletManager from '@tetherto/wdk-wallet'
+import WalletManager, { NoSuchElementError, WalletAccountReadOnly } from '@tetherto/wdk-wallet'
 import { sha256 as hashSha256 } from '@noble/hashes/sha2.js'
 import { keccak_256 } from '@noble/hashes/sha3.js'
 import { base64, hex } from '@scure/base'
@@ -26,6 +26,8 @@ const NATIVE_SOURCE = '0a9d352f2690902df2b6fae9bca1a6c13c3354d4'
 const NATIVE_OVERLAY = '5b7660a66d53da6a5935407bbaf21f7e73636f35'
 const NATIVE_INTEGRATION = '8dd209a8bb849696e45f301b0ea1b3d4eb0fba06'
 const PROOF_MAGIC = [82, 71, 66, 0, 84, 70, 82]
+const SPEND_KINDS = new Set(['rgb-output', 'btc-send', 'rgb-send', 'rgb-burn'])
+const OPEN_WALLET_DIRECTORIES = new Set()
 
 function sha256 (bytes) { return hex.encode(hashSha256(bytes)) }
 
@@ -62,9 +64,10 @@ function checkTxid (txid) {
 }
 
 function httpUrl (value, name, protocols = ['http:', 'https:']) {
-  if (typeof value !== 'string' || value.length > 2048) throw new TypeError('Invalid ' + name)
+  if (typeof value !== 'string' || value.length > 2048 || /[\s\x00-\x1f\x7f\\?#]/.test(value) ||
+      !/^[a-z]+:\/\/[^/@]+(?:\/|$)/.test(value)) throw new TypeError('Invalid ' + name)
   const url = new URL(value)
-  if (!protocols.includes(url.protocol) || url.username || url.password || url.hash || url.search) {
+  if (!protocols.includes(url.protocol) || url.username || url.password || url.port === '0') {
     throw new TypeError('Invalid ' + name)
   }
   if (!['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)) {
@@ -75,6 +78,13 @@ function httpUrl (value, name, protocols = ['http:', 'https:']) {
 
 function configFor (options) {
   if (options?.network !== 'regtest') throw new TypeError('The candidate supports isolated regtest only')
+  const mode = options.mode === undefined ? 'rgb' : options.mode
+  if (mode !== 'rgb' && mode !== 'btc-only') throw new TypeError('Invalid wallet mode')
+  if (mode === 'btc-only' && ['transportEndpoint', 'evmRpcUrls', 'proxyAuthKeys', 'burnDestinationRoutes'].some(key => options[key] !== undefined)) {
+    throw new TypeError('Bitcoin-only mode does not accept RGB service configuration')
+  }
+  const startupMode = options.startupMode ?? 'online'
+  if (startupMode !== 'online' && startupMode !== 'offline') throw new TypeError('Invalid wallet startup mode')
   if (typeof options.authorize !== 'function') throw new TypeError('A transaction authorization callback is required')
   if (options.authorizeMessage !== undefined && typeof options.authorizeMessage !== 'function') {
     throw new TypeError('Invalid message authorization callback')
@@ -86,12 +96,11 @@ function configFor (options) {
   if (new Set(routes.map(route => route.chainId)).size !== routes.length) throw new TypeError('Duplicate V1 bridge route')
 
   if (options.bitcoindAuth !== undefined) throw new TypeError('The wallet accepts only Electrum configuration')
-  const indexerUrl = httpUrl(options.indexerUrl, 'indexer endpoint', ['tcp:', 'ssl:'])
-  const indexer = new URL(indexerUrl)
+  const indexer = new URL(httpUrl(options.indexerUrl, 'indexer endpoint', ['tcp:', 'ssl:']))
   if (!indexer.port || !['', '/'].includes(indexer.pathname)) {
     throw new TypeError('Electrum requires an explicit port and no path')
   }
-  const online = { indexerUrl }
+  const online = { indexerUrl: `${indexer.protocol}//${indexer.hostname}:${indexer.port}` }
   if (options.evmRpcUrls) {
     online.evmRpcUrls = Object.fromEntries(Object.entries(options.evmRpcUrls).map(([id, url]) => {
       u64(id, 'EVM chain ID')
@@ -100,13 +109,15 @@ function configFor (options) {
   }
   if (options.proxyAuthKeys) {
     online.proxyAuthKeys = Object.fromEntries(Object.entries(options.proxyAuthKeys).map(([url, key]) => {
-      httpUrl(url, 'proxy authentication endpoint', ['http:', 'https:', 'rpc:', 'rpcs:'])
+      httpUrl(url, 'proxy authentication endpoint', ['rpc:', 'rpcs:'])
       if (typeof key !== 'string' || !HEX_32.test(key)) throw new TypeError('Invalid proxy authentication key')
       return [url, key]
     }))
   }
   return {
     network: options.network,
+    mode,
+    startupMode,
     dataDir: options.dataDir,
     nativeExecutable: options.nativeExecutable,
     nativeSha256: options.nativeSha256,
@@ -114,7 +125,7 @@ function configFor (options) {
     authorize: options.authorize,
     authorizeMessage: options.authorizeMessage,
     maxFeeSats: u64(options.maxFeeSats, 'Fee cap', 2_100_000_000_000_000n),
-    transportEndpoint: httpUrl(options.transportEndpoint, 'RGB proxy endpoint', ['rpc:', 'rpcs:']),
+    transportEndpoint: mode === 'rgb' ? httpUrl(options.transportEndpoint, 'RGB proxy endpoint', ['rpc:', 'rpcs:']) : undefined,
     routes,
     online
   }
@@ -179,42 +190,60 @@ export class WalletAccountRgb {
   #signer
   #config
   #journal
+  #invoices
   #busy = false
   #closed = false
+  #closing
+  #journalWrite
+  #releaseDirectory
+  #connected = false
   #address
   #prepared
 
   static async open (config, signer, isDisposed) {
     const dataDir = await privateWalletDir(config.dataDir)
     if (isDisposed()) throw new WalletRuntimeError('WALLET_CLOSED', 'Wallet manager is closed')
-    const worker = await OnchainWorker.start(config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir)
+    if (OPEN_WALLET_DIRECTORIES.has(dataDir)) throw new WalletRuntimeError('WALLET_IN_USE', 'Another wallet account already owns this directory')
+    OPEN_WALLET_DIRECTORIES.add(dataDir)
+    const releaseDirectory = () => { OPEN_WALLET_DIRECTORIES.delete(dataDir) }
+    let worker
     try {
+      worker = await OnchainWorker.start(config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir)
       const version = await worker.request('version')
-      if (version?.protocol !== 2 || version.indexer !== 'electrum-only' || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
-        version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION) {
+      if (version?.protocol !== 2 || version.indexer !== 'electrum-only' || version.networkChecks !== 1 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
+        version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION || version.unsignedRecovery !== 1 || version.journalWrites !== 1) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
       const identity = signer.identity
-      const opened = await worker.request('open', { ...identity, network: config.network, dataDir })
+      const opened = await worker.request('open', { ...identity, network: config.network, mode: config.mode, dataDir })
       if (opened?.watchOnly !== true || opened.network !== config.network) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Native wallet did not attest the requested watch-only network')
       }
-      const journal = new OnchainJournal(dataDir)
-      await journal.bind(sha256(new TextEncoder().encode(JSON.stringify([config.network, identity.accountXpubVanilla, identity.accountXpubColored, identity.masterFingerprint]))))
-      await worker.request('goOnline', config.online)
+      const journal = new OnchainJournal(dataDir, { worker })
+      const invoices = new OnchainJournal(dataDir, { invoices: true, worker })
+      const identityFields = [config.network, identity.accountXpubVanilla, identity.accountXpubColored, identity.masterFingerprint]
+      // Domain-separate BTC-only storage so older SDKs cannot open it as RGB.
+      if (config.mode === 'btc-only') identityFields.push(config.mode)
+      const journalIdentity = sha256(new TextEncoder().encode(JSON.stringify(identityFields)))
+      await journal.bind(journalIdentity, config.mode)
+      await invoices.bind(journalIdentity, config.mode)
+      const account = new WalletAccountRgb(worker, signer, config, journal, invoices, releaseDirectory)
+      if (config.startupMode === 'online') await account.connect()
       if (isDisposed()) throw new WalletRuntimeError('WALLET_CLOSED', 'Wallet manager is closed')
-      return new WalletAccountRgb(worker, signer, config, journal)
+      return account
     } catch (error) {
-      await worker.close()
+      try { await worker?.close() } finally { releaseDirectory() }
       throw error
     }
   }
 
-  constructor (worker, signer, config, journal) {
+  constructor (worker, signer, config, journal, invoices, releaseDirectory) {
     this.#worker = worker
     this.#signer = signer
     this.#config = config
     this.#journal = journal
+    this.#invoices = invoices
+    this.#releaseDirectory = releaseDirectory
   }
 
   get disposed () { return this.#closed }
@@ -225,15 +254,39 @@ export class WalletAccountRgb {
   getNetwork () { return this.#config.network }
   shutdown () { return this.dispose() }
 
-  async dispose () {
-    if (!this.#closed) this.#closed = true
+  dispose () {
+    if (this.#closing) return this.#closing
+    this.#closed = true
     this.#signer.destroy()
     this.#prepared = undefined
-    await this.#worker.close()
+    // The native worker owns the directory lock. Keep it alive through an
+    // admitted journal write, while closing admission to any later writes.
+    // A user approval or pending native request must never delay shutdown.
+    this.#closing = (this.#journalWrite ?? Promise.resolve()).catch(() => {})
+      .then(() => this.#worker.close()).finally(this.#releaseDirectory)
+    return this.#closing
   }
 
   #assertOpen () {
     if (this.#closed) throw new WalletRuntimeError('WALLET_CLOSED', 'Wallet account is closed')
+  }
+
+  #assertConnected () {
+    if (!this.#connected) throw new WalletRuntimeError('WALLET_OFFLINE', 'The wallet has no online indexer session')
+  }
+
+  #assertRgbMode () {
+    this.#assertOpen()
+    if (this.#config.mode === 'btc-only') {
+      throw new WalletRuntimeError('RGB_MODE_UNAVAILABLE', 'This wallet was restored for Bitcoin only. RGB state requires a verified wallet backup.')
+    }
+  }
+
+  #saveRecord (record, journal = this.#journal) {
+    this.#assertOpen()
+    const pending = Promise.resolve(journal.save(record))
+    this.#journalWrite = pending
+    return pending.finally(() => { this.#journalWrite = undefined })
   }
 
   async #run (callback) {
@@ -247,13 +300,76 @@ export class WalletAccountRgb {
     return this.#run(() => this.#worker.request(method, params))
   }
 
+  getConnectionStatus () {
+    this.#assertOpen()
+    if (!this.#worker.available) return 'unavailable'
+    return this.#connected ? 'connected' : 'offline'
+  }
+
+  connect () {
+    return this.#run(async () => {
+      if (this.#connected) {
+        if (!this.#worker.available) throw new WalletRuntimeError('NATIVE_CLOSED', 'Reopen the wallet to reconnect')
+        return
+      }
+      await this.#worker.request('goOnline', this.#config.online)
+      this.#assertOpen()
+      this.#connected = true
+    })
+  }
+
+  getNetworkInfo () {
+    return this.#run(async () => {
+      this.#assertConnected()
+      const result = await this.#worker.request('getNetworkInfo')
+      this.#assertOpen()
+      if (result?.network !== this.#config.network || !Number.isSafeInteger(result.height) ||
+          result.height < 0 || result.height > 0xffffffff || typeof result.blockHash !== 'string' ||
+          !HEX_32.test(result.blockHash)) {
+        throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid Bitcoin chain tip')
+      }
+      return { network: result.network, height: result.height, blockHash: result.blockHash }
+    })
+  }
+
+  checkIndexerUrl (url = this.#config.online.indexerUrl) {
+    const endpoint = new URL(httpUrl(url, 'indexer endpoint', ['tcp:', 'ssl:']))
+    if (!['', '/'].includes(endpoint.pathname) ||
+        `${endpoint.protocol}//${endpoint.hostname}:${endpoint.port}` !== this.#config.online.indexerUrl) {
+      throw new TypeError('Only the configured Electrum endpoint can be checked')
+    }
+    return this.#run(async () => {
+      const result = await this.#worker.request('checkIndexerUrl', { url: this.#config.online.indexerUrl })
+      this.#assertOpen()
+      if (result?.ok !== true || result.indexerProtocol !== 'Electrum') {
+        throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid Electrum endpoint response')
+      }
+      return { ok: true, indexerProtocol: 'Electrum' }
+    })
+  }
+
+  checkProxyEndpoint (url = this.#config.transportEndpoint) {
+    this.#assertRgbMode()
+    if (url !== this.#config.transportEndpoint) throw new TypeError('Only the configured RGB proxy endpoint can be checked')
+    return this.#run(async () => {
+      const result = await this.#worker.request('checkProxyEndpoint', { url })
+      this.#assertOpen()
+      if (result?.ok !== true) throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid RGB proxy endpoint response')
+      return { ok: true }
+    })
+  }
+
   getInfo () {
     this.#assertOpen()
+    const ready = this.getConnectionStatus() === 'connected'
+    if (this.#config.mode === 'btc-only') {
+      return { ready, network: this.#config.network, protocol: 'BTC_L1', methods: [] }
+    }
     const burnDestinationRoutes = [...this.#config.routes]
-    const methods = ['getInfo', 'getAddress', 'listAssets', 'getAssetBalance', 'listTransfers', 'blindReceive', 'decodeRgbInvoice']
+    const methods = ['getInfo', 'getAddress', 'listAssets', 'getAssetBalance', 'listTransfers', 'blindReceive', 'witnessReceive', 'decodeRgbInvoice']
     if (burnDestinationRoutes.length) methods.push('burnAsset', 'getConsignment')
     return {
-      ready: this.#worker.available,
+      ready,
       network: this.#config.network,
       protocol: 'RGB_L1',
       methods,
@@ -272,6 +388,7 @@ export class WalletAccountRgb {
   getNewAddress () { return this.#run(() => this.#allocateAddress()) }
 
   async #allocateAddress () {
+    this.#assertConnected()
     const { address } = await this.#worker.request('getAddress')
     this.#assertOpen()
     if (typeof address !== 'string' || !address) throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid receive address')
@@ -311,7 +428,11 @@ export class WalletAccountRgb {
     return verifyMessageBip322(message, address, signature, this.#config.network)
   }
 
-  getBtcBalance () { return this.#read('getBtcBalance') }
+  async getBtcBalance () {
+    const balance = await this.#read('getBtcBalance')
+    if (this.#config.mode !== 'btc-only') return balance
+    return { vanilla: balance.vanilla, colored: { ...balance.colored, spendable: '0' } }
+  }
   getBalanceDetails () { return this.getBtcBalance() }
   async getBalance () { return BigInt((await this.getBtcBalance()).vanilla.spendable) }
   getAssetBalance (assetId) { return this.#read('getAssetBalance', { assetId: checkAsset(assetId) }) }
@@ -319,6 +440,49 @@ export class WalletAccountRgb {
   listAssets () { return this.#read('listAssets') }
   getTransactions () { return this.#read('listTransactions') }
   getAssetMetadata (assetId) { return this.#read('getAssetMetadata', { assetId: checkAsset(assetId) }) }
+
+  async #findTransaction (hash) {
+    checkTxid(hash)
+    return (await this.getTransactions()).find(transaction => transaction.txid === hash)
+  }
+
+  async getTransaction (hash) {
+    const transaction = await this.#findTransaction(hash)
+    if (!transaction) throw new NoSuchElementError('Transaction is absent from wallet history')
+    const { confirmationTime, fee } = transaction
+    return {
+      hash,
+      finality: confirmationTime ? 'confirmed' : 'pending',
+      ...(confirmationTime && { block: confirmationTime.height, success: true }),
+      ...(BigInt(fee) > 0n && { fee: BigInt(fee) })
+    }
+  }
+
+  async getTransactionReceipt (hash) {
+    const transaction = await this.#findTransaction(hash)
+    return transaction?.confirmationTime ? transaction : null
+  }
+
+  waitForTransaction (hash, options) {
+    return this.toReadOnlyAccount().then(account => account.waitForTransaction(hash, options))
+  }
+
+  async toReadOnlyAccount () {
+    this.#assertOpen()
+    const account = this
+    return Object.freeze(new class extends WalletAccountReadOnly {
+      async getAddress () {
+        account.#assertOpen()
+        if (!account.#address) throw new WalletRuntimeError('ADDRESS_UNALLOCATED', 'Allocate a receive address on the wallet first')
+        return account.#address
+      }
+
+      getBalance () { return account.getBalance() }
+      getTokenBalance (assetId) { return account.getTokenBalance(assetId) }
+      getTransaction (hash) { return account.getTransaction(hash) }
+      getTransactionReceipt (hash) { return account.getTransactionReceipt(hash) }
+    }())
+  }
 
   estimateFeeResult (blocks = 6) { return this.#read('getFeeRate', { blocks: checkFeeBlocks(blocks) }) }
 
@@ -334,6 +498,7 @@ export class WalletAccountRgb {
     const invoice = checkRgbInvoice(request.invoice)
     const copy = { ...request, invoice }
     return this.#run(async () => {
+      this.#assertRgbMode()
       const decoded = await this.#worker.request('decodeInvoice', { invoice })
       const { args, expectations } = prepareRgbSend(copy, decoded, this.#config)
       return this.#authorizeAndSubmit(await this.#prepare(copy.operationId, 'rgb-send', args, expectations, 'sendRgb'))
@@ -343,11 +508,12 @@ export class WalletAccountRgb {
   recoverSend (operationId) {
     return this.#run(async () => {
       const record = await this.#journal.get(operationId)
+      if (record?.kind === 'rgb-send') this.#assertRgbMode()
       const params = sendRecoveryParams(record)
       if (record.stage === 'failed') return { state: 'failed', txid: params.txid, batchTransferIdx: params.batchTransferIdx }
       const status = admitSendStatus(await this.#worker.request('getSendStatus', params), params)
       if (status.state !== 'unresolved' && status.state !== record.stage) {
-        await this.#journal.save({ ...record, stage: status.state })
+        await this.#saveRecord({ ...record, stage: status.state })
       }
       return status
     })
@@ -370,6 +536,7 @@ export class WalletAccountRgb {
   }
 
   refresh (assetId) {
+    this.#assertRgbMode()
     return this.#read('refresh', assetId === undefined ? {} : { assetId: checkAsset(assetId) })
   }
 
@@ -380,6 +547,7 @@ export class WalletAccountRgb {
   importRgbContract (options) { return this.registerAssetContract(options) }
 
   registerAssetContract ({ contract, assetId, sha256: expectedSha256 }) {
+    this.#assertRgbMode()
     if (!(contract instanceof Uint8Array) || contract.length === 0 || contract.length > MAX_CONTRACT_BYTES ||
       typeof expectedSha256 !== 'string' || sha256(contract) !== expectedSha256) {
       throw new TypeError('Contract bytes must match the configured SHA-256')
@@ -401,7 +569,7 @@ export class WalletAccountRgb {
     throw new TypeError('Unknown RGB receive mode')
   }
 
-  #receive (method, { assetId, amount, expirationSeconds = 7200, minConfirmations = 3 } = {}) {
+  #receiveParams ({ assetId, amount, expirationSeconds = 7200, minConfirmations = 3 } = {}) {
     const params = {
       transportEndpoints: [this.#config.transportEndpoint],
       expirationTimestamp: String(Math.floor(Date.now() / 1000) + smallInteger(expirationSeconds, 'invoice expiry', 3600, 604800)),
@@ -409,7 +577,62 @@ export class WalletAccountRgb {
     }
     if (assetId !== undefined) params.assetId = checkAsset(assetId)
     if (amount !== undefined) params.amount = u64(amount, 'Invoice amount')
-    return this.#read(method, params)
+    return params
+  }
+
+  #receive (method, options) {
+    const params = this.#receiveParams(options)
+    return this.#run(() => {
+      this.#assertRgbMode()
+      this.#assertConnected()
+      return this.#worker.request(method, params)
+    })
+  }
+
+  // Host-only entry point. A lost response can disclose the exact previously
+  // authorized invoice to that same request. It can never allocate another one.
+  receiveWebRgbInvoice ({ method, operationId, requestKey, options, assertAuthorized, approve }) {
+    if (!['blindReceive', 'witnessReceive'].includes(method) || typeof requestKey !== 'string' || !HEX_32.test(requestKey) ||
+        typeof assertAuthorized !== 'function' || typeof approve !== 'function') {
+      throw new TypeError('Invalid trusted receive request')
+    }
+    checkOperationId(operationId)
+    const params = this.#receiveParams(options)
+    return this.#run(async () => {
+      this.#assertRgbMode()
+      this.#assertConnected()
+      assertMutationAuthorized(assertAuthorized)
+      const existing = await this.#invoices.get(operationId)
+      this.#assertOpen()
+      assertMutationAuthorized(assertAuthorized)
+      if (existing !== undefined) {
+        if (existing.kind !== 'rgb-receive' || existing.method !== method || existing.requestKey !== requestKey) {
+          throw new WalletRuntimeError('INVALID_PARAMS', 'Receive request identity does not match')
+        }
+        if (existing.stage === 'submitted' && typeof existing.result?.expirationTimestamp === 'string' &&
+            Number(existing.result.expirationTimestamp) > Math.floor(Date.now() / 1000)) return existing.result
+        throw new WalletRuntimeError('INVOICE_UNAVAILABLE', 'The original invoice is expired or requires reconciliation')
+      }
+
+      await approve()
+      this.#assertOpen()
+      assertMutationAuthorized(assertAuthorized)
+      const entry = { id: operationId, kind: 'rgb-receive', stage: 'starting', method, requestKey }
+      await this.#saveRecord(entry, this.#invoices)
+      this.#assertOpen()
+      assertMutationAuthorized(assertAuthorized)
+      const result = await this.#worker.request(method, params)
+      if (typeof result?.invoice !== 'string' || result.invoice.length > 8192 || !result.invoice.startsWith('rgb:') ||
+          typeof result.recipientId !== 'string' || !result.recipientId || result.recipientId.length > 1024 ||
+          result.expirationTimestamp !== params.expirationTimestamp) {
+        throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid receive invoice response')
+      }
+      const invoice = { invoice: result.invoice, recipientId: result.recipientId, expirationTimestamp: result.expirationTimestamp }
+      await this.#saveRecord({ ...entry, stage: 'submitted', result: invoice }, this.#invoices)
+      this.#assertOpen()
+      assertMutationAuthorized(assertAuthorized)
+      return invoice
+    })
   }
 
   async getInvoiceStatus (recipientId) {
@@ -447,6 +670,7 @@ export class WalletAccountRgb {
 
   cancelCreateUtxosPlan ({ operationId, psbtSha256 }) {
     return this.#run(async () => {
+      this.#assertRgbMode()
       const record = await this.#journal.get(operationId)
       if (record?.kind !== 'rgb-output' || record.stage !== 'prepared' ||
           !HEX_32.test(psbtSha256) || record.psbtSha256 !== psbtSha256) {
@@ -454,14 +678,17 @@ export class WalletAccountRgb {
       }
       if (this.#prepared) {
         await this.#discard(this.#requireOutputPlan(operationId, psbtSha256))
+      } else if (Array.isArray(record.unsignedCheckpoint)) {
+        await this.#discardAbandoned(record)
       } else {
         await this.#worker.request('cancelAbandonedOutputs', { txid: checkTxid(record.txid) })
-        await this.#journal.save({ ...record, stage: 'declined' })
+        await this.#saveRecord({ ...record, stage: 'declined' })
       }
     })
   }
 
   #requireOutputPlan (operationId, psbtSha256) {
+    this.#assertRgbMode()
     const plan = this.#prepared
     if (plan?.record.kind !== 'rgb-output' || plan.record.id !== operationId || plan.plan.psbtSha256 !== psbtSha256) {
       throw new WalletRuntimeError('NO_PREPARED_OPERATION', 'Output plan identity does not match this wallet session')
@@ -482,23 +709,26 @@ export class WalletAccountRgb {
 
   recoverCreateUtxos (operationId) {
     return this.#run(async () => {
+      this.#assertRgbMode()
       const record = await this.#journal.get(operationId)
       if (record?.kind !== 'rgb-output' || !['submitting', 'submitted'].includes(record.stage)) {
         throw new WalletRuntimeError('OPERATION_UNRESOLVED', 'No submitted RGB output operation is recorded')
       }
       if (record.stage === 'submitted') return record
+      this.#assertConnected()
       const txid = checkTxid(record.txid)
       const rows = await this.#worker.request('listTransactions')
       if (!rows.some(row => row.txid === txid && row.type === 'CreateUtxos')) {
         throw new WalletRuntimeError('OPERATION_UNRESOLVED', 'The original RGB output transaction was not found')
       }
       const submitted = { ...record, stage: 'submitted' }
-      await this.#journal.save(submitted)
+      await this.#saveRecord(submitted)
       return submitted
     })
   }
 
   burnAsset ({ operationId, assetId, amount, feeRate, minConfirmations = 6, burnRecipient, burnDestination, assertAuthorized, webRgbBinding }) {
+    this.#assertRgbMode()
     let binding
     if (webRgbBinding !== undefined) {
       const { scopeKey, requestKey } = webRgbBinding
@@ -529,24 +759,28 @@ export class WalletAccountRgb {
 
   async #prepare (id, kind, args, expectations, method, burn) {
     checkOperationId(id)
+    if (kind !== 'btc-send') this.#assertRgbMode()
+    this.#assertConnected()
     assertMutationAuthorized(burn?.assertAuthorized)
     if (await this.#journal.get(id)) {
       throw new WalletRuntimeError('OPERATION_EXISTS', 'Operation ID was already recorded. Use recovery to inspect its result.')
     }
     await this.#journal.assertAvailable()
+    const { reservations: unsignedCheckpoint } = await this.#worker.request('snapshotUnsigned', { kind })
+    if (!Array.isArray(unsignedCheckpoint)) throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Unsigned reservation checkpoint is invalid')
     const record = {
-      id, kind, args, stage: 'starting',
+      id, kind, args, stage: 'starting', unsignedCheckpoint,
       ...(burn && { burnDestination: burn.destination, burnRecipient: { ...burn.recipient } }),
       ...(burn?.binding && { webRgbBinding: burn.binding })
     }
-    await this.#journal.save(record)
+    await this.#saveRecord(record)
     try {
       this.#assertOpen()
       assertMutationAuthorized(burn?.assertAuthorized)
     } catch (error) {
-      // No native Begin was invoked. The durable ID remains consumed, but
-      // this record cannot block future independent wallet operations.
-      await this.#journal.save({ ...record, stage: 'declined' })
+      // No native Begin was invoked. If the wallet is closing, leave the
+      // durable checkpoint for the next owner and make no further writes.
+      if (!this.#closed) await this.#saveRecord({ ...record, stage: 'declined' })
       throw error
     }
     let draft
@@ -554,7 +788,11 @@ export class WalletAccountRgb {
       draft = await this.#worker.request(method + 'Begin', args)
     } catch (error) {
       if (['btc-send', 'rgb-send'].includes(kind) && ['SEND_NOT_PREPARED', 'SEND_PLAN_REJECTED'].includes(error.code)) {
-        await this.#journal.save({ ...record, stage: 'declined' })
+        await this.#saveRecord({ ...record, stage: 'declined' })
+      } else if (this.#worker.available) {
+        // A live worker can reconcile a rejected Begin without waiting for the host to retry.
+        // If reconciliation fails, leave the checkpoint intact and surface the original fault.
+        await this.#discardAbandoned(record).catch(() => {})
       }
       throw error
     }
@@ -566,7 +804,7 @@ export class WalletAccountRgb {
       const plan = this.#signer.inspect(psbt, expectation)
       if (plan.txid !== txid) throw new WalletRuntimeError('PSBT_MISMATCH', 'Native transaction ID does not match the reviewed PSBT')
       record.psbtSha256 = plan.psbtSha256
-      await this.#journal.save(record)
+      await this.#saveRecord(record)
       this.#assertOpen()
       const review = Object.freeze({
         operationId: id,
@@ -580,7 +818,7 @@ export class WalletAccountRgb {
     } catch (error) {
       this.#assertOpen()
       await this.#worker.request('discardPrepared', { txid })
-      await this.#journal.save({ ...record, stage: 'declined' })
+      await this.#saveRecord({ ...record, stage: 'declined' })
       throw error
     }
   }
@@ -589,7 +827,7 @@ export class WalletAccountRgb {
     this.#prepared = undefined
     this.#assertOpen()
     await this.#worker.request('discardPrepared', { txid: record.txid })
-    await this.#journal.save({ ...record, stage: 'declined' })
+    await this.#saveRecord({ ...record, stage: 'declined' })
   }
 
   async #authorizeAndSubmit (prepared) {
@@ -616,7 +854,7 @@ export class WalletAccountRgb {
       throw error
     }
     this.#prepared = undefined
-    await this.#journal.save({ ...record, stage: 'submitting' })
+    await this.#saveRecord({ ...record, stage: 'submitting' })
     this.#assertOpen()
     try {
       assertMutationAuthorized(burn?.assertAuthorized)
@@ -626,7 +864,7 @@ export class WalletAccountRgb {
     }
     const result = await this.#worker.request(method + 'End', { signedPsbt })
     if (result?.txid !== record.txid) throw new WalletRuntimeError('TXID_MISMATCH', 'Submitted transaction did not match the reviewed transaction')
-    await this.#journal.save({ ...record, stage: 'submitted' })
+    await this.#saveRecord({ ...record, stage: 'submitted' })
     return {
       ...result,
       ...(burn && {
@@ -640,6 +878,40 @@ export class WalletAccountRgb {
   }
 
   getOperation (id) { return this.#run(() => this.#journal.get(id)) }
+
+  listUnresolvedOperations () {
+    return this.#run(async () => (await this.#journal.records()).filter(record => SPEND_KINDS.has(record.kind) &&
+      ['starting', 'prepared', 'submitting'].includes(record.stage)))
+  }
+
+  recoverUnsubmittedOperation (operationId) {
+    return this.#run(async () => {
+      const record = await this.#journal.get(operationId)
+      if (record && record.kind !== 'btc-send') this.#assertRgbMode()
+      if (!record || !SPEND_KINDS.has(record.kind) || !Array.isArray(record.unsignedCheckpoint)) {
+        throw new WalletRuntimeError('OPERATION_UNRESOLVED', 'No unsigned reservation checkpoint is available')
+      }
+      if (record.stage === 'declined') return record
+      if (!['starting', 'prepared'].includes(record.stage) || this.#prepared) {
+        throw new WalletRuntimeError('OPERATION_UNRESOLVED', 'This operation cannot be discarded as an abandoned unsigned plan')
+      }
+      return this.#discardAbandoned(record)
+    })
+  }
+
+  async #discardAbandoned (record) {
+    this.#assertOpen()
+    const result = await this.#worker.request('discardUnsubmitted', {
+      kind: record.kind,
+      checkpoint: record.unsignedCheckpoint,
+      ...(record.stage === 'prepared' && { expected: { txid: checkTxid(record.txid), batchTransferIdx: record.batchTransferIdx } })
+    })
+    if (result?.discarded !== true) throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Unsigned reservation cleanup was not acknowledged')
+    this.#assertOpen()
+    const declined = { ...record, stage: 'declined' }
+    await this.#saveRecord(declined)
+    return declined
+  }
 
   getConsignment ({ assetId, txid, webRgbScopeKey }) {
     checkAsset(assetId)
@@ -660,6 +932,7 @@ export class WalletAccountRgb {
   }
 
   async #proof (record) {
+    this.#assertRgbMode()
     if (record?.kind !== 'rgb-burn' || !['submitting', 'submitted'].includes(record.stage)) {
       throw new WalletRuntimeError('PROOF_UNAVAILABLE', 'No matching submitted burn is recorded for this wallet')
     }
@@ -678,7 +951,7 @@ export class WalletAccountRgb {
       !PROOF_MAGIC.every((byte, index) => byte === bytes[index]) || base64.encode(bytes) !== result.data || sha256(bytes) !== result.sha256) {
       throw new WalletRuntimeError('PROOF_INVALID', 'Native wallet returned an invalid burn proof')
     }
-    if (record.stage === 'submitting') await this.#journal.save({ ...record, stage: 'submitted' })
+    if (record.stage === 'submitting') await this.#saveRecord({ ...record, stage: 'submitted' })
     return {
       txid,
       assetId,

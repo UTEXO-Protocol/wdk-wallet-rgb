@@ -53,19 +53,32 @@ async function writeAtomically (dir, name, value) {
 
 export class OnchainJournal {
   #dir
+  #scope
+  #worker
 
-  constructor (dataDir) { this.#dir = join(dataDir, '.wdk-onchain-journal-v1') }
+  constructor (dataDir, { invoices = false, worker } = {}) {
+    this.#dir = join(dataDir, invoices ? '.wdk-onchain-invoices-v1' : '.wdk-onchain-journal-v1')
+    this.#scope = invoices ? 'invoice' : 'spend'
+    this.#worker = worker
+  }
 
-  async bind (identity) {
+  async bind (identity, mode = 'rgb') {
+    if (mode !== 'rgb' && mode !== 'btc-only') throw new TypeError('Invalid wallet storage mode')
+    if (this.#worker) return this.#writeNative('bindJournal', { identity })
     await privateWalletDir(this.#dir)
     const name = 'identity.json'
     const saved = await this.#read(name)
     if (saved === undefined) {
       const files = await fs.readdir(this.#dir)
       if (files.some(file => file.endsWith('.json'))) throw new Error('Operation journal has no wallet identity')
-      await writeAtomically(this.#dir, name, { identity })
-    } else if (saved?.identity !== identity) {
-      throw new WalletRuntimeError('WALLET_IDENTITY_MISMATCH', 'Wallet directory belongs to another on-chain account')
+      await writeAtomically(this.#dir, name, { identity, mode })
+    } else {
+      if (saved && (Object.hasOwn(saved, 'mode') ? saved.mode : 'rgb') !== mode) {
+        throw new WalletRuntimeError('WALLET_MODE_MISMATCH', 'Wallet directory belongs to another wallet mode')
+      }
+      if (saved?.identity !== identity) {
+        throw new WalletRuntimeError('WALLET_IDENTITY_MISMATCH', 'Wallet directory belongs to another on-chain account')
+      }
     }
   }
 
@@ -89,7 +102,14 @@ export class OnchainJournal {
   }
 
   async save (record) {
-    await writeAtomically(this.#dir, checkOperationId(record.id) + '.json', record)
+    const name = checkOperationId(record.id) + '.json'
+    if (this.#worker) return this.#writeNative('writeJournalRecord', { record })
+    await writeAtomically(this.#dir, name, record)
+  }
+
+  async #writeNative (method, params) {
+    const result = await this.#worker.request(method, { scope: this.#scope, ...params })
+    if (result?.written !== true) throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Wallet journal write was not acknowledged')
   }
 
   async #read (name) {

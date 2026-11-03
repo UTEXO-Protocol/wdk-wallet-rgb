@@ -1,3 +1,5 @@
+import type { IWalletAccountReadOnly, TransactionReceipt, WaitForTransactionOptions } from '@tetherto/wdk-wallet'
+
 export type BaseUnits = `${bigint}` | bigint
 export type V1Chain = 'eip155:42161' | 'eip155:1' | 'eip155:137' | 'eip155:9745' | 'tron:728126428'
 export type BurnRecipient = { chainId: V1Chain; address: string }
@@ -38,17 +40,28 @@ export type Review = Readonly<{
 }>
 type SharedCandidateConfig = {
   network: 'regtest'
+  startupMode?: 'online' | 'offline'
   dataDir: string
   indexerUrl: `${'tcp' | 'ssl'}://${string}`
-  transportEndpoint: string
   maxFeeSats: BaseUnits
-  evmRpcUrls?: Record<string, string>
-  proxyAuthKeys?: Record<string, string>
-  burnDestinationRoutes?: readonly BurnRoute[]
   authorize(review: Review): boolean | Promise<boolean>
   authorizeMessage?(review: MessageReview): boolean | Promise<boolean>
 }
-export type CandidateConfig = SharedCandidateConfig & ({
+type WalletModeConfig = {
+  mode?: 'rgb'
+  transportEndpoint: string
+  evmRpcUrls?: Record<string, string>
+  proxyAuthKeys?: Record<string, string>
+  burnDestinationRoutes?: readonly BurnRoute[]
+} | {
+  /** Choose for seed-only imports. The selected mode is bound to the wallet directory. */
+  mode: 'btc-only'
+  transportEndpoint?: never
+  evmRpcUrls?: never
+  proxyAuthKeys?: never
+  burnDestinationRoutes?: never
+}
+export type CandidateConfig = SharedCandidateConfig & WalletModeConfig & ({
   nativeExecutable: string
   nativeSha256: string
   androidNativeLibraryDir?: never
@@ -134,6 +147,12 @@ export class WalletAccountRgb {
   shutdown(): Promise<void>
   isDisposed(): boolean
   getNetwork(): 'regtest'
+  /** Tracks whether an indexer session was established. Call getNetworkInfo for current reachability. */
+  getConnectionStatus(): 'offline' | 'connected' | 'unavailable'
+  connect(): Promise<void>
+  getNetworkInfo(): Promise<{ network: 'regtest'; height: number; blockHash: string }>
+  checkIndexerUrl(url?: string): Promise<{ ok: true; indexerProtocol: 'Electrum' }>
+  checkProxyEndpoint(url?: string): Promise<{ ok: true }>
   getInfo(): {
     ready: boolean
     network: 'regtest'
@@ -142,6 +161,11 @@ export class WalletAccountRgb {
     burnDestinationVersion?: 1
     burnDestinationRoutes?: BurnRoute[]
     burnRecipientNamespaces?: string[]
+  } | {
+    ready: boolean
+    network: 'regtest'
+    protocol: 'BTC_L1'
+    methods: []
   }
   getAddress(): Promise<string>
   getNewAddress(): Promise<string>
@@ -154,6 +178,10 @@ export class WalletAccountRgb {
   getBalanceDetails(): Promise<{ vanilla: Balance; colored: Balance }>
   listAssets(): Promise<AssetView[]>
   getTransactions(): Promise<WalletTransaction[]>
+  getTransaction(hash: string): Promise<TransactionReceipt>
+  getTransactionReceipt(hash: string): Promise<WalletTransaction | null>
+  waitForTransaction(hash: string, options?: WaitForTransactionOptions): Promise<TransactionReceipt>
+  toReadOnlyAccount(): Promise<IWalletAccountReadOnly>
   getAssetMetadata(assetId: string): Promise<unknown>
   estimateFeeResult(blocks?: number): Promise<{ feeRate: string }>
   decodeRgbInvoice(invoice: string): Promise<DecodedInvoice>
@@ -175,6 +203,11 @@ export class WalletAccountRgb {
   blindReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>
   witnessReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>
   createRgbInvoice(options?: ReceiveRequest & { mode?: 'blind' | 'witness' }): Promise<ReceiveInvoice>
+  /** Trusted transport entry point. approve() must reject if the user declines. */
+  receiveWebRgbInvoice(request: {
+    method: 'blindReceive' | 'witnessReceive'; operationId: string; requestKey: string;
+    options: ReceiveRequest; assertAuthorized(): void; approve(): Promise<void>
+  }): Promise<Pick<ReceiveInvoice, 'invoice' | 'recipientId' | 'expirationTimestamp'>>
   getInvoiceStatus(recipientId: string): Promise<Transfer | null>
   createUtxos(options: OutputRequest): Promise<Operation>
   prepareCreateUtxos(options: OutputRequest): Promise<Review>
@@ -187,6 +220,8 @@ export class WalletAccountRgb {
     assetId: string; amount: string; minConfirmations: number; burnRecipient: BurnRecipient; burnDestination: BurnDestination
   }>
   getOperation(operationId: string): Promise<OperationRecord | undefined>
+  listUnresolvedOperations(): Promise<OperationRecord[]>
+  recoverUnsubmittedOperation(operationId: string): Promise<OperationRecord>
   getConsignment(options: { assetId: string; txid: string }): Promise<Proof>
   recoverBurn(operationId: string): Promise<{ txid: string; assetId: string; burnDestination: BurnDestination; proof: Proof }>
 }

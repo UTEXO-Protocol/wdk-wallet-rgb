@@ -3,6 +3,7 @@ name = "utexo-rgb-native-bare"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.94.0"
+license = "Apache-2.0"
 publish = false
 
 [lib]
@@ -11,6 +12,8 @@ crate-type = ["staticlib"]
 [dependencies]
 rgb-lib = { path = "../.sources/rgb-lib-bfa-bare", default-features = false, features = ["electrum", "camel_case"] }
 rgb-invoicing = { version = "=0.11.2-rc.1", default-features = false }
+electrum-client = { version = "=0.25.2", default-features = false }
+reqwest = { version = "=0.13.5", default-features = false, features = ["blocking", "json"] }
 base64 = "0.23.1"
 fs2 = "0.4.3"
 libc = "0.2"

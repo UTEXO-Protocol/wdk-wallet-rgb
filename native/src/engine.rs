@@ -27,6 +27,15 @@ use zeroize::Zeroize;
 #[path = "read_api.rs"]
 mod read_api;
 
+#[path = "network.rs"]
+mod network;
+
+#[path = "recovery.rs"]
+mod recovery;
+
+#[path = "journal.rs"]
+mod journal;
+
 #[path = "send.rs"]
 mod send;
 
@@ -144,6 +153,8 @@ struct Open {
     account_xpub_vanilla: String,
     account_xpub_colored: String,
     master_fingerprint: String,
+    #[serde(default)]
+    mode: journal::Mode,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -243,11 +254,15 @@ struct InvoiceInput {
     invoice: String,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Deserialize, PartialEq, Eq)]
 enum Kind {
+    #[serde(rename = "rgb-output")]
     Outputs,
+    #[serde(rename = "btc-send")]
     Btc,
+    #[serde(rename = "rgb-send")]
     Rgb,
+    #[serde(rename = "rgb-burn")]
     Burn,
 }
 struct Prepared {
@@ -262,8 +277,11 @@ struct Session {
     wallet: Wallet,
     _directory_lock: File,
     root: PathBuf,
+    journal_identity: String,
+    journal_mode: journal::Mode,
     network: BitcoinNetwork,
     online: Option<Online>,
+    indexer_url: Option<String>,
     prepared: Option<Prepared>,
 }
 #[derive(Default)]
@@ -396,13 +414,19 @@ fn bind_identity(root: &Path, params: &Open, network: BitcoinNetwork) -> Result<
 pub(crate) fn validated_url(value: &str, allowed: &[&str], allow_plain: bool) -> Result<Url> {
     let url = Url::parse(value).map_err(|_| input("Invalid network endpoint."))?;
     if value.len() > 2048
+        || value.bytes().any(|b| b.is_ascii_control() || b.is_ascii_whitespace() || b == b'\\')
+        || value.split_once("://").is_none_or(|(_, tail)| {
+            tail.split('/').next().is_none_or(|host| host.is_empty() || host.contains('@'))
+        })
         || !allowed.contains(&url.scheme())
         || url.host().is_none()
         || !url.username().is_empty()
         || url.password().is_some()
+        || url.port() == Some(0)
         || url.fragment().is_some()
         || url.query().is_some()
         || (!allow_plain && matches!(url.scheme(), "http" | "tcp" | "rpc"))
+        || (allow_plain && !matches!(url.host_str(), Some("127.0.0.1" | "localhost" | "[::1]")))
     {
         return Err(input(
             "Network endpoint is not admitted by this wallet profile.",
@@ -538,6 +562,17 @@ impl Worker {
                 }
                 let (root, lock) = open_root(&p.data_dir)?;
                 bind_identity(&root, &p, network)?;
+                let mut identity_fields = vec![
+                    p.network.as_str(),
+                    p.account_xpub_vanilla.as_str(),
+                    p.account_xpub_colored.as_str(),
+                    p.master_fingerprint.as_str(),
+                ];
+                if p.mode == journal::Mode::BtcOnly {
+                    identity_fields.push(p.mode.as_str());
+                }
+                let journal_identity = sha256(&serde_json::to_vec(&identity_fields)
+                    .map_err(|_| input("Invalid wallet journal identity."))?);
                 let fingerprint_path = root.join(&p.master_fingerprint);
                 if let Ok(meta) = fingerprint_path.symlink_metadata() {
                     if !meta.is_dir() {
@@ -577,8 +612,11 @@ impl Worker {
                     wallet,
                     _directory_lock: lock,
                     root,
+                    journal_identity,
+                    journal_mode: p.mode,
                     network,
                     online: None,
+                    indexer_url: None,
                     prepared: None,
                 });
                 Ok(json!({"network":p.network,"watchOnly":true}))
@@ -605,6 +643,9 @@ impl Session {
                 "The RGB wallet has no online indexer session.",
             )
         })
+    }
+    fn skip_read_sync(&self) -> bool {
+        self.online.is_none() || self.prepared.is_some()
     }
     fn idle(&self) -> Result<()> {
         if self.prepared.is_some() {
@@ -771,6 +812,10 @@ impl Session {
         self.idle()?;
         let regtest = self.network == BitcoinNetwork::Regtest;
         let config = crate::profile::indexer(p.indexer_url, p.bitcoind_auth.take(), regtest)?;
+        let rgb_lib::wallet::IndexerConfig::Electrum { url: indexer_url } = &config else {
+            unreachable!("the profile admits only Electrum");
+        };
+        let indexer_url = indexer_url.clone();
         if p.evm_rpc_urls.len() > 16 || p.proxy_auth_keys.len() > 16 {
             return Err(input("Too many network endpoints."));
         }
@@ -800,7 +845,10 @@ impl Session {
             secret.zeroize();
         }
         crate::profile::clear_indexer_credentials(&mut options.indexer_config);
+        self.online = None;
+        self.indexer_url = None;
         self.online = Some(online.map_err(native)?);
+        self.indexer_url = Some(indexer_url);
         Ok(json!({}))
     }
     fn receive(&mut self, p: Receive, blind: bool) -> Result<Value> {
@@ -1018,6 +1066,9 @@ impl Session {
     fn dispatch(&mut self, method: &str, params: Value) -> Result<Value> {
         match method {
             "goOnline" => self.go_online(decode(params)?),
+            "getNetworkInfo" => self.network_info(params),
+            "checkIndexerUrl" => self.check_indexer(params),
+            "checkProxyEndpoint" => self.check_proxy(params),
             "getAddress" => {
                 let _: Empty = decode(params)?;
                 self.idle()?;
@@ -1027,7 +1078,7 @@ impl Session {
                 let _: Empty = decode(params)?;
                 let balance = self
                     .wallet
-                    .get_btc_balance(self.online, self.prepared.is_some())
+                    .get_btc_balance(self.online, self.skip_read_sync())
                     .map_err(native)?;
                 Ok(
                     json!({"vanilla":iso_balance(balance.vanilla), "colored":iso_balance(balance.colored)}),
@@ -1055,7 +1106,7 @@ impl Session {
                 let _: Empty = decode(params)?;
                 let rows = self
                     .wallet
-                    .list_unspents(self.online, false, self.prepared.is_some())
+                    .list_unspents(self.online, false, self.skip_read_sync())
                     .map_err(native)?;
                 Ok(Value::Array(rows.into_iter().map(|row| {
                     let allocations = row.rgb_allocations.into_iter().map(|a| json!({
@@ -1074,7 +1125,7 @@ impl Session {
                 let _: Empty = decode(params)?;
                 let rows = self
                     .wallet
-                    .list_transactions(self.online, self.prepared.is_some())
+                    .list_transactions(self.online, self.skip_read_sync())
                     .map_err(native)?;
                 Ok(Value::Array(rows.into_iter().map(|t| json!({
                     "type":t.transaction_type,"txid":t.txid,"received":t.received.to_string(),
@@ -1125,6 +1176,10 @@ impl Session {
                 send::decoded_invoice(&p.invoice)
             }
             "listAssets" => self.assets(params),
+            "bindJournal" => self.bind_journal(params),
+            "writeJournalRecord" => self.write_journal_record(params),
+            "snapshotUnsigned" => self.snapshot_unsigned(params),
+            "discardUnsubmitted" => self.discard_unsubmitted(params),
             "cancelAbandonedOutputs" => self.cancel_abandoned_outputs(params),
             "refresh" => self.refresh_transfers(params),
             "blindReceive" => self.receive(decode(params)?, true),
@@ -1255,6 +1310,9 @@ mod tests {
             second.dispatch("open", params.clone()).unwrap_err().code,
             "WALLET_IN_USE"
         );
+        assert_eq!(first.dispatch("getBtcBalance", json!({})).unwrap()["vanilla"]["spendable"], "0");
+        assert_eq!(first.dispatch("listTransactions", json!({})).unwrap(), json!([]));
+        assert_eq!(first.dispatch("listUnspents", json!({})).unwrap(), json!([]));
         let address = first.dispatch("getAddress", json!({})).unwrap();
         assert!(address["address"].as_str().unwrap().starts_with("bcrt1p"));
         let closed = first.dispatch("close", json!({})).unwrap();
@@ -1273,6 +1331,96 @@ mod tests {
         assert_ne!(
             address, next,
             "persisted derivation index must advance after reopen"
+        );
+    }
+
+    #[test]
+    fn journals_bind_the_native_owner_and_exclude_stale_workers_and_wallet_modes() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let params = open_params(dir.path(), "regtest");
+        let fields = [
+            "network",
+            "accountXpubVanilla",
+            "accountXpubColored",
+            "masterFingerprint",
+        ];
+        let strings = fields.map(|key| params[key].as_str().unwrap());
+        let exact = format!(
+            "[\"{}\",\"{}\",\"{}\",\"{}\"]",
+            strings[0], strings[1], strings[2], strings[3]
+        );
+        let identity = sha256(exact.as_bytes());
+        let mut first = Worker::default();
+        let mut second = Worker::default();
+        first.dispatch("open", params.clone()).unwrap();
+        assert_eq!(
+            first
+                .dispatch("bindJournal", json!({"scope":"spend","identity":"other"}))
+                .unwrap_err()
+                .code,
+            "WALLET_IDENTITY_MISMATCH"
+        );
+        for scope in ["spend", "invoice"] {
+            assert_eq!(
+                first
+                    .dispatch("bindJournal", json!({"scope":scope,"identity":identity}))
+                    .unwrap(),
+                json!({"written":true})
+            );
+        }
+        let spend = json!({"scope":"spend","record":{"id":"native-journal-send-01","kind":"btc-send","stage":"starting"}});
+        let invoice = json!({"scope":"invoice","record":{"id":"native-journal-invoice","kind":"rgb-receive","stage":"submitted"}});
+        for request in [&spend, &invoice] {
+            assert_eq!(
+                first
+                    .dispatch("writeJournalRecord", request.clone())
+                    .unwrap(),
+                json!({"written":true})
+            );
+        }
+        let spend_dir = dir.path().join(".wdk-onchain-journal-v1");
+        let identity_meta = spend_dir.join("identity.json").symlink_metadata().unwrap();
+        assert_eq!(identity_meta.permissions().mode() & 0o777, 0o600);
+        assert_eq!(identity_meta.nlink(), 1);
+        let path = spend_dir.join("native-journal-send-01.json");
+        assert_eq!(
+            serde_json::from_slice::<Value>(&std::fs::read(&path).unwrap()).unwrap(),
+            spend["record"]
+        );
+        assert_eq!(
+            second.dispatch("open", params.clone()).unwrap_err().code,
+            "WALLET_IN_USE"
+        );
+        first.dispatch("close", json!({})).unwrap();
+        let mut btc_params = params.clone();
+        btc_params["mode"] = "btc-only".into();
+        second.dispatch("open", btc_params).unwrap();
+        let btc_identity =
+            sha256(format!("{},\"btc-only\"]", &exact[..exact.len() - 1]).as_bytes());
+        assert_eq!(
+            second
+                .dispatch(
+                    "bindJournal",
+                    json!({"scope":"spend","identity":btc_identity})
+                )
+                .unwrap_err()
+                .code,
+            "WALLET_MODE_MISMATCH"
+        );
+        assert_eq!(
+            second
+                .dispatch("writeJournalRecord", spend.clone())
+                .unwrap_err()
+                .code,
+            "WALLET_MODE_MISMATCH"
+        );
+        assert_eq!(
+            first
+                .dispatch("writeJournalRecord", spend)
+                .unwrap_err()
+                .code,
+            "WALLET_CLOSED"
         );
     }
 

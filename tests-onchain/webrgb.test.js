@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict'
+import { mkdtemp, realpath, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import test from 'node:test'
 import { keccak_256 } from '@noble/hashes/sha3.js'
 import { base64, hex } from '@scure/base'
 import { WalletAccountRgb } from '../src/onchain-wallet.js'
+import { OnchainJournal } from '../src/onchain-journal.js'
 import { WalletRuntimeError } from '../src/onchain-runtime-error.js'
 import { WebRgbProvider, burnDestinationFor, burnDestinationHash } from '../src/onchain-webrgb.js'
 
@@ -175,6 +179,8 @@ for (const revokedStage of ['starting', 'submitting']) {
       available: true,
       request (method) {
         methods.push(method)
+        if (method === 'goOnline') return {}
+        if (method === 'snapshotUnsigned') return { reservations: [] }
         if (method === 'burnBegin') return { txid: TXID, psbt: 'irrelevant' }
         if (method === 'discardPrepared') return {}
         assert.fail('Unexpected native method: ' + method)
@@ -187,12 +193,75 @@ for (const revokedStage of ['starting', 'submitting']) {
     const account = new WalletAccountRgb(worker, signer, {
       network: 'regtest', routes: [ROUTE], maxFeeSats: '1234', authorize: () => true
     }, journal)
+    await account.connect()
+    methods.length = 0
     const web = provider(account, 'burnAsset', { assertAuthorized: () => { if (!active) throw new Error('revoked') } })
     await assert.rejects(web.burnAsset(REQUEST), { code: 'NOT_ENABLED' })
-    assert.deepEqual(methods, revokedStage === 'starting' ? [] : ['burnBegin', 'discardPrepared'])
+    assert.deepEqual(methods, revokedStage === 'starting' ? ['snapshotUnsigned'] : ['snapshotUnsigned', 'burnBegin', 'discardPrepared'])
     const [record] = [...records.values()]
     assert.equal(record.stage, 'declined')
     assert.match(record.webRgbBinding.scopeKey, /^[a-f0-9]{64}$/)
     assert.match(record.webRgbBinding.requestKey, /^[a-f0-9]{64}$/)
   })
 }
+
+test('WebRGB invoice retries disclose only the exact still-authorized allocation after restart', async t => {
+  const dir = await realpath(await mkdtemp(join(tmpdir(), 'wdk-webrgb-invoice-')))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  let allocations = 0
+  let approvals = 0
+  let authorized = true
+  let loseReply = false
+  const worker = {
+    available: true,
+    request (method, params) {
+      if (method === 'goOnline') return {}
+      assert.ok(['blindReceive', 'witnessReceive'].includes(method))
+      allocations++
+      if (loseReply) throw new WalletRuntimeError('NATIVE_TIMEOUT', 'Response lost')
+      authorized = false
+      return { invoice: 'rgb:invoice-' + allocations, recipientId: 'recipient-' + allocations,
+        expirationTimestamp: params.expirationTimestamp }
+    },
+    close () {}
+  }
+  const newWallet = async () => {
+    const journal = new OnchainJournal(dir)
+    const invoices = new OnchainJournal(dir, { invoices: true })
+    await journal.bind('wallet')
+    await invoices.bind('wallet')
+    const wallet = new WalletAccountRgb(worker, { destroy () {} }, {
+      network: 'regtest', routes: [], transportEndpoint: 'rpc://127.0.0.1:49090/json-rpc'
+    }, journal, invoices)
+    await wallet.connect()
+    return { journal, wallet }
+  }
+  const first = await newWallet()
+  const args = { assetId: ASSET, amount: 12 }
+  const options = {
+    assertAuthorized () { if (!authorized) throw new Error('Wallet locked') },
+    confirm () { approvals++; return true }
+  }
+  await assert.rejects(provider(first.wallet, 'blindReceive', options).blindReceive(args), { code: 'NOT_ENABLED' })
+  await first.wallet.shutdown()
+  authorized = true
+  const second = await newWallet()
+  t.after(() => second.wallet.shutdown())
+  const receive = provider(second.wallet, 'blindReceive', options)
+  const original = await receive.blindReceive(args)
+  assert.equal(original.invoice, 'rgb:invoice-1')
+  assert.deepEqual(await receive.blindReceive(args), original)
+  await assert.rejects(receive.blindReceive({ ...args, amount: 13 }), { code: 'INVALID_PARAMS' })
+  await assert.rejects(provider(second.wallet, 'witnessReceive', options).witnessReceive(args), { code: 'INVALID_PARAMS' })
+  assert.equal(allocations, 1)
+  assert.equal(approvals, 1)
+
+  loseReply = true
+  const uncertain = provider(second.wallet, 'blindReceive', { ...options, identity: { id: 43 } })
+  await assert.rejects(uncertain.blindReceive(args), { code: 'INTERNAL_ERROR' })
+  loseReply = false
+  await assert.rejects(uncertain.blindReceive(args), { code: 'INTERNAL_ERROR' })
+  assert.equal(allocations, 2)
+  assert.equal(approvals, 2)
+  await second.journal.assertAvailable()
+})

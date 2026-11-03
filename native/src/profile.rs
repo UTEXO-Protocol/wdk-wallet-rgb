@@ -12,6 +12,9 @@ pub(crate) fn version(source: &str, overlay: &str) -> Value {
         "integrationTree": "8dd209a8bb849696e45f301b0ea1b3d4eb0fba06",
         "runtime": crate::RUNTIME,
         "indexer": "electrum-only",
+        "networkChecks": 1,
+        "unsignedRecovery": 1,
+        "journalWrites": 1,
     })
 }
 
@@ -28,12 +31,17 @@ pub(crate) fn indexer(
         ));
     }
     let url = validated_url(&indexer_url, &["ssl", "tcp"], regtest)?;
-    if url.port().is_none() || url.query().is_some() || !matches!(url.path(), "" | "/") {
+    let (Some(host), Some(port)) = (url.host_str(), url.port()) else {
+        return Err(input("The Electrum endpoint requires an explicit host and port."));
+    };
+    if !matches!(url.path(), "" | "/") {
         return Err(input(
             "The Electrum endpoint requires an explicit port and no path or query.",
         ));
     }
-    Ok(IndexerConfig::Electrum { url: indexer_url })
+    Ok(IndexerConfig::Electrum {
+        url: format!("{}://{host}:{port}", url.scheme()),
+    })
 }
 
 pub(crate) fn clear_indexer_credentials(_: &mut IndexerConfig) {}

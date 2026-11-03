@@ -34,12 +34,16 @@ for (const path of files) {
 }
 
 const artifacts = [...files].filter(path => path.startsWith('prebuilds/'))
+const native = readJson('src/onchain-bare-native.json')
+assert.equal(native.target, 'android-arm64')
+assert.equal(native.linkedName, `libutexo__wdk-wallet-rgb.${manifest.version}.so`)
+assert.match(native.integrationTree, /^[a-f0-9]{40}$/)
+assert.match(native.sha256, /^[a-f0-9]{64}$/)
+assert.ok(Number.isSafeInteger(native.byteLength) && native.byteLength > 0)
 if (!requireNative) {
   assert.deepEqual(artifacts, [], 'Public source-only CI must not contain staged native binaries')
   console.log('Package exports and source-only inventory passed. Native admission is a separate gate.')
 } else {
-  const native = readJson('src/onchain-bare-native.json')
-  assert.match(native.target, /^(?:android|darwin)-arm64$/)
   const path = 'prebuilds/' + native.target + '/utexo__wdk-wallet-rgb.bare'
   assert.deepEqual(artifacts, [path], 'Unexpected packed native addon inventory')
   const bytes = readFileSync(new URL(path, root))
