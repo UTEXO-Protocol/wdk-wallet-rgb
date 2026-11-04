@@ -11,6 +11,7 @@ import { deriveOnchainSigner } from './onchain-signer.js'
 import { WalletRuntimeError } from './onchain-runtime-error.js'
 import { BIP322_CAPABILITIES, bip322MessageBytes, verifyMessageBip322 } from './onchain-message.js'
 import { admitFeeEstimate, admitSendStatus, checkFeeBlocks, checkRgbInvoice, prepareBtcSend, prepareRgbSend, sendRecoveryParams } from './onchain-send.js'
+import devServices from './onchain-dev-services.json' with { type: 'json' }
 
 const ROUTES = new Map([
   ['eip155:42161', 0],
@@ -26,8 +27,11 @@ const NATIVE_SOURCE = '0a9d352f2690902df2b6fae9bca1a6c13c3354d4'
 const NATIVE_OVERLAY = 'e517dc80f613bee86a9808e8a54c361e4be73810'
 const NATIVE_INTEGRATION = '8a113320471c79b046c7ea045ccc9b20f4484be6'
 const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
-const STAGING_PROXY = 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
-const STAGING_ARBITRUM_RPC = 'https://arb1.arbitrum.io/rpc'
+const STAGING_SERVICES = {
+  proxyEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc',
+  arbitrumRpc: 'https://arb1.arbitrum.io/rpc'
+}
+const DEV_SERVICES = Object.freeze(devServices)
 const PROOF_MAGIC = [82, 71, 66, 0, 84, 70, 82]
 const SPEND_KINDS = new Set(['rgb-output', 'btc-send', 'rgb-send', 'rgb-burn'])
 const OPEN_WALLET_DIRECTORIES = new Set()
@@ -79,12 +83,16 @@ function httpUrl (value, name, protocols = ['http:', 'https:']) {
   return value
 }
 
-function indexerUrl (value, network) {
+function indexerUrl (value, network, profile) {
   if (network === 'signet') {
-    if (value !== SIGNET_ELECTRUM && value !== SIGNET_ELECTRUM + '/') {
-      throw new TypeError('Public Signet requires the approved TLS Electrum endpoint')
+    const dev = profile === 'dev'
+    const approved = dev ? DEV_SERVICES.indexerUrl : SIGNET_ELECTRUM
+    if (value !== approved && value !== approved + '/') {
+      throw new TypeError(dev
+        ? 'Dev Signet requires the approved HTTPS Esplora endpoint'
+        : 'Public Signet requires the approved TLS Electrum endpoint')
     }
-    return SIGNET_ELECTRUM
+    return approved
   }
   const indexer = new URL(httpUrl(value, 'indexer endpoint', ['tcp:', 'ssl:']))
   if (!indexer.port || !['', '/'].includes(indexer.pathname)) {
@@ -97,11 +105,14 @@ function configFor (options) {
   if (options?.network !== 'regtest' && options?.network !== 'signet') throw new TypeError('Unsupported Bitcoin network')
   const mode = options.mode === undefined ? 'rgb' : options.mode
   if (mode !== 'rgb' && mode !== 'btc-only') throw new TypeError('Invalid wallet mode')
-  if (options.profile === 'dev') throw new TypeError('Dev Signet hosted access is disabled')
-  const staging = options.network === 'signet' && mode === 'rgb' && options.profile === 'staging'
-  if (options.profile !== undefined && !staging) throw new TypeError('The staging profile requires a Signet RGB wallet')
-  if (options.network === 'signet' && mode !== 'btc-only' && !staging) {
-    throw new TypeError('Public Signet requires Bitcoin-only mode or the explicit staging RGB profile')
+  const dev = options.profile === 'dev'
+  if (dev && DEV_SERVICES.enabled !== true) throw new TypeError('Dev Signet hosted access is disabled')
+  const services = dev ? DEV_SERVICES : options.profile === 'staging' ? STAGING_SERVICES : undefined
+  if (options.profile !== undefined && (!services || options.network !== 'signet' || mode !== 'rgb')) {
+    throw new TypeError('The selected RGB profile requires a Signet RGB wallet')
+  }
+  if (options.network === 'signet' && mode !== 'btc-only' && !services) {
+    throw new TypeError('Signet requires Bitcoin-only mode or an explicit RGB profile')
   }
   if (mode === 'btc-only' && ['transportEndpoint', 'evmRpcUrls', 'proxyAuthKeys', 'burnDestinationRoutes'].some(key => options[key] !== undefined)) {
     throw new TypeError('Bitcoin-only mode does not accept RGB service configuration')
@@ -119,21 +130,21 @@ function configFor (options) {
   if (new Set(routes.map(route => route.chainId)).size !== routes.length) throw new TypeError('Duplicate V1 bridge route')
 
   if (options.bitcoindAuth !== undefined) throw new TypeError('The wallet does not accept Bitcoin Core credentials')
-  const online = { indexerUrl: indexerUrl(options.indexerUrl, options.network) }
+  const online = { indexerUrl: indexerUrl(options.indexerUrl, options.network, options.profile) }
   let transportEndpoint
-  if (staging) {
+  if (services) {
     const entries = Object.entries(options.evmRpcUrls ?? {})
-    if (options.transportEndpoint !== STAGING_PROXY || entries.length !== 1 ||
-        entries[0][0] !== '42161' || entries[0][1] !== STAGING_ARBITRUM_RPC || options.proxyAuthKeys !== undefined ||
+    if (options.transportEndpoint !== services.proxyEndpoint || entries.length !== 1 ||
+        entries[0][0] !== '42161' || entries[0][1] !== services.arbitrumRpc || options.proxyAuthKeys !== undefined ||
         routes.some(route => route.chainId !== 'eip155:42161')) {
-      throw new TypeError('Staging requires its approved RGB proxy and Arbitrum RPC without credentials or unrelated burn routes')
+      throw new TypeError('The selected Signet profile requires its approved RGB proxy and Arbitrum RPC without credentials or unrelated burn routes')
     }
-    transportEndpoint = STAGING_PROXY
-    online.evmRpcUrls = { 42161: STAGING_ARBITRUM_RPC }
+    transportEndpoint = services.proxyEndpoint
+    online.evmRpcUrls = { 42161: services.arbitrumRpc }
   } else if (mode === 'rgb') {
     transportEndpoint = httpUrl(options.transportEndpoint, 'RGB proxy endpoint', ['rpc:', 'rpcs:'])
   }
-  if (!staging && options.evmRpcUrls) {
+  if (!services && options.evmRpcUrls) {
     online.evmRpcUrls = Object.fromEntries(Object.entries(options.evmRpcUrls).map(([id, url]) => {
       u64(id, 'EVM chain ID')
       return [id, httpUrl(url, 'EVM RPC endpoint')]
@@ -257,7 +268,7 @@ export class WalletAccountRgb {
       const journal = new OnchainJournal(dataDir, { worker })
       const invoices = new OnchainJournal(dataDir, { invoices: true, worker })
       const identityFields = [config.network, identity.accountXpubVanilla, identity.accountXpubColored, identity.masterFingerprint]
-      // Domain-separate staging and BTC-only storage from the legacy RGB profile.
+      // Domain-separate Signet profiles and BTC-only storage from the legacy RGB profile.
       if (config.profile) identityFields.push(config.profile)
       else if (config.mode === 'btc-only') identityFields.push(config.mode)
       const journalIdentity = sha256(new TextEncoder().encode(JSON.stringify(identityFields)))
@@ -372,16 +383,18 @@ export class WalletAccountRgb {
   }
 
   checkIndexerUrl (url = this.#config.online.indexerUrl) {
-    if (indexerUrl(url, this.#config.network) !== this.#config.online.indexerUrl) {
-      throw new TypeError('Only the configured Electrum endpoint can be checked')
+    const { network, profile, online } = this.#config
+    const indexerProtocol = profile === 'dev' ? 'Esplora' : 'Electrum'
+    if (indexerUrl(url, network, profile) !== online.indexerUrl) {
+      throw new TypeError(`Only the configured ${indexerProtocol} endpoint can be checked`)
     }
     return this.#run(async () => {
-      const result = await this.#worker.request('checkIndexerUrl', { url: this.#config.online.indexerUrl })
+      const result = await this.#worker.request('checkIndexerUrl', { url: online.indexerUrl })
       this.#assertOpen()
-      if (result?.ok !== true || result.indexerProtocol !== 'Electrum') {
-        throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid Electrum endpoint response')
+      if (result?.ok !== true || result.indexerProtocol !== indexerProtocol) {
+        throw new WalletRuntimeError('NATIVE_PROTOCOL', `Invalid ${indexerProtocol} endpoint response`)
       }
-      return { ok: true, indexerProtocol: 'Electrum' }
+      return { ok: true, indexerProtocol }
     })
   }
 

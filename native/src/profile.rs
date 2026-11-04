@@ -5,24 +5,45 @@ use rgb_lib::no_wallet::SignetCheckpoint;
 use rgb_lib::wallet::IndexerConfig;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::sync::OnceLock;
 use zeroize::Zeroize;
 
 const SIGNET_ELECTRUM: &str = "ssl://electrum.iriswallet.com:50033";
-const DEV_ESPLORA: &str = "https://dev.esplora-01.mint.utexo.com";
+const DEV_SERVICES_JSON: &str = include_str!("../../src/onchain-dev-services.json");
 
 pub(crate) struct SignetServices {
-    electrum: &'static str,
     pub(crate) proxy: &'static str,
     pub(crate) arbitrum_rpc: &'static str,
 }
 
 const STAGING_SERVICES: SignetServices = SignetServices {
-    electrum: SIGNET_ELECTRUM,
     proxy: "rpcs://staging.rgb-proxy.utexo.com/json-rpc",
     arbitrum_rpc: "https://arb1.arbitrum.io/rpc",
 };
-// Populate this only with the reviewed Dev deployment and approved endpoints.
-const DEV_SERVICES: Option<SignetServices> = None;
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct DevServices {
+    enabled: bool,
+    indexer_url: &'static str,
+    proxy_endpoint: &'static str,
+    arbitrum_rpc: &'static str,
+}
+
+impl DevServices {
+    fn active_services(&self) -> Option<SignetServices> {
+        self.enabled.then_some(SignetServices {
+            proxy: self.proxy_endpoint,
+            arbitrum_rpc: self.arbitrum_rpc,
+        })
+    }
+}
+
+fn dev_services() -> Result<&'static DevServices> {
+    static CONFIG: OnceLock<Option<DevServices>> = OnceLock::new();
+    CONFIG.get_or_init(|| serde_json::from_str(DEV_SERVICES_JSON).ok())
+        .as_ref()
+        .ok_or_else(|| input("Dev Signet service policy is invalid."))
+}
 
 #[derive(Clone, Copy, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -39,11 +60,11 @@ impl Profile {
         }
     }
 
-    pub(crate) fn services(self) -> Result<&'static SignetServices> {
+    pub(crate) fn services(self) -> Result<SignetServices> {
         match self {
-            Self::Staging => Ok(&STAGING_SERVICES),
-            Self::Dev => DEV_SERVICES
-                .as_ref()
+            Self::Staging => Ok(STAGING_SERVICES),
+            Self::Dev => dev_services()?
+                .active_services()
                 .ok_or_else(|| input("Dev Signet hosted access is disabled.")),
         }
     }
@@ -85,15 +106,13 @@ pub(crate) fn indexer(
     }
     if network == BitcoinNetwork::Signet {
         if matches!(profile, Some(Profile::Dev)) {
-            if indexer_url.strip_suffix('/').unwrap_or(&indexer_url) != DEV_ESPLORA {
+            let approved = dev_services()?.indexer_url;
+            if indexer_url.strip_suffix('/').unwrap_or(&indexer_url) != approved {
                 return Err(input("Dev Signet requires the approved HTTPS Esplora endpoint."));
             }
-            return Ok(IndexerConfig::DevSignetEsplora { url: DEV_ESPLORA.into() });
+            return Ok(IndexerConfig::DevSignetEsplora { url: approved.into() });
         }
-        let approved = match profile {
-            Some(profile) => profile.services()?.electrum,
-            None => SIGNET_ELECTRUM,
-        };
+        let approved = SIGNET_ELECTRUM;
         if indexer_url.strip_suffix('/').unwrap_or(&indexer_url) != approved {
             return Err(input("Signet requires the approved TLS Electrum endpoint for its profile."));
         }
@@ -155,6 +174,11 @@ mod tests {
 
     #[test]
     fn dev_selects_only_its_https_esplora_and_has_no_hosted_services() {
+        const DEV_ESPLORA: &str = "https://dev.esplora-01.mint.utexo.com";
+        let services = dev_services().unwrap();
+        assert_eq!(services.indexer_url, DEV_ESPLORA);
+        assert_eq!(services.proxy_endpoint, "rpcs://dev.rgb-proxy.utexo.com/json-rpc");
+        assert_eq!(services.arbitrum_rpc, "https://arb1.arbitrum.io/rpc");
         assert!(Profile::Dev.services().is_err());
         for url in [DEV_ESPLORA.into(), format!("{DEV_ESPLORA}/")] {
             assert!(matches!(
@@ -174,5 +198,19 @@ mod tests {
         assert!(indexer(SIGNET_ELECTRUM.into(), None, BitcoinNetwork::Signet, Some(Profile::Dev)).is_err());
         assert!(indexer("ssl://127.0.0.1:48002".into(), None, BitcoinNetwork::Signet, Some(Profile::Dev)).is_err());
         assert!(indexer("tcp://127.0.0.1:48001".into(), None, BitcoinNetwork::Regtest, Some(Profile::Dev)).is_err());
+    }
+
+    #[test]
+    fn dev_activation_uses_only_the_compiled_service_policy() {
+        let config: DevServices = serde_json::from_str(r#"{
+            "enabled":true,
+            "indexerUrl":"https://dev-esplora.example",
+            "proxyEndpoint":"rpcs://dev-proxy.example/json-rpc",
+            "arbitrumRpc":"https://arb.example/rpc"
+        }"#).unwrap();
+        let services = config.active_services().unwrap();
+        assert_eq!(services.proxy, "rpcs://dev-proxy.example/json-rpc");
+        assert_eq!(services.arbitrum_rpc, "https://arb.example/rpc");
+        assert!(Profile::Dev.services().is_err());
     }
 }

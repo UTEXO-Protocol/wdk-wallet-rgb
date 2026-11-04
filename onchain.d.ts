@@ -62,13 +62,20 @@ type BtcOnlyModeConfig = {
   proxyAuthKeys?: never
   burnDestinationRoutes?: never
 }
-type StagingRgbModeConfig = {
-  profile: 'staging'
+type HostedRgbModeConfig = {
   mode: 'rgb'
-  transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
   evmRpcUrls: { readonly '42161': 'https://arb1.arbitrum.io/rpc' }
   proxyAuthKeys?: never
   burnDestinationRoutes?: readonly [] | readonly [{ chainId: 'eip155:42161'; dstEid: 0 }]
+}
+type StagingRgbModeConfig = HostedRgbModeConfig & {
+  profile: 'staging'
+  transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
+}
+type DevRgbModeConfig = HostedRgbModeConfig & {
+  /** Hosted access is gated by the reviewed package configuration. */
+  profile: 'dev'
+  transportEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc'
 }
 type CandidateNetwork = 'regtest' | 'signet'
 type NetworkConfig = ({
@@ -77,7 +84,10 @@ type NetworkConfig = ({
 } & (RgbModeConfig | BtcOnlyModeConfig)) | ({
   network: 'signet'
   indexerUrl: `ssl://electrum.iriswallet.com:50033${'' | '/'}`
-} & (BtcOnlyModeConfig | StagingRgbModeConfig))
+} & (BtcOnlyModeConfig | StagingRgbModeConfig)) | ({
+  network: 'signet'
+  indexerUrl: `https://dev.esplora-01.mint.utexo.com${'' | '/'}`
+} & DevRgbModeConfig)
 export type CandidateConfig = SharedCandidateConfig & NetworkConfig & ({
   nativeExecutable: string
   nativeSha256: string
@@ -169,7 +179,7 @@ export class WalletAccountRgb {
   getConnectionStatus(): 'offline' | 'connected' | 'unavailable'
   connect(): Promise<void>
   getNetworkInfo(): Promise<{ network: CandidateNetwork; height: number; blockHash: string }>
-  checkIndexerUrl(url?: string): Promise<{ ok: true; indexerProtocol: 'Electrum' }>
+  checkIndexerUrl(url?: string): Promise<{ ok: true; indexerProtocol: 'Electrum' | 'Esplora' }>
   checkProxyEndpoint(url?: string): Promise<{ ok: true }>
   getInfo(): {
     ready: boolean

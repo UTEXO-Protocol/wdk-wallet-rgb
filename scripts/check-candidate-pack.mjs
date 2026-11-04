@@ -28,6 +28,7 @@ function checkTarget (target) {
 }
 checkTarget(manifest.exports)
 assert.ok(files.has('LICENSE'), 'Missing package license')
+assert.ok(files.has('src/onchain-dev-services.json'), 'Missing Dev Signet service policy')
 for (const path of files) {
   assert.ok(!/^(?:native|scripts|tests[^/]*|evidence|fixtures?)\//.test(path), 'Build-only file packed: ' + path)
   assert.ok(!/(?:^|\/)\.(?:env|git)(?:[./]|$)/.test(path), 'Private file packed: ' + path)
@@ -51,5 +52,7 @@ if (!requireNative) {
   assert.equal(createHash('sha256').update(bytes).digest('hex'), native.sha256)
   assert.ok(bytes.includes(Buffer.from(native.integrationTree)), 'Native addon does not contain the admitted tree')
   assert.ok(bytes.includes(Buffer.from('electrum-and-dev-esplora')), 'Native addon lacks the expected indexer capabilities')
+  assert.ok(bytes.includes(readFileSync(new URL('src/onchain-dev-services.json', root))),
+    'Native addon and package disagree on the Dev Signet service policy')
   console.log('Package exports and exact native addon inventory passed.')
 }

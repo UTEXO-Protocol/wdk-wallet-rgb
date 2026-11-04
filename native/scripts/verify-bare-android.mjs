@@ -62,7 +62,9 @@ function exportsOf (elf) {
 }
 
 const bytes = readFileSync(addon)
+const devPolicy = readFileSync(join(root, '../src/onchain-dev-services.json'))
 ensure(bytes.includes(Buffer.from(expectedIntegrationTree)), 'The addon does not contain the expected native tree identity')
+ensure(bytes.includes(devPolicy), 'The addon does not contain the exact Dev Signet service policy')
 const elf = readElf(addon)
 ensure(elf.FileSummary.Format === 'elf64-littleaarch64' && elf.ElfHeader.Type === 'SharedObject (0x3)' &&
   elf.FileSummary.LoadName === soname, 'Unexpected AArch64 addon format or SONAME')
@@ -121,6 +123,8 @@ console.log(JSON.stringify({
   cargoLockSha256: hash(lock),
   bindingSourceSha256: hash(readFileSync(join(root, 'bare/binding.c'))),
   nativeEngineSha256: hash(readFileSync(join(root, 'src/engine.rs'))),
+  devPolicySha256: hash(devPolicy),
+  devHostedEnabled: JSON.parse(devPolicy).enabled === true,
   rgb: {
     revision: '0a9d352f2690902df2b6fae9bca1a6c13c3354d4',
     integrationTree: expectedIntegrationTree,

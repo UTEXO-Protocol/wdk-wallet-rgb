@@ -1,0 +1,6 @@
+{
+  "enabled": false,
+  "indexerUrl": "https://dev.esplora-01.mint.utexo.com",
+  "proxyEndpoint": "rpcs://dev.rgb-proxy.utexo.com/json-rpc",
+  "arbitrumRpc": "https://arb1.arbitrum.io/rpc"
+}
