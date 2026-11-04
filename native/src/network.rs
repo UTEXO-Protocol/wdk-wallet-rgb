@@ -8,7 +8,9 @@ use rgb_lib::bitcoin::BlockHash;
 use rgb_lib::bitcoin::constants::genesis_block;
 use rgb_lib::no_wallet::SignetCheckpoint;
 use rgb_lib::wallet::rust_only::wallet_http_client_for_network;
-use rgb_lib::wallet::{IndexerProtocol, TransportEndpoint, check_indexer_config};
+use rgb_lib::wallet::{
+    IndexerConfig, IndexerProtocol, TransportEndpoint, check_dev_esplora_tip, check_indexer_config,
+};
 use serde::Deserialize;
 use std::io::Read;
 use std::time::Duration;
@@ -49,6 +51,10 @@ impl Session {
                 "The RGB wallet has no online indexer session.",
             )
         })?;
+        if matches!(self.profile, Some(crate::profile::Profile::Dev)) {
+            let (height, hash) = check_dev_esplora_tip(url).map_err(native)?;
+            return Ok(json!({"network":"signet", "height":height, "blockHash":hash}));
+        }
         let unavailable = |_| {
             fault(
                 "INDEXER_UNAVAILABLE",
@@ -102,14 +108,21 @@ impl Session {
     pub(super) fn check_indexer(&self, params: Value) -> Result<Value> {
         let p: Endpoint = decode(params)?;
         let config = crate::profile::indexer(p.url, None, self.network, self.profile)?;
-        if check_indexer_config(&config, self.network).map_err(native)? != IndexerProtocol::Electrum
-        {
+        let protocol = match &config {
+            IndexerConfig::DevSignetEsplora { .. } => IndexerProtocol::Esplora,
+            _ => IndexerProtocol::Electrum,
+        };
+        if check_indexer_config(&config, self.network).map_err(native)? != protocol {
             return Err(fault(
                 "INVALID_INDEXER",
-                "The endpoint is not an Electrum indexer.",
+                "The endpoint did not match the wallet's indexer protocol.",
             ));
         }
-        Ok(json!({"ok":true, "indexerProtocol":"Electrum"}))
+        let protocol_name = match protocol {
+            IndexerProtocol::Esplora => "Esplora",
+            _ => "Electrum",
+        };
+        Ok(json!({"ok":true, "indexerProtocol":protocol_name}))
     }
 
     pub(super) fn check_proxy(&self, params: Value) -> Result<Value> {

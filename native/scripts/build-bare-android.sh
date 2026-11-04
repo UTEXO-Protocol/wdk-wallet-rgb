@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the ARM64 APK addon from the admitted Electrum-only graph.
+# Build the ARM64 APK addon from the pinned native dependency graph.
 set -euo pipefail
 
 native_dir="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -36,7 +36,7 @@ export RANLIB_aarch64_linux_android="$llvm/llvm-ranlib"
 cargo +1.94.0 build --locked --manifest-path bare/Cargo.toml --release --target aarch64-linux-android
 
 headers="$toolchain/node_modules/bare-headers/include"
-output_dir="$native_dir/target/bare-addon-android"
+output_dir="${UTEXO_BARE_OUTPUT_DIR:-$native_dir/target/bare-addon-android}"
 mkdir -p "$output_dir"
 output="$output_dir/utexo__wdk-wallet-rgb.bare"
 temporary="$(mktemp "$output.XXXXXX")"

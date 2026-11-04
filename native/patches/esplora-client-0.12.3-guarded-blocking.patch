@@ -1,0 +1,496 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 2849794..5573855 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -57,26 +57,11 @@ async-https-rustls-manual-roots = [
+     "async",
+     "reqwest/rustls-tls-manual-roots",
+ ]
+-blocking = [
+-    "minreq",
+-    "minreq/proxy",
+-]
+-blocking-https = [
+-    "blocking",
+-    "minreq/https",
+-]
+-blocking-https-bundled = [
+-    "blocking",
+-    "minreq/https-bundled",
+-]
+-blocking-https-native = [
+-    "blocking",
+-    "minreq/https-native",
+-]
+-blocking-https-rustls = [
+-    "blocking",
+-    "minreq/https-rustls",
+-]
++blocking = ["dep:reqwest-blocking"]
++blocking-https = ["blocking-https-rustls"]
++blocking-https-bundled = ["blocking", "reqwest-blocking/native-tls-vendored"]
++blocking-https-native = ["blocking", "reqwest-blocking/native-tls"]
++blocking-https-rustls = ["blocking", "reqwest-blocking/rustls"]
+ default = [
+     "blocking",
+     "async",
+@@ -104,9 +89,18 @@ package = "hex-conservative"
+ [dependencies.log]
+ version = "^0.4"
+ 
+-[dependencies.minreq]
+-version = "2.11.0"
+-features = ["json-using-serde"]
++[dependencies.reqwest-blocking]
++version = "=0.13.5"
++package = "reqwest"
++features = ["blocking", "json", "query"]
++default-features = false
++optional = true
++
++[target.'cfg(target_os = "android")'.dependencies.reqwest-blocking]
++version = "=0.13.5"
++package = "reqwest"
++features = ["native-tls-vendored"]
++default-features = false
+ optional = true
+ 
+ [dependencies.reqwest]
+diff --git a/Cargo.toml.orig b/Cargo.toml.orig
+index aa929d1..6345dac 100644
+--- a/Cargo.toml.orig
++++ b/Cargo.toml.orig
+@@ -25,7 +25,7 @@ serde_json = { version = "1.0", features = ["alloc"], default-features = false }
+ bitcoin = { version = "0.32", features = ["serde", "std"], default-features = false }
+ hex = { version = "0.2", package = "hex-conservative" }
+ log = "^0.4"
+-minreq = { version = "2.11.0", features = ["json-using-serde"], optional = true }
++reqwest-blocking = { package = "reqwest", version = "=0.13.5", features = ["blocking", "json", "query"], default-features = false, optional = true }
+ reqwest = { version = "0.12",  features = ["json"], default-features = false, optional = true }
+ 
+ # default async runtime
+@@ -36,13 +36,16 @@ tokio = { version = "1.20.1", features = ["full"] }
+ electrsd = { version = "0.33.0", features = ["legacy", "esplora_a33e97e1", "corepc-node_28_0"] }
+ lazy_static = "1.4.0"
+ 
++[target.'cfg(target_os = "android")'.dependencies]
++reqwest-blocking = { package = "reqwest", version = "=0.13.5", features = ["native-tls-vendored"], default-features = false, optional = true }
++
+ [features]
+ default = ["blocking", "async", "async-https", "tokio"]
+-blocking = ["minreq", "minreq/proxy"]
+-blocking-https = ["blocking", "minreq/https"]
+-blocking-https-rustls = ["blocking", "minreq/https-rustls"]
+-blocking-https-native = ["blocking", "minreq/https-native"]
+-blocking-https-bundled = ["blocking", "minreq/https-bundled"]
++blocking = ["dep:reqwest-blocking"]
++blocking-https = ["blocking-https-rustls"]
++blocking-https-rustls = ["blocking", "reqwest-blocking/rustls"]
++blocking-https-native = ["blocking", "reqwest-blocking/native-tls"]
++blocking-https-bundled = ["blocking", "reqwest-blocking/native-tls-vendored"]
+ 
+ tokio = ["dep:tokio"]
+ async = ["reqwest", "reqwest/socks", "tokio?/time"]
+diff --git a/src/blocking.rs b/src/blocking.rs
+index 022feaf..ae6d4c8 100644
+--- a/src/blocking.rs
++++ b/src/blocking.rs
+@@ -9,18 +9,20 @@
+ // You may not use this file except in accordance with one or both of these
+ // licenses.
+ 
+-//! Esplora by way of `minreq` HTTP client.
++//! Esplora by way of the blocking reqwest HTTP client.
+ 
+ use std::collections::HashMap;
+-use std::convert::TryFrom;
+ use std::str::FromStr;
++use std::sync::Arc;
+ use std::thread;
++use std::time::Duration;
+ 
+ use bitcoin::consensus::encode::serialize_hex;
+ #[allow(unused_imports)]
+ use log::{debug, error, info, trace};
+ 
+-use minreq::{Proxy, Request, Response};
++use reqwest_blocking::blocking::{Client, RequestBuilder, Response};
++use reqwest_blocking::{Method, Proxy};
+ 
+ use bitcoin::block::Header as BlockHeader;
+ use bitcoin::consensus::{deserialize, serialize, Decodable};
+@@ -47,17 +49,45 @@ pub struct BlockingClient {
+     pub headers: HashMap<String, String>,
+     /// Number of times to retry a request
+     pub max_retries: usize,
++    client: Result<Client, Arc<reqwest_blocking::Error>>,
+ }
+ 
+ impl BlockingClient {
+     /// Build a blocking client from a [`Builder`]
+     pub fn from_builder(builder: Builder) -> Self {
++        let client = (|| {
++            let mut client = Client::builder()
++                .no_proxy()
++                .retry(reqwest_blocking::retry::never());
++            // Android's rustls platform verifier requires a Java initialization hook.
++            #[cfg(target_os = "android")]
++            {
++                client = client.tls_backend_native();
++            }
++            if let Some(proxy) = &builder.proxy {
++                client = client.proxy(Proxy::all(proxy)?);
++            }
++            client.build()
++        })();
++        Self::from_transport(builder, client)
++    }
++
++    /// Build from an already configured blocking HTTP client, retaining its transport policy.
++    pub fn from_client(builder: Builder, client: Client) -> Self {
++        Self::from_transport(builder, Ok(client))
++    }
++
++    fn from_transport(
++        builder: Builder,
++        client: Result<Client, reqwest_blocking::Error>,
++    ) -> Self {
+         Self {
+             url: builder.base_url,
+             proxy: builder.proxy,
+             timeout: builder.timeout,
+             headers: builder.headers,
+             max_retries: builder.max_retries,
++            client: client.map_err(Arc::new),
+         }
+     }
+ 
+@@ -66,69 +96,55 @@ impl BlockingClient {
+         &self.url
+     }
+ 
+-    /// Perform a raw HTTP GET request with the given URI `path`.
+-    pub fn get_request(&self, path: &str) -> Result<Request, Error> {
+-        let mut request = minreq::get(format!("{}{}", self.url, path));
+-
+-        if let Some(proxy) = &self.proxy {
+-            let proxy = Proxy::new(proxy.as_str())?;
+-            request = request.with_proxy(proxy);
+-        }
++    /// Build a raw HTTP GET request with the given URI `path`.
++    pub fn get_request(&self, path: &str) -> Result<RequestBuilder, Error> {
++        self.request(Method::GET, path)
++    }
+ 
+-        if let Some(timeout) = &self.timeout {
+-            request = request.with_timeout(*timeout);
++    fn request(&self, method: Method, path: &str) -> Result<RequestBuilder, Error> {
++        let client = self
++            .client
++            .as_ref()
++            .map_err(|err| Error::BlockingSetup(err.clone()))?;
++        let mut request = client.request(method, format!("{}{}", self.url, path));
++        if let Some(timeout) = self.timeout {
++            request = request.timeout(Duration::from_secs(timeout));
+         }
+-
+-        if !self.headers.is_empty() {
+-            for (key, value) in &self.headers {
+-                request = request.with_header(key, value);
+-            }
++        for (key, value) in &self.headers {
++            request = request.header(key, value);
+         }
+-
+         Ok(request)
+     }
+ 
+-    fn post_request<T>(&self, path: &str, body: T) -> Result<Request, Error>
++    fn post_request<T>(&self, path: &str, body: T) -> Result<RequestBuilder, Error>
+     where
+         T: Into<Vec<u8>>,
+     {
+-        let mut request = minreq::post(format!("{}{}", self.url, path)).with_body(body);
+-
+-        if let Some(proxy) = &self.proxy {
+-            let proxy = Proxy::new(proxy.as_str())?;
+-            request = request.with_proxy(proxy);
+-        }
++        Ok(self.request(Method::POST, path)?.body(body.into()))
++    }
+ 
+-        if let Some(timeout) = &self.timeout {
+-            request = request.with_timeout(*timeout);
++    fn response_error(response: Response) -> Error {
++        Error::HttpResponse {
++            status: response.status().as_u16(),
++            message: response.text().unwrap_or_default(),
+         }
+-
+-        Ok(request)
+     }
+ 
+     fn get_opt_response<T: Decodable>(&self, path: &str) -> Result<Option<T>, Error> {
+         match self.get_with_retry(path) {
+-            Ok(resp) if is_status_not_found(resp.status_code) => Ok(None),
+-            Ok(resp) if !is_status_ok(resp.status_code) => {
+-                let status = u16::try_from(resp.status_code).map_err(Error::StatusCode)?;
+-                let message = resp.as_str().unwrap_or_default().to_string();
+-                Err(Error::HttpResponse { status, message })
+-            }
+-            Ok(resp) => Ok(Some(deserialize::<T>(resp.as_bytes())?)),
++            Ok(resp) if is_status_not_found(resp.status().as_u16()) => Ok(None),
++            Ok(resp) if !is_status_ok(resp.status().as_u16()) => Err(Self::response_error(resp)),
++            Ok(resp) => Ok(Some(deserialize::<T>(&resp.bytes()?)?)),
+             Err(e) => Err(e),
+         }
+     }
+ 
+     fn get_opt_response_txid(&self, path: &str) -> Result<Option<Txid>, Error> {
+         match self.get_with_retry(path) {
+-            Ok(resp) if is_status_not_found(resp.status_code) => Ok(None),
+-            Ok(resp) if !is_status_ok(resp.status_code) => {
+-                let status = u16::try_from(resp.status_code).map_err(Error::StatusCode)?;
+-                let message = resp.as_str().unwrap_or_default().to_string();
+-                Err(Error::HttpResponse { status, message })
+-            }
++            Ok(resp) if is_status_not_found(resp.status().as_u16()) => Ok(None),
++            Ok(resp) if !is_status_ok(resp.status().as_u16()) => Err(Self::response_error(resp)),
+             Ok(resp) => Ok(Some(
+-                Txid::from_str(resp.as_str().map_err(Error::Minreq)?).map_err(Error::HexToArray)?,
++                Txid::from_str(&resp.text()?).map_err(Error::HexToArray)?,
+             )),
+             Err(e) => Err(e),
+         }
+@@ -136,15 +152,11 @@ impl BlockingClient {
+ 
+     fn get_opt_response_hex<T: Decodable>(&self, path: &str) -> Result<Option<T>, Error> {
+         match self.get_with_retry(path) {
+-            Ok(resp) if is_status_not_found(resp.status_code) => Ok(None),
+-            Ok(resp) if !is_status_ok(resp.status_code) => {
+-                let status = u16::try_from(resp.status_code).map_err(Error::StatusCode)?;
+-                let message = resp.as_str().unwrap_or_default().to_string();
+-                Err(Error::HttpResponse { status, message })
+-            }
++            Ok(resp) if is_status_not_found(resp.status().as_u16()) => Ok(None),
++            Ok(resp) if !is_status_ok(resp.status().as_u16()) => Err(Self::response_error(resp)),
+             Ok(resp) => {
+-                let hex_str = resp.as_str().map_err(Error::Minreq)?;
+-                let hex_vec = Vec::from_hex(hex_str)?;
++                let hex_str = resp.text()?;
++                let hex_vec = Vec::from_hex(&hex_str)?;
+                 deserialize::<T>(&hex_vec)
+                     .map_err(Error::BitcoinEncoding)
+                     .map(|r| Some(r))
+@@ -155,14 +167,10 @@ impl BlockingClient {
+ 
+     fn get_response_hex<T: Decodable>(&self, path: &str) -> Result<T, Error> {
+         match self.get_with_retry(path) {
+-            Ok(resp) if !is_status_ok(resp.status_code) => {
+-                let status = u16::try_from(resp.status_code).map_err(Error::StatusCode)?;
+-                let message = resp.as_str().unwrap_or_default().to_string();
+-                Err(Error::HttpResponse { status, message })
+-            }
++            Ok(resp) if !is_status_ok(resp.status().as_u16()) => Err(Self::response_error(resp)),
+             Ok(resp) => {
+-                let hex_str = resp.as_str().map_err(Error::Minreq)?;
+-                let hex_vec = Vec::from_hex(hex_str)?;
++                let hex_str = resp.text()?;
++                let hex_vec = Vec::from_hex(&hex_str)?;
+                 deserialize::<T>(&hex_vec).map_err(Error::BitcoinEncoding)
+             }
+             Err(e) => Err(e),
+@@ -175,12 +183,8 @@ impl BlockingClient {
+     ) -> Result<T, Error> {
+         let response = self.get_with_retry(path);
+         match response {
+-            Ok(resp) if !is_status_ok(resp.status_code) => {
+-                let status = u16::try_from(resp.status_code).map_err(Error::StatusCode)?;
+-                let message = resp.as_str().unwrap_or_default().to_string();
+-                Err(Error::HttpResponse { status, message })
+-            }
+-            Ok(resp) => Ok(resp.json::<T>().map_err(Error::Minreq)?),
++            Ok(resp) if !is_status_ok(resp.status().as_u16()) => Err(Self::response_error(resp)),
++            Ok(resp) => Ok(resp.json::<T>()?),
+             Err(e) => Err(e),
+         }
+     }
+@@ -190,12 +194,8 @@ impl BlockingClient {
+         path: &str,
+     ) -> Result<Option<T>, Error> {
+         match self.get_with_retry(path) {
+-            Ok(resp) if is_status_not_found(resp.status_code) => Ok(None),
+-            Ok(resp) if !is_status_ok(resp.status_code) => {
+-                let status = u16::try_from(resp.status_code).map_err(Error::StatusCode)?;
+-                let message = resp.as_str().unwrap_or_default().to_string();
+-                Err(Error::HttpResponse { status, message })
+-            }
++            Ok(resp) if is_status_not_found(resp.status().as_u16()) => Ok(None),
++            Ok(resp) if !is_status_ok(resp.status().as_u16()) => Err(Self::response_error(resp)),
+             Ok(resp) => Ok(Some(resp.json::<T>()?)),
+             Err(e) => Err(e),
+         }
+@@ -203,12 +203,8 @@ impl BlockingClient {
+ 
+     fn get_response_str(&self, path: &str) -> Result<String, Error> {
+         match self.get_with_retry(path) {
+-            Ok(resp) if !is_status_ok(resp.status_code) => {
+-                let status = u16::try_from(resp.status_code).map_err(Error::StatusCode)?;
+-                let message = resp.as_str().unwrap_or_default().to_string();
+-                Err(Error::HttpResponse { status, message })
+-            }
+-            Ok(resp) => Ok(resp.as_str()?.to_string()),
++            Ok(resp) if !is_status_ok(resp.status().as_u16()) => Err(Self::response_error(resp)),
++            Ok(resp) => Ok(resp.text()?),
+             Err(e) => Err(e),
+         }
+     }
+@@ -300,13 +296,9 @@ impl BlockingClient {
+         )?;
+ 
+         match request.send() {
+-            Ok(resp) if !is_status_ok(resp.status_code) => {
+-                let status = u16::try_from(resp.status_code).map_err(Error::StatusCode)?;
+-                let message = resp.as_str().unwrap_or_default().to_string();
+-                Err(Error::HttpResponse { status, message })
+-            }
++            Ok(resp) if !is_status_ok(resp.status().as_u16()) => Err(Self::response_error(resp)),
+             Ok(_resp) => Ok(()),
+-            Err(e) => Err(Error::Minreq(e)),
++            Err(e) => Err(Error::BlockingRequest(e)),
+         }
+     }
+ 
+@@ -337,21 +329,17 @@ impl BlockingClient {
+         )?;
+ 
+         if let Some(maxfeerate) = maxfeerate {
+-            request = request.with_param("maxfeerate", maxfeerate.to_string())
++            request = request.query(&[("maxfeerate", maxfeerate)])
+         }
+ 
+         if let Some(maxburnamount) = maxburnamount {
+-            request = request.with_param("maxburnamount", maxburnamount.to_string())
++            request = request.query(&[("maxburnamount", maxburnamount)])
+         }
+ 
+         match request.send() {
+-            Ok(resp) if !is_status_ok(resp.status_code) => {
+-                let status = u16::try_from(resp.status_code).map_err(Error::StatusCode)?;
+-                let message = resp.as_str().unwrap_or_default().to_string();
+-                Err(Error::HttpResponse { status, message })
+-            }
+-            Ok(resp) => Ok(resp.json::<SubmitPackageResult>().map_err(Error::Minreq)?),
+-            Err(e) => Err(Error::Minreq(e)),
++            Ok(resp) if !is_status_ok(resp.status().as_u16()) => Err(Self::response_error(resp)),
++            Ok(resp) => Ok(resp.json::<SubmitPackageResult>()?),
++            Err(e) => Err(Error::BlockingRequest(e)),
+         }
+     }
+ 
+@@ -552,7 +540,7 @@ impl BlockingClient {
+ 
+         loop {
+             match self.get_request(url)?.send()? {
+-                resp if attempts < self.max_retries && is_status_retryable(resp.status_code) => {
++                resp if attempts < self.max_retries && is_status_retryable(resp.status().as_u16()) => {
+                     thread::sleep(delay);
+                     attempts += 1;
+                     delay *= 2;
+@@ -563,15 +551,14 @@ impl BlockingClient {
+     }
+ }
+ 
+-fn is_status_ok(status: i32) -> bool {
++fn is_status_ok(status: u16) -> bool {
+     status == 200
+ }
+ 
+-fn is_status_not_found(status: i32) -> bool {
++fn is_status_not_found(status: u16) -> bool {
+     status == 404
+ }
+ 
+-fn is_status_retryable(status: i32) -> bool {
+-    let status = status as u16;
++fn is_status_retryable(status: u16) -> bool {
+     RETRYABLE_ERROR_CODES.contains(&status)
+ }
+diff --git a/src/lib.rs b/src/lib.rs
+index cc9ffcb..5520b33 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -4,7 +4,7 @@
+ //! async Esplora client to query Esplora's backend.
+ //!
+ //! The library provides the possibility to build a blocking
+-//! client using [`minreq`] and an async client using [`reqwest`].
++//! client using reqwest and an async client using [`reqwest`].
+ //! The library supports communicating to Esplora via a proxy
+ //! and also using TLS (SSL) for secure communication.
+ //!
+@@ -44,14 +44,14 @@
+ //! `esplora-client = { version = "*", default-features = false, features =
+ //! ["blocking"] }`
+ //!
+-//! * `blocking` enables [`minreq`], the blocking client with proxy.
+-//! * `blocking-https` enables [`minreq`], the blocking client with proxy and TLS (SSL) capabilities
+-//!   using the default [`minreq`] backend.
+-//! * `blocking-https-rustls` enables [`minreq`], the blocking client with proxy and TLS (SSL)
++//! * `blocking` enables reqwest, the blocking client with proxy.
++//! * `blocking-https` enables reqwest, the blocking client with proxy and TLS (SSL) capabilities
++//!   using the rustls backend.
++//! * `blocking-https-rustls` enables reqwest, the blocking client with proxy and TLS (SSL)
+ //!   capabilities using the `rustls` backend.
+-//! * `blocking-https-native` enables [`minreq`], the blocking client with proxy and TLS (SSL)
++//! * `blocking-https-native` enables reqwest, the blocking client with proxy and TLS (SSL)
+ //!   capabilities using the platform's native TLS backend (likely OpenSSL).
+-//! * `blocking-https-bundled` enables [`minreq`], the blocking client with proxy and TLS (SSL)
++//! * `blocking-https-bundled` enables reqwest, the blocking client with proxy and TLS (SSL)
+ //!   capabilities using a bundled OpenSSL library backend.
+ //! * `async` enables [`reqwest`], the async client with proxy capabilities.
+ //! * `async-https` enables [`reqwest`], the async client with support for proxying and TLS (SSL)
+@@ -65,7 +65,6 @@
+ //!   certificates.
+ //!
+ //! [`dont remove this line or cargo doc will break`]: https://example.com
+-#![cfg_attr(not(feature = "minreq"), doc = "[`minreq`]: https://docs.rs/minreq")]
+ #![cfg_attr(not(feature = "reqwest"), doc = "[`reqwest`]: https://docs.rs/reqwest")]
+ #![allow(clippy::result_large_err)]
+ #![warn(missing_docs)]
+@@ -127,9 +126,9 @@ pub struct Builder {
+     /// `<protocol>://<user>:<password>@host:<port>`.
+     ///
+     /// Note that the format of this value and the supported protocols change
+-    /// slightly between the blocking version of the client (using `minreq`)
++    /// slightly between the blocking version of the client (using reqwest)
+     /// and the async version (using `reqwest`). For more details check with
+-    /// the documentation of the two crates. Both of them are compiled with
++    /// the reqwest documentation. Both of them are compiled with
+     /// the `socks` feature enabled.
+     ///
+     /// The proxy is ignored when targeting `wasm32`.
+@@ -202,9 +201,12 @@ impl Builder {
+ /// Errors that can happen during a request to `Esplora` servers.
+ #[derive(Debug)]
+ pub enum Error {
+-    /// Error during `minreq` HTTP request
++    /// Error setting up the blocking HTTP transport.
+     #[cfg(feature = "blocking")]
+-    Minreq(::minreq::Error),
++    BlockingSetup(std::sync::Arc<reqwest_blocking::Error>),
++    /// Error during a blocking HTTP request.
++    #[cfg(feature = "blocking")]
++    BlockingRequest(reqwest_blocking::Error),
+     /// Error during reqwest HTTP request
+     #[cfg(feature = "async")]
+     Reqwest(::reqwest::Error),
+@@ -260,7 +262,7 @@ macro_rules! impl_error {
+ 
+ impl std::error::Error for Error {}
+ #[cfg(feature = "blocking")]
+-impl_error!(::minreq::Error, Minreq, Error);
++impl_error!(reqwest_blocking::Error, BlockingRequest, Error);
+ #[cfg(feature = "async")]
+ impl_error!(::reqwest::Error, Reqwest, Error);
+ impl_error!(std::num::ParseIntError, Parsing, Error);

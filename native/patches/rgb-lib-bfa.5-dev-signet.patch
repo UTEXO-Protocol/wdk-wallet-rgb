@@ -1,3 +1,25 @@
+diff --git a/src/lib.rs b/src/lib.rs
+index 00fc284..687e539 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -491,8 +491,6 @@ use crate::error::IndexerError;
+ use crate::no_wallet::validation::checked_bitcoind_indexes;
+ #[cfg(feature = "electrum")]
+ use crate::no_wallet::validation::electrum_config;
+-#[cfg(feature = "esplora")]
+-use crate::no_wallet::validation::esplora_config;
+ #[cfg(feature = "_online")]
+ use crate::no_wallet::validation::{
+     AnchorResolution, ChainResolver, OffchainResolver, PendingAnchors, RejectList,
+@@ -501,6 +499,8 @@ use crate::no_wallet::validation::{
+     rejected_opouts, resolve_anchors, resolve_witnesses, unreachable_indexer_details,
+     validate_consignment_internal, validate_deterministic,
+ };
++#[cfg(feature = "esplora")]
++use crate::no_wallet::validation::{dev_esplora_client, esplora_config};
+ #[cfg(feature = "wallet")]
+ use crate::no_wallet::{bundle_info, check_file_exists, verify_witness_commitment};
+ #[cfg(feature = "electrum")]
 diff --git a/src/no_wallet/mod.rs b/src/no_wallet/mod.rs
 index b1ed6fa..c4b00e8 100644
 --- a/src/no_wallet/mod.rs
@@ -14,7 +36,7 @@ index b1ed6fa..c4b00e8 100644
      ConsignmentValidation, RejectList, RejectListSource, ResolveRejectList, ValidatedWitness,
      ValidationOptions, ValidationWarning, WitnessValidationStatus,
 diff --git a/src/no_wallet/validation.rs b/src/no_wallet/validation.rs
-index 10a8ef5..5da9188 100644
+index 10a8ef5..b815ca9 100644
 --- a/src/no_wallet/validation.rs
 +++ b/src/no_wallet/validation.rs
 @@ -12,10 +12,26 @@ pub(crate) const INDEXER_TIMEOUT: u64 = 10;
@@ -47,7 +69,7 @@ index 10a8ef5..5da9188 100644
 
  /// Indexer to connect to, see `OnlineOptions::indexer_config` (with the `wallet` feature) and
  /// [`validate_consignment`].
-@@ -45,6 +61,11 @@ pub enum IndexerConfig {
+@@ -45,6 +61,16 @@ pub enum IndexerConfig {
          /// URL of the electrum server
          url: String,
      },
@@ -56,10 +78,15 @@ index 10a8ef5..5da9188 100644
 +        /// TLS URL of the Electrum server.
 +        url: String,
 +    },
++    /// An explicitly configured HTTPS Esplora indexer for UTEXO's Dev Signet.
++    DevSignetEsplora {
++        /// HTTPS URL of the Esplora server.
++        url: String,
++    },
      /// An indexer implementing the esplora protocol. Requires the `esplora` feature (or
      /// `esplora_validation` to only validate consignments).
      Esplora {
-@@ -58,7 +79,10 @@ impl IndexerConfig {
+@@ -58,7 +84,11 @@ impl IndexerConfig {
      /// URL of the indexer.
      pub fn url(&self) -> &str {
          match self {
@@ -67,19 +94,21 @@ index 10a8ef5..5da9188 100644
 +            Self::Bitcoind { url, .. }
 +            | Self::Electrum { url }
 +            | Self::DevSignetElectrum { url }
++            | Self::DevSignetEsplora { url }
 +            | Self::Esplora { url } => url,
          }
      }
 
-@@ -66,10 +90,66 @@ impl IndexerConfig {
+@@ -66,10 +96,102 @@ impl IndexerConfig {
      pub fn protocol(&self) -> IndexerProtocol {
          match self {
              Self::Bitcoind { .. } => IndexerProtocol::Bitcoind,
 -            Self::Electrum { .. } => IndexerProtocol::Electrum,
+-            Self::Esplora { .. } => IndexerProtocol::Esplora,
 +            Self::Electrum { .. } | Self::DevSignetElectrum { .. } => IndexerProtocol::Electrum,
-             Self::Esplora { .. } => IndexerProtocol::Esplora,
-         }
-     }
++            Self::Esplora { .. } | Self::DevSignetEsplora { .. } => IndexerProtocol::Esplora,
++        }
++    }
 +
 +    /// Select the expected checkpoint and validate Dev transport before connecting.
 +    pub fn signet_checkpoint(
@@ -92,6 +121,13 @@ index 10a8ef5..5da9188 100644
 +                    details: s!("Dev Signet requires a Signet network and a TLS Electrum endpoint"),
 +                });
 +            }
++            return Ok(Some(SignetCheckpoint::Dev));
++        }
++        if let Self::DevSignetEsplora { url } = self {
++            if network != BitcoinNetwork::Signet {
++                return Err(invalid_dev_esplora());
++            }
++            dev_esplora_endpoint(url)?;
 +            return Ok(Some(SignetCheckpoint::Dev));
 +        }
 +        Ok((network == BitcoinNetwork::Signet).then_some(SignetCheckpoint::Public))
@@ -121,6 +157,35 @@ index 10a8ef5..5da9188 100644
 +}
 +
 +#[cfg(feature = "_validation")]
++fn invalid_dev_esplora() -> Error {
++    Error::InvalidIndexer {
++        details: s!("Dev Signet requires a Signet network and an HTTPS Esplora endpoint"),
++    }
++}
++
++#[cfg(feature = "_validation")]
++fn dev_esplora_endpoint(url: &str) -> Result<(reqwest::Url, BitcoinNetwork), Error> {
++    let endpoint = reqwest::Url::parse(url).map_err(|_| invalid_dev_esplora())?;
++    if endpoint.host_str().is_none()
++        || endpoint.port() == Some(0)
++        || !endpoint.username().is_empty()
++        || endpoint.password().is_some()
++        || endpoint.query().is_some()
++        || endpoint.fragment().is_some()
++    {
++        return Err(invalid_dev_esplora());
++    }
++    #[cfg(test)]
++    if endpoint.scheme() == "http" && endpoint.host_str() == Some("127.0.0.1") {
++        return Ok((endpoint, BitcoinNetwork::Regtest));
++    }
++    if endpoint.scheme() != "https" {
++        return Err(invalid_dev_esplora());
++    }
++    Ok((endpoint, BitcoinNetwork::Signet))
++}
++
++#[cfg(feature = "_validation")]
 +pub(crate) fn check_signet_indexer(
 +    checkpoint: Option<SignetCheckpoint>,
 +    genesis: &str,
@@ -133,13 +198,13 @@ index 10a8ef5..5da9188 100644
 +            return Err(Error::InvalidIndexer {
 +                details: s!("the indexer reports a different Signet chain"),
 +            });
-+        }
-+    }
+         }
+     }
 +    Ok(())
  }
 
  /// Authentication for a Bitcoin Core node RPC connection, see [`IndexerConfig::Bitcoind`].
-@@ -406,7 +486,11 @@ impl IndexerClient {
+@@ -406,7 +528,11 @@ impl IndexerClient {
      /// and, for a Bitcoin Core node, it has a synced transaction index.
      ///
      /// Fails if support for the configured indexer is not compiled in.
@@ -152,7 +217,7 @@ index 10a8ef5..5da9188 100644
          let unreachable = |e: &dyn fmt::Display| Error::InvalidIndexer {
              details: unreachable_indexer_details(indexer_config, e),
          };
-@@ -416,10 +500,10 @@ impl IndexerClient {
+@@ -416,10 +542,10 @@ impl IndexerClient {
                  BitcoindRpcClient::new(url, auth.into()).map_err(|e| unreachable(&e))?,
              )),
              #[cfg(feature = "electrum_validation")]
@@ -165,7 +230,18 @@ index 10a8ef5..5da9188 100644
                          .map_err(|e| unreachable(&e))?,
                  ))
              }
-@@ -436,7 +520,10 @@ impl IndexerClient {
+@@ -427,6 +553,10 @@ impl IndexerClient {
+             IndexerConfig::Esplora { url } => {
+                 Self::Esplora(Box::new(EsploraClient::from_builder(esplora_config(url))))
+             }
++            #[cfg(feature = "esplora_validation")]
++            IndexerConfig::DevSignetEsplora { url } => {
++                Self::Esplora(Box::new(dev_esplora_client(url)?))
++            }
+             #[cfg(not(all(
+                 feature = "bitcoind_validation",
+                 feature = "electrum_validation",
+@@ -436,7 +566,10 @@ impl IndexerClient {
          };
 
          // this also checks connectivity (and credentials for bitcoind)
@@ -177,7 +253,7 @@ index 10a8ef5..5da9188 100644
          #[allow(irrefutable_let_patterns)]
          #[cfg(feature = "bitcoind_validation")]
          if let Self::Bitcoind(client) = &client {
-@@ -506,26 +593,105 @@ pub(crate) fn checked_bitcoind_indexes(
+@@ -506,26 +639,166 @@ pub(crate) fn checked_bitcoind_indexes(
      })
  }
 
@@ -195,15 +271,17 @@ index 10a8ef5..5da9188 100644
 +        if chain_net != ChainNet::BitcoinSignet {
 +            return Err(WitnessResolverError::WrongChainNet);
 +        }
-+        let request_error = |err: ElectrumError| {
-+            WitnessResolverError::ResolverIssue(None, err.to_string())
-+        };
++        let request_error =
++            |err: ElectrumError| WitnessResolverError::ResolverIssue(None, err.to_string());
 +        let client = &self.0.inner;
 +        let genesis = client.block_header(0).map_err(request_error)?.block_hash();
 +        let expected_genesis =
 +            bitcoin::constants::genesis_block(bitcoin::Network::Signet).block_hash();
 +        if genesis != expected_genesis
-+            || self.get_block_header(NonZeroU32::MIN)?.block_hash().to_string()
++            || self
++                .get_block_header(NonZeroU32::MIN)?
++                .block_hash()
++                .to_string()
 +                != SignetCheckpoint::Dev.block_one()
 +        {
 +            return Err(WitnessResolverError::WrongChainNet);
@@ -247,6 +325,59 @@ index 10a8ef5..5da9188 100644
 +    }
 +}
 +
++#[cfg(feature = "esplora_validation")]
++struct DevSignetEsploraResolver(rgbstd::indexers::esplora_blocking::EsploraClient);
++
++#[cfg(feature = "esplora_validation")]
++impl ResolveWitness for DevSignetEsploraResolver {
++    fn check_chain_net(&self, chain_net: ChainNet) -> Result<(), WitnessResolverError> {
++        if chain_net != ChainNet::BitcoinSignet {
++            return Err(WitnessResolverError::WrongChainNet);
++        }
++        self.0.check_chain_net(chain_net)?;
++        let expected: bitcoin::BlockHash = SignetCheckpoint::Dev
++            .block_one()
++            .parse()
++            .expect("the compiled checkpoint is a valid block hash");
++        let height_one = self
++            .0
++            .inner
++            .get_block_hash(1)
++            .map_err(|err| WitnessResolverError::ResolverIssue(None, err.to_string()))?;
++        if height_one != expected {
++            return Err(WitnessResolverError::WrongChainNet);
++        }
++        let header = self
++            .0
++            .inner
++            .get_header_by_hash(&height_one)
++            .map_err(|err| WitnessResolverError::ResolverIssue(None, err.to_string()))?;
++        if header.block_hash() != expected {
++            return Err(WitnessResolverError::WrongChainNet);
++        }
++        Ok(())
++    }
++
++    fn resolve_witness(&self, witness_id: RgbTxid) -> Result<WitnessStatus, WitnessResolverError> {
++        self.0.resolve_witness(witness_id)
++    }
++
++    fn get_block_header(&self, height: NonZeroU32) -> Result<BlockHeader, WitnessResolverError> {
++        self.0.get_block_header(height)
++    }
++}
++
++#[cfg(feature = "esplora_validation")]
++impl ResolveSpvProof for DevSignetEsploraResolver {
++    fn resolve_spv_proof(
++        &self,
++        txid: RgbTxid,
++    ) -> Result<rgbstd::validation::SpvProof, WitnessResolverError> {
++        self.check_chain_net(ChainNet::BitcoinSignet)?;
++        self.0.resolve_spv_proof(txid)
++    }
++}
++
  /// Build the witness resolver for the indexer described by `indexer_config`, checking it's for the
  /// given network.
  #[cfg(feature = "_validation")]
@@ -265,11 +396,12 @@ index 10a8ef5..5da9188 100644
 +            Box::new(AnyResolver::bitcoind_blocking(url, auth.into()).map_err(invalid)?)
          }
          #[cfg(feature = "electrum_validation")]
-         IndexerConfig::Electrum { url } => {
+-        IndexerConfig::Electrum { url } => {
 -            AnyResolver::electrum_blocking(url, Some(electrum_config())).map_err(invalid)?
-+            Box::new(AnyResolver::electrum_blocking(url, Some(electrum_config(indexer_config)))
-+                .map_err(invalid)?)
-+        }
++        IndexerConfig::Electrum { url } => Box::new(
++            AnyResolver::electrum_blocking(url, Some(electrum_config(indexer_config)))
++                .map_err(invalid)?,
++        ),
 +        #[cfg(feature = "electrum_validation")]
 +        IndexerConfig::DevSignetElectrum { url } => {
 +            let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
@@ -286,10 +418,16 @@ index 10a8ef5..5da9188 100644
 +            AnyResolver::esplora_blocking(esplora_config(url))
 +                .expect("esplora_blocking wraps an infallible builder and always returns Ok"),
 +        ),
++        #[cfg(feature = "esplora_validation")]
++        IndexerConfig::DevSignetEsplora { url } => Box::new(DevSignetEsploraResolver(
++            rgbstd::indexers::esplora_blocking::EsploraClient {
++                inner: dev_esplora_client(url)?,
++            },
++        )),
          #[cfg(not(all(
              feature = "bitcoind_validation",
              feature = "electrum_validation",
-@@ -536,12 +702,12 @@ pub(crate) fn get_resolver(
+@@ -536,12 +809,12 @@ pub(crate) fn get_resolver(
      resolver
          .check_chain_net(bitcoin_network.into())
          .map_err(|e| invalid(e.to_string()))?;
@@ -305,27 +443,33 @@ index 10a8ef5..5da9188 100644
          }
      }
      Ok(resolver)
-@@ -556,7 +722,9 @@ pub(crate) fn unreachable_indexer_details(
+@@ -556,8 +829,12 @@ pub(crate) fn unreachable_indexer_details(
  ) -> String {
      match indexer_config {
          IndexerConfig::Bitcoind { .. } => format!("cannot connect to bitcoind: {err}"),
 -        IndexerConfig::Electrum { .. } => s!("not a valid electrum server"),
+-        IndexerConfig::Esplora { .. } => s!("not a valid esplora server"),
 +        IndexerConfig::Electrum { .. } | IndexerConfig::DevSignetElectrum { .. } => {
 +            s!("not a valid electrum server")
 +        }
-         IndexerConfig::Esplora { .. } => s!("not a valid esplora server"),
++        IndexerConfig::Esplora { .. } | IndexerConfig::DevSignetEsplora { .. } => {
++            s!("not a valid esplora server")
++        }
      }
  }
-@@ -572,7 +740,7 @@ pub(crate) fn unreachable_indexer_details(
+
+@@ -572,8 +849,8 @@ pub(crate) fn unreachable_indexer_details(
  fn unsupported_indexer(indexer_config: &IndexerConfig) -> Error {
      let feature = match indexer_config {
          IndexerConfig::Bitcoind { .. } => "bitcoind",
 -        IndexerConfig::Electrum { .. } => "electrum",
+-        IndexerConfig::Esplora { .. } => "esplora",
 +        IndexerConfig::Electrum { .. } | IndexerConfig::DevSignetElectrum { .. } => "electrum",
-         IndexerConfig::Esplora { .. } => "esplora",
++        IndexerConfig::Esplora { .. } | IndexerConfig::DevSignetEsplora { .. } => "esplora",
      };
      Error::InvalidIndexer {
-@@ -595,9 +763,15 @@ impl From<&BitcoindAuth> for BitcoindRpcAuth {
+         details: format!(
+@@ -595,9 +872,15 @@ impl From<&BitcoindAuth> for BitcoindRpcAuth {
  }
 
  #[cfg(feature = "electrum_validation")]
@@ -343,7 +487,48 @@ index 10a8ef5..5da9188 100644
          .timeout(Some(Duration::from_secs(INDEXER_TIMEOUT)))
          .build()
  }
-@@ -655,7 +829,7 @@ pub fn validate_consignment(
+@@ -609,6 +892,40 @@ pub(crate) fn esplora_config(indexer_url: &str) -> EsploraBuilder {
+         .timeout(INDEXER_TIMEOUT)
+ }
+
++#[cfg(feature = "esplora_validation")]
++pub(crate) fn dev_esplora_client(indexer_url: &str) -> Result<EsploraClient, Error> {
++    use crate::api::egress::wallet_http_client_for_network;
++
++    let (_, network) = dev_esplora_endpoint(indexer_url)?;
++    let timeout = Duration::from_secs(INDEXER_TIMEOUT);
++    let (http, endpoint) = wallet_http_client_for_network(indexer_url, network, timeout, timeout)
++        .map_err(|_| invalid_dev_esplora())?;
++    let builder = EsploraBuilder::new(endpoint.as_str().trim_end_matches('/'))
++        .max_retries(0)
++        .timeout(INDEXER_TIMEOUT);
++    Ok(EsploraClient::from_client(builder, http))
++}
++
++/// Return a height and matching block hash after checking the Dev Signet Esplora checkpoint.
++#[cfg(feature = "esplora")]
++pub fn check_dev_esplora_tip(url: &str) -> Result<(u32, String), Error> {
++    let config = IndexerConfig::DevSignetEsplora { url: url.into() };
++    let client = IndexerClient::new(&config, BitcoinNetwork::Signet)?;
++    let height = client.get_latest_block_height()?;
++    if height == 0 {
++        return Err(Error::InvalidIndexer {
++            details: s!("the indexer reports a tip below the Dev Signet checkpoint"),
++        });
++    }
++    let block_hash = client.block_hash(height as usize)?;
++    if height == 1 && block_hash != SignetCheckpoint::Dev.block_one() {
++        return Err(Error::InvalidIndexer {
++            details: s!("the indexer reports a different Signet chain"),
++        });
++    }
++    Ok((height, block_hash))
++}
++
+ /// Validate the RGB consignment (transfer or contract) at the given path, without a wallet.
+ ///
+ /// The witness transactions are resolved with the indexer described by `indexer_config`, which
+@@ -655,7 +972,7 @@ pub fn validate_consignment(
      min_confirmations: Option<u8>,
      options: &ValidationOptions,
  ) -> Result<ConsignmentValidation, Error> {
@@ -352,7 +537,20 @@ index 10a8ef5..5da9188 100644
      let resolver = get_resolver(indexer_config, options.bitcoin_network)?;
      let safe_height = min_confirmations
          .map(|min_confirmations| -> Result<_, Error> {
-@@ -872,11 +1046,11 @@ impl ResolveRejectList for RemoteRejectListResolver<'_> {
+@@ -856,7 +1173,11 @@ impl RemoteRejectListResolver<'_> {
+             ),
+             RejectListSource::Evm(contract) => (
+                 RejectList::from_evm(
+-                    &checked_evm_client(self.evm_rpc_urls, contract.chain_id, self.bitcoin_network)?,
++                    &checked_evm_client(
++                        self.evm_rpc_urls,
++                        contract.chain_id,
++                        self.bitcoin_network,
++                    )?,
+                     &contract.address,
+                 )?,
+                 0,
+@@ -872,11 +1193,11 @@ impl ResolveRejectList for RemoteRejectListResolver<'_> {
      }
  }
 
@@ -366,7 +564,320 @@ index 10a8ef5..5da9188 100644
  }
 
  #[cfg(feature = "_validation")]
-@@ -1306,6 +1480,10 @@ mod tests {
+@@ -1301,11 +1622,323 @@ pub(crate) fn rejected_opouts(
+     Ok(to_reject)
+ }
+
++#[cfg(all(test, feature = "esplora"))]
++pub(crate) mod dev_signet_esplora_fixture {
++    use super::*;
++    use crate::wallet::{
++        DatabaseType, Online, OnlineOptions, RgbWalletOpsOnline, SinglesigKeys, SyncKeychain,
++        SyncOptions, SyncStrategy, Wallet, WalletData,
++    };
++    use std::io::{BufRead, BufReader, Read, Write};
++    use std::net::TcpListener;
++    use std::time::Instant;
++
++    const DEV_HEADER: &str = "00000020f61eee3b63a380a477a063af32b2bbc97c9ff9f01f2c4225e973988108000000ff4f693674163783e85d4c1c57205c20804084d70447bd224cf95f8c08510f00fe1c8069ae77031e22260200";
++    const PUBLIC_HEADER: &str = "00000020f61eee3b63a380a477a063af32b2bbc97c9ff9f01f2c4225e973988108000000f575c83235984e7dc4afc1f30944c170462e84437ab6f2d52e16878a79e4678bd1914d5fae77031eccf40700";
++
++    struct Reply {
++        request_line: String,
++        status: &'static str,
++        extra_headers: String,
++        body: String,
++    }
++
++    fn ok(path: &str, body: &str) -> Reply {
++        Reply {
++            request_line: format!("GET {path} HTTP/1.1"),
++            status: "200 OK",
++            extra_headers: String::new(),
++            body: body.into(),
++        }
++    }
++
++    fn redirect(request_line: &str, destination: &str) -> Reply {
++        Reply {
++            request_line: request_line.into(),
++            status: "307 Temporary Redirect",
++            extra_headers: format!("Location: {destination}\r\n"),
++            body: String::new(),
++        }
++    }
++
++    fn serve(replies: Vec<Reply>) -> (String, std::thread::JoinHandle<()>) {
++        let listener = TcpListener::bind("127.0.0.1:0").expect("bind Esplora fixture");
++        listener.set_nonblocking(true).expect("nonblocking fixture");
++        let url = format!("http://{}", listener.local_addr().expect("fixture address"));
++        let worker = std::thread::spawn(move || {
++            for reply in replies {
++                let deadline = Instant::now() + Duration::from_secs(5);
++                let mut stream = loop {
++                    match listener.accept() {
++                        Ok((stream, _)) => break stream,
++                        Err(err)
++                            if err.kind() == std::io::ErrorKind::WouldBlock
++                                && Instant::now() < deadline =>
++                        {
++                            std::thread::sleep(Duration::from_millis(2));
++                        }
++                        Err(err) => panic!("expected {}: {err}", reply.request_line),
++                    }
++                };
++                stream
++                    .set_nonblocking(false)
++                    .expect("blocking accepted stream");
++                stream
++                    .set_read_timeout(Some(Duration::from_secs(5)))
++                    .unwrap();
++                let mut reader = BufReader::new(&mut stream);
++                let mut line = String::new();
++                reader.read_line(&mut line).expect("request line");
++                assert_eq!(line.trim_end(), reply.request_line);
++                let mut length = 0;
++                loop {
++                    line.clear();
++                    assert_ne!(reader.read_line(&mut line).expect("request header"), 0);
++                    if line == "\r\n" {
++                        break;
++                    }
++                    if let Some(value) = line.to_ascii_lowercase().strip_prefix("content-length:") {
++                        length = value.trim().parse().expect("request content length");
++                    }
++                }
++                if reply.request_line.starts_with("POST") {
++                    assert!(length > 0);
++                    reader
++                        .read_exact(&mut vec![0; length])
++                        .expect("broadcast transaction");
++                }
++                write!(
++                    stream,
++                    "HTTP/1.1 {}\r\nContent-Length: {}\r\n{}Connection: close\r\n\r\n{}",
++                    reply.status,
++                    reply.body.len(),
++                    reply.extra_headers,
++                    reply.body
++                )
++                .expect("serve Esplora response");
++            }
++        });
++        (url, worker)
++    }
++
++    fn wallet_online(url: String, data_dir: &std::path::Path) -> Result<(Wallet, Online), Error> {
++        let network = BitcoinNetwork::Signet;
++        let keys = crate::keys::generate_keys(network, WitnessVersion::Taproot);
++        let mut wallet = Wallet::new(
++            WalletData {
++                data_dir: data_dir.to_str().expect("UTF-8 fixture path").into(),
++                bitcoin_network: network,
++                database_type: DatabaseType::Sqlite,
++                max_allocations_per_utxo: 5,
++                supported_schemas: vec![AssetSchema::Nia],
++            },
++            SinglesigKeys::from_keys(&keys, None),
++        )?;
++        let online = wallet.go_online(OnlineOptions {
++            indexer_config: IndexerConfig::DevSignetEsplora { url },
++            skip_consistency_check: true,
++            vanilla_sync_lookback: 0,
++            failed_witness_receive_grace_secs: 0,
++            proxy_auth_keys: HashMap::new(),
++            evm_rpc_urls: HashMap::new(),
++        })?;
++        Ok((wallet, online))
++    }
++
++    pub(crate) fn run() {
++        let genesis = bitcoin::constants::genesis_block(bitcoin::Network::Signet)
++            .block_hash()
++            .to_string();
++        let dev = SignetCheckpoint::Dev.block_one();
++        let public = SignetCheckpoint::Public.block_one();
++        let header_path = format!("/block/{dev}/header");
++        let genesis_reply = || ok("/block-height/0", &genesis);
++        let height_one = |hash| ok("/block-height/1", hash);
++        let data_dir = tempfile::tempdir().expect("temporary wallet directory");
++
++        for (replies, should_accept) in [
++            (
++                vec![
++                    genesis_reply(),
++                    height_one(dev),
++                    genesis_reply(),
++                    height_one(dev),
++                    ok(&header_path, DEV_HEADER),
++                ],
++                true,
++            ),
++            (vec![genesis_reply(), height_one(public)], false),
++            (
++                vec![ok(
++                    "/block-height/0",
++                    &bitcoin::constants::genesis_block(bitcoin::Network::Bitcoin)
++                        .block_hash()
++                        .to_string(),
++                )],
++                false,
++            ),
++            (
++                vec![
++                    genesis_reply(),
++                    Reply {
++                        request_line: "GET /block-height/1 HTTP/1.1".into(),
++                        status: "404 Not Found",
++                        extra_headers: String::new(),
++                        body: String::new(),
++                    },
++                ],
++                false,
++            ),
++            (
++                vec![
++                    genesis_reply(),
++                    height_one(dev),
++                    genesis_reply(),
++                    height_one(public),
++                ],
++                false,
++            ),
++            (
++                vec![
++                    genesis_reply(),
++                    height_one(dev),
++                    genesis_reply(),
++                    height_one(dev),
++                    ok(&header_path, PUBLIC_HEADER),
++                ],
++                false,
++            ),
++        ] {
++            let (url, fixture) = serve(replies);
++            let result = wallet_online(url, data_dir.path());
++            assert_eq!(result.is_ok(), should_accept, "{:?}", result.as_ref().err());
++            fixture.join().expect("wallet fixture completed");
++        }
++
++        let (url, fixture) = serve(vec![
++            genesis_reply(),
++            height_one(dev),
++            ok("/blocks/tip/height", "1"),
++            height_one(dev),
++        ]);
++        assert_eq!(check_dev_esplora_tip(&url).unwrap(), (1, dev.into()));
++        fixture.join().expect("tip fixture completed");
++
++        let (url, fixture) = serve(vec![
++            genesis_reply(),
++            height_one(dev),
++            ok("/blocks/tip/height", "0"),
++        ]);
++        assert!(check_dev_esplora_tip(&url).is_err());
++        fixture
++            .join()
++            .expect("below-checkpoint tip fixture completed");
++
++        let (url, fixture) = serve(vec![
++            genesis_reply(),
++            height_one(dev),
++            ok("/blocks/tip/height", "1"),
++            height_one(public),
++        ]);
++        assert!(check_dev_esplora_tip(&url).is_err());
++        fixture
++            .join()
++            .expect("wrong checkpoint tip fixture completed");
++
++        let (url, fixture) = serve(vec![
++            genesis_reply(),
++            height_one(dev),
++            genesis_reply(),
++            height_one(dev),
++            ok(&header_path, DEV_HEADER),
++            genesis_reply(),
++            height_one(public),
++        ]);
++        let (mut wallet, online) = wallet_online(url, data_dir.path()).expect("Dev online wallet");
++        let result = wallet.sync(
++            online,
++            SyncOptions {
++                keychain: SyncKeychain::Colored,
++                strategy: SyncStrategy::FastSync,
++            },
++        );
++        assert!(matches!(result, Err(Error::InvalidIndexer { .. })));
++        fixture.join().expect("wallet switch fixture completed");
++
++        let target = TcpListener::bind("127.0.0.1:0").expect("redirect target");
++        target.set_nonblocking(true).unwrap();
++        let destination = format!("http://{}/unexpected", target.local_addr().unwrap());
++        let (url, fixture) = serve(vec![redirect("GET /block-height/0 HTTP/1.1", &destination)]);
++        assert!(check_dev_esplora_tip(&url).is_err());
++        fixture.join().expect("GET fixture completed");
++
++        let (url, fixture) = serve(vec![
++            genesis_reply(),
++            height_one(dev),
++            genesis_reply(),
++            height_one(dev),
++            redirect(&format!("GET {header_path} HTTP/1.1"), &destination),
++        ]);
++        assert!(wallet_online(url, data_dir.path()).is_err());
++        fixture.join().expect("resolver redirect fixture completed");
++
++        let tx = bitcoin::Transaction {
++            version: bitcoin::transaction::Version::TWO,
++            lock_time: bitcoin::absolute::LockTime::ZERO,
++            input: vec![],
++            output: vec![],
++        };
++        let (url, fixture) = serve(vec![
++            genesis_reply(),
++            height_one(dev),
++            ok(&header_path, DEV_HEADER),
++            genesis_reply(),
++            height_one(public),
++        ]);
++        let resolver = get_resolver(
++            &IndexerConfig::DevSignetEsplora { url },
++            BitcoinNetwork::Signet,
++        )
++        .expect("Dev SPV proof resolver");
++        assert!(matches!(
++            resolver.resolve_spv_proof(tx.compute_txid()),
++            Err(WitnessResolverError::WrongChainNet)
++        ));
++        fixture
++            .join()
++            .expect("SPV proof chain switch fixture completed");
++
++        let (url, fixture) = serve(vec![redirect("POST /tx HTTP/1.1", &destination)]);
++        let error = dev_esplora_client(&url)
++            .unwrap()
++            .broadcast(&tx)
++            .unwrap_err();
++        assert!(matches!(
++            error,
++            EsploraError::HttpResponse { status: 307, .. }
++        ));
++        fixture.join().expect("broadcast fixture completed");
++        assert_eq!(
++            target.accept().unwrap_err().kind(),
++            std::io::ErrorKind::WouldBlock
++        );
++    }
++
++    #[test]
++    fn dev_esplora_admission_uses_both_clients_and_rejects_redirects() {
++        run();
++    }
++}
++
+ #[cfg(all(test, feature = "electrum_validation"))]
+ mod tests {
      use super::*;
 
      const GENESIS_HEADER_HEX: &str = "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c";
@@ -377,7 +888,7 @@ index 10a8ef5..5da9188 100644
 
      /// Start a mock electrum server that accepts a single connection, refusing any further one,
      /// and answers the requests needed to check it can be reached, returning its URL.
-@@ -1376,4 +1554,105 @@ mod tests {
+@@ -1376,4 +2009,122 @@ mod tests {
          // Indexer is not Debug, so the Ok variant cannot be printed by assert_matches
          assert!(matches!(result, Err(Error::InvalidIndexer { .. })));
      }
@@ -417,7 +928,8 @@ index 10a8ef5..5da9188 100644
 +        use std::time::Instant;
 +
 +        const DEV_TXID: &str = "fe001085c0f895cf24bd47704d840408c205725c1c4c5de88337167493694fff";
-+        const PUBLIC_TXID: &str = "8153034f45e695453250a8fb7225a5e545144071d8ed7b0d3211efa1f3c92ad8";
++        const PUBLIC_TXID: &str =
++            "8153034f45e695453250a8fb7225a5e545144071d8ed7b0d3211efa1f3c92ad8";
 +        let listener = TcpListener::bind("127.0.0.1:0").expect("bind mock Electrum");
 +        listener.set_nonblocking(true).unwrap();
 +        let url = format!("tcp://{}", listener.local_addr().unwrap());
@@ -430,8 +942,9 @@ index 10a8ef5..5da9188 100644
 +                let mut stream = loop {
 +                    match listener.accept() {
 +                        Ok((stream, _)) => break stream,
-+                        Err(err) if err.kind() == std::io::ErrorKind::WouldBlock
-+                            && Instant::now() < deadline =>
++                        Err(err)
++                            if err.kind() == std::io::ErrorKind::WouldBlock
++                                && Instant::now() < deadline =>
 +                        {
 +                            std::thread::sleep(Duration::from_millis(5));
 +                        }
@@ -441,7 +954,9 @@ index 10a8ef5..5da9188 100644
 +                let genesis = genesis.clone();
 +                clients.push(std::thread::spawn(move || {
 +                    stream.set_nonblocking(false).unwrap();
-+                    stream.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
++                    stream
++                        .set_read_timeout(Some(Duration::from_secs(3)))
++                        .unwrap();
 +                    let reader = BufReader::new(stream.try_clone().unwrap());
 +                    let dev = checkpoint == DEV_HEADER;
 +                    for line in reader.lines() {
@@ -451,12 +966,25 @@ index 10a8ef5..5da9188 100644
 +                            Some("server.version") => json!(["mock-electrum", "1.6"]),
 +                            Some("blockchain.block.header") if params[0] == 0 => json!(genesis),
 +                            Some("blockchain.block.header") if params[0] == 1 => json!(checkpoint),
-+                            Some("blockchain.transaction.id_from_pos") if dev && params == &json!([1, 0]) => json!(DEV_TXID),
-+                            Some("blockchain.transaction.get") if !dev && params == &json!([PUBLIC_TXID, false]) => json!("00"),
-+                            Some("blockchain.transaction.get")
-+                                if params == &json!([if dev { DEV_TXID } else { PUBLIC_TXID }, true]) =>
++                            Some("blockchain.transaction.id_from_pos")
++                                if dev && params == &json!([1, 0]) =>
 +                            {
-+                                if verbose { json!({"hex": "00"}) } else { json!("00") }
++                                json!(DEV_TXID)
++                            }
++                            Some("blockchain.transaction.get")
++                                if !dev && params == &json!([PUBLIC_TXID, false]) =>
++                            {
++                                json!("00")
++                            }
++                            Some("blockchain.transaction.get")
++                                if params
++                                    == &json!([if dev { DEV_TXID } else { PUBLIC_TXID }, true]) =>
++                            {
++                                if verbose {
++                                    json!({"hex": "00"})
++                                } else {
++                                    json!("00")
++                                }
 +                            }
 +                            _ => {
 +                                let reply = json!({
@@ -484,10 +1012,10 @@ index 10a8ef5..5da9188 100644
 +    }
  }
 diff --git a/src/utils.rs b/src/utils.rs
-index 2348898..5c1ef04 100644
+index 2348898..cad28a6 100644
 --- a/src/utils.rs
 +++ b/src/utils.rs
-@@ -496,7 +496,10 @@ pub(crate) fn check_proxy(
+@@ -496,27 +496,22 @@ pub(crate) fn check_proxy(
  pub(crate) fn get_indexer_and_resolver(
      indexer_config: &IndexerConfig,
      bitcoin_network: BitcoinNetwork,
@@ -499,8 +1027,15 @@ index 2348898..5c1ef04 100644
      #[cfg_attr(not(feature = "bitcoind"), allow(unused_mut))]
      let mut indexer = build_indexer(indexer_config)?;
      // This also checks connectivity (and credentials for bitcoind).
-@@ -506,17 +509,7 @@ pub(crate) fn get_indexer_and_resolver(
-         })
+     let header_hash = |height| {
+-        indexer.block_hash(height).map_err(|e| Error::InvalidIndexer {
+-            details: unreachable_indexer_details(indexer_config, &e),
+-        })
++        indexer
++            .block_hash(height)
++            .map_err(|e| Error::InvalidIndexer {
++                details: unreachable_indexer_details(indexer_config, &e),
++            })
      };
      let genesis = header_hash(0)?;
 -    if bitcoin_network == BitcoinNetwork::Signet {
@@ -518,7 +1053,7 @@ index 2348898..5c1ef04 100644
      #[allow(irrefutable_let_patterns)]
      #[cfg(feature = "bitcoind")]
      if let Indexer::Bitcoind(client) = &mut indexer {
-@@ -547,13 +540,12 @@ pub(crate) fn build_indexer(indexer_config: &IndexerConfig) -> Result<Indexer, E
+@@ -547,25 +542,30 @@ pub(crate) fn build_indexer(indexer_config: &IndexerConfig) -> Result<Indexer, E
              })))
          }
          #[cfg(feature = "electrum")]
@@ -536,20 +1071,50 @@ index 2348898..5c1ef04 100644
              Ok(Indexer::Electrum(Box::new(BdkElectrumClient::new(client))))
          }
          #[cfg(feature = "esplora")]
-@@ -564,7 +556,7 @@ pub(crate) fn build_indexer(indexer_config: &IndexerConfig) -> Result<Indexer, E
+         IndexerConfig::Esplora { url } => Ok(Indexer::Esplora(Box::new(
+             EsploraClient::from_builder(esplora_config(url)),
+         ))),
++        #[cfg(feature = "esplora")]
++        IndexerConfig::DevSignetEsplora { url } => {
++            Ok(Indexer::Esplora(Box::new(dev_esplora_client(url)?)))
++        }
+         #[cfg(not(all(feature = "bitcoind", feature = "electrum", feature = "esplora")))]
          _ => {
              let feature = match indexer_config {
                  IndexerConfig::Bitcoind { .. } => "bitcoind",
 -                IndexerConfig::Electrum { .. } => "electrum",
-+                IndexerConfig::Electrum { .. } | IndexerConfig::DevSignetElectrum { .. } => "electrum",
-                 IndexerConfig::Esplora { .. } => "esplora",
+-                IndexerConfig::Esplora { .. } => "esplora",
++                IndexerConfig::Electrum { .. } | IndexerConfig::DevSignetElectrum { .. } => {
++                    "electrum"
++                }
++                IndexerConfig::Esplora { .. } | IndexerConfig::DevSignetEsplora { .. } => "esplora",
              };
              Err(Error::InvalidIndexer {
+                 details: format!(
 diff --git a/src/wallet/core.rs b/src/wallet/core.rs
-index 63a0fe2..8e664ca 100644
+index 63a0fe2..65f4497 100644
 --- a/src/wallet/core.rs
 +++ b/src/wallet/core.rs
-@@ -569,7 +569,7 @@ pub trait WalletCore {
+@@ -564,12 +564,26 @@ pub trait WalletCore {
+         &self.online_data().as_ref().unwrap().indexer
+     }
+
++    #[cfg(feature = "esplora")]
++    fn check_dev_esplora_checkpoint(&self) -> Result<(), Error> {
++        use crate::no_wallet::validation::{SignetCheckpoint, check_signet_indexer};
++
++        let online = self.online_data().as_ref().ok_or(Error::Offline)?;
++        if !matches!(online.indexer_config, IndexerConfig::DevSignetEsplora { .. }) {
++            return Ok(());
++        }
++        let genesis = online.indexer.block_hash(0)?;
++        check_signet_indexer(Some(SignetCheckpoint::Dev), &genesis, || {
++            Ok(online.indexer.block_hash(1)?)
++        })
++    }
++
+     fn spv_resolver(&self) -> Option<&dyn ResolveSpvProof> {
+         #[cfg(feature = "_online")]
          {
              self.online_data()
                  .as_ref()
@@ -558,16 +1123,29 @@ index 63a0fe2..8e664ca 100644
          }
          #[cfg(not(feature = "_online"))]
          {
+@@ -764,6 +778,9 @@ pub trait WalletCore {
+     ) -> Result<(), Error> {
+         debug!(self.logger(), "Syncing {:?}...", options);
+
++        #[cfg(feature = "esplora")]
++        self.check_dev_esplora_checkpoint()?;
++
+         let pending_witness_scripts = match options.keychain {
+             SyncKeychain::Colored => self.reconcile_pending_witness(txn)?,
+             SyncKeychain::Vanilla { .. } => HashMap::new(),
 diff --git a/src/wallet/mod.rs b/src/wallet/mod.rs
-index 12e6eb3..8eb574b 100644
+index 12e6eb3..07f54b7 100644
 --- a/src/wallet/mod.rs
 +++ b/src/wallet/mod.rs
-@@ -52,7 +52,7 @@ pub use objects::{
+@@ -52,7 +52,10 @@ pub use objects::{
  };
  pub use offline::RgbWalletOpsOffline;
  #[cfg(feature = "_online")]
 -pub use online::{RgbWalletOpsOnline, check_indexer_url};
 +pub use online::{RgbWalletOpsOnline, check_indexer_config, check_indexer_url};
++
++#[cfg(feature = "esplora")]
++pub use crate::no_wallet::validation::check_dev_esplora_tip;
  pub use singlesig::{SinglesigKeys, Wallet};
 
  pub(crate) use backup::WalletBackup;
@@ -585,7 +1163,7 @@ index dbe1f0c..f74865b 100644
      pub(crate) evm_rpc_urls: HashMap<u64, String>,
      pub(crate) hub_client: Option<MultisigHubClient>,
 diff --git a/src/wallet/online.rs b/src/wallet/online.rs
-index 46f1bb2..fd70c5e 100644
+index 46f1bb2..90c2363 100644
 --- a/src/wallet/online.rs
 +++ b/src/wallet/online.rs
 @@ -65,7 +65,7 @@ pub fn check_indexer_url(
@@ -614,3 +1192,13 @@ index 46f1bb2..fd70c5e 100644
      Ok(indexer_config.protocol())
  }
 
+@@ -426,6 +433,9 @@ pub trait WalletOnline: WalletOffline {
+     }
+
+     fn broadcast_tx(&self, tx: BdkTransaction) -> Result<BdkTransaction, Error> {
++        #[cfg(feature = "esplora")]
++        self.check_dev_esplora_checkpoint()?;
++
+         let txid = tx.compute_txid().to_string();
+         let indexer = self.indexer();
+         match indexer.broadcast(&tx) {

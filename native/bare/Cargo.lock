@@ -534,6 +534,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bdk_esplora"
+version = "0.22.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ac04fdd76362dccf600ccf338ff6be7ad6a0d064def5969e4b33c171718e913"
+dependencies = [
+ "bdk_core",
+ "esplora-client",
+]
+
+[[package]]
 name = "bdk_tx"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1294,6 +1304,18 @@ checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "esplora-client"
+version = "0.12.3"
+dependencies = [
+ "bitcoin",
+ "hex-conservative 0.2.3",
+ "log",
+ "reqwest",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2922,6 +2944,7 @@ dependencies = [
  "rustls-platform-verifier",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "sync_wrapper",
  "tokio",
  "tokio-native-tls",
@@ -3017,6 +3040,7 @@ dependencies = [
  "amplify",
  "base64 0.23.1",
  "bdk_electrum",
+ "bdk_esplora",
  "bdk_wallet",
  "chacha20poly1305",
  "ed25519-dalek",
@@ -3070,6 +3094,7 @@ dependencies = [
  "baid64",
  "chrono",
  "electrum-client",
+ "esplora-client",
  "getrandom 0.3.4",
  "rgb-aluvm",
  "rgb-ascii-armor",
@@ -3650,6 +3675,18 @@ version = "0.6.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf41e0cfaf7226dca15e8197172c295a782857fcb97fad1808a166870dee75a3"
 dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "serde_urlencoded"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3491c14715ca2294c4d6a88f15e84739788c1d030eed8c110436aafdaa2f3fd"
+dependencies = [
+ "form_urlencoded",
+ "itoa",
+ "ryu",
  "serde",
 ]
 

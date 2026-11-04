@@ -8,6 +8,7 @@ use serde_json::{Value, json};
 use zeroize::Zeroize;
 
 const SIGNET_ELECTRUM: &str = "ssl://electrum.iriswallet.com:50033";
+const DEV_ESPLORA: &str = "https://dev.esplora-01.mint.utexo.com";
 
 pub(crate) struct SignetServices {
     electrum: &'static str,
@@ -60,10 +61,10 @@ pub(crate) fn version(source: &str, overlay: &str) -> Value {
         "protocol": 2,
         "source": source,
         "overlayTree": overlay,
-        "integrationTree": "6d46c5d44748e713fc5acfcef014fd7077261380",
+        "integrationTree": "8a113320471c79b046c7ea045ccc9b20f4484be6",
         "runtime": crate::RUNTIME,
-        "indexer": "electrum-only",
-        "networkChecks": 3,
+        "indexer": "electrum-and-dev-esplora",
+        "networkChecks": 4,
         "unsignedRecovery": 1,
         "journalWrites": 1,
     })
@@ -79,10 +80,16 @@ pub(crate) fn indexer(
         auth.username.zeroize();
         auth.password.zeroize();
         return Err(input(
-            "Bitcoin Core credentials are not supported by the Electrum profile.",
+            "Bitcoin Core credentials are not supported by this wallet.",
         ));
     }
     if network == BitcoinNetwork::Signet {
+        if matches!(profile, Some(Profile::Dev)) {
+            if indexer_url.strip_suffix('/').unwrap_or(&indexer_url) != DEV_ESPLORA {
+                return Err(input("Dev Signet requires the approved HTTPS Esplora endpoint."));
+            }
+            return Ok(IndexerConfig::DevSignetEsplora { url: DEV_ESPLORA.into() });
+        }
         let approved = match profile {
             Some(profile) => profile.services()?.electrum,
             None => SIGNET_ELECTRUM,
@@ -90,11 +97,7 @@ pub(crate) fn indexer(
         if indexer_url.strip_suffix('/').unwrap_or(&indexer_url) != approved {
             return Err(input("Signet requires the approved TLS Electrum endpoint for its profile."));
         }
-        let url = approved.into();
-        return Ok(match signet_checkpoint(profile) {
-            SignetCheckpoint::Public => IndexerConfig::Electrum { url },
-            SignetCheckpoint::Dev => IndexerConfig::DevSignetElectrum { url },
-        });
+        return Ok(IndexerConfig::Electrum { url: approved.into() });
     }
     if network != BitcoinNetwork::Regtest || profile.is_some() {
         return Err(input("Unsupported Bitcoin network."));
@@ -151,8 +154,23 @@ mod tests {
     }
 
     #[test]
-    fn dev_has_no_admitted_services_or_public_fallback() {
+    fn dev_selects_only_its_https_esplora_and_has_no_hosted_services() {
         assert!(Profile::Dev.services().is_err());
+        for url in [DEV_ESPLORA.into(), format!("{DEV_ESPLORA}/")] {
+            assert!(matches!(
+                indexer(url, None, BitcoinNetwork::Signet, Some(Profile::Dev)).unwrap(),
+                IndexerConfig::DevSignetEsplora { url } if url == DEV_ESPLORA
+            ));
+        }
+        for url in [
+            "http://dev.esplora-01.mint.utexo.com",
+            "https://dev.esplora-01.mint.utexo.com/redirect",
+            "https://dev.esplora-01.mint.utexo.com?",
+            "https://other.example",
+        ] {
+            assert!(indexer(url.into(), None, BitcoinNetwork::Signet, Some(Profile::Dev)).is_err());
+        }
+        assert!(indexer(DEV_ESPLORA.into(), None, BitcoinNetwork::Signet, Some(Profile::Staging)).is_err());
         assert!(indexer(SIGNET_ELECTRUM.into(), None, BitcoinNetwork::Signet, Some(Profile::Dev)).is_err());
         assert!(indexer("ssl://127.0.0.1:48002".into(), None, BitcoinNetwork::Signet, Some(Profile::Dev)).is_err());
         assert!(indexer("tcp://127.0.0.1:48001".into(), None, BitcoinNetwork::Regtest, Some(Profile::Dev)).is_err());

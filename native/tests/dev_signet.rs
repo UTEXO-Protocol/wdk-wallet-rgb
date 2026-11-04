@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 use rgb_lib::bitcoin::{Network, consensus::encode::serialize_hex, constants::genesis_block};
-use rgb_lib::wallet::{IndexerConfig, IndexerProtocol, check_indexer_config};
+use rgb_lib::wallet::{
+    IndexerConfig, IndexerProtocol, check_dev_esplora_tip, check_indexer_config,
+};
 use rgb_lib::{BitcoinNetwork, Error};
 use serde_json::{Value, json};
 use std::io::{self, BufRead, BufReader, Write};
@@ -185,15 +187,26 @@ fn public_signet_rejects_a_dev_resolver_after_indexer_admission() {
 fn dev_signet_rejects_plaintext_before_connecting() {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
-    let url = format!("tcp://{}", listener.local_addr().unwrap());
-    let result = check_indexer_config(
-        &IndexerConfig::DevSignetElectrum { url },
-        BitcoinNetwork::Signet,
-    );
-    assert!(
-        matches!(result, Err(Error::InvalidIndexer { .. })),
-        "{result:?}"
-    );
+    let address = listener.local_addr().unwrap();
+    let esplora = format!("http://{address}/api");
+    for config in [
+        IndexerConfig::DevSignetElectrum {
+            url: format!("tcp://{address}"),
+        },
+        IndexerConfig::DevSignetEsplora {
+            url: esplora.clone(),
+        },
+    ] {
+        let result = check_indexer_config(&config, BitcoinNetwork::Signet);
+        assert!(
+            matches!(result, Err(Error::InvalidIndexer { .. })),
+            "{config:?} {result:?}"
+        );
+    }
+    assert!(matches!(
+        check_dev_esplora_tip(&esplora),
+        Err(Error::InvalidIndexer { .. })
+    ));
     assert_eq!(
         listener.accept().unwrap_err().kind(),
         io::ErrorKind::WouldBlock

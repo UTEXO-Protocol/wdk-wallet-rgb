@@ -1,6 +1,6 @@
 # On-chain WDK candidate
 
-`@utexo/wdk-wallet-rgb@2.1.0-alpha.7` targets the SDK review branch. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
+`@utexo/wdk-wallet-rgb@2.1.0-alpha.8` is the local Dev Esplora candidate. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
 
 | Component | Pinned version or source |
 | --- | --- |
@@ -8,7 +8,7 @@
 | Android embedded runtime | Bare Kit `3.0.1`, Bare `1.36.2` |
 | Bare C headers | `1.35.0` |
 | RGB library | `v0.3.0-beta.7-upstream-dev-bfa.5`, `0a9d352f2690902df2b6fae9bca1a6c13c3354d4` |
-| Native overlay | Functional tree `be8930be04b8d65a704333fe7c215ba1f2186c35`, embedded tree `3697d02a29d126acb22aaf9ac19cccf9412cce84` |
+| Native overlay | Functional tree `e517dc80f613bee86a9808e8a54c361e4be73810`, embedded tree `8a113320471c79b046c7ea045ccc9b20f4484be6` |
 | Signing | `@scure/btc-signer@2.4.1`, `@scure/bip32@2.4.0`, `@scure/base@2.4.0`, `@noble/curves@2.4.0`, `@noble/hashes@2.4.0` |
 
 The RGB overlay ports public-contract registration from [RGB #4](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/4) and exact mint conservation from [RGB #8](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/8). Native preparation verifies the upstream commit and patched tree before building from the locked graph.
@@ -20,6 +20,8 @@ Public JavaScript checks run from the lock with `npm ci --ignore-scripts`, `npm 
 Supply a canonical private data directory and a disposable seed. For Regtest, set `network: 'regtest'` and a loopback `tcp:` or `ssl:` Electrum endpoint with an explicit port. Regtest RGB also needs a loopback RGB proxy and the EVM validation RPC appropriate to the fixture. For public Signet, set `network: 'signet'`, `mode: 'btc-only'`, and `indexerUrl: 'ssl://electrum.iriswallet.com:50033'`. The Signet profile accepts only that certificate-validated endpoint and checks the genesis and public block-one hashes on the wallet indexer and resolver before synchronization. It uses a separate wallet directory and has Bitcoin address allocation, balance, history, sends and message signing. The Bitcoin-only profile rejects RGB service settings and RGB mutations.
 
 To admit RGB on public Signet, set `network: 'signet'`, `mode: 'rgb'` and `profile: 'staging'`, with the same Electrum endpoint, `transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'` and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. Use a separate wallet directory. The profile forbids proxy credentials. An application can explicitly configure `{ chainId: 'eip155:42161', dstEid: 0 }` as its sole V1 burn route after qualifying its deployment. Compatible asset bytes and a matching hosted deployment remain separate prerequisites for enabling bridge capabilities.
+
+The Dev Esplora backend has local checkpoint and contract import tests. Hosted Dev wallet admission is disabled in both JavaScript and native code. See the [Dev native test instructions](native/README.md#dev-checkpoint-candidate).
 
 The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Android packs a linked worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. The SDK verifies addon hash and native profile before opening.
 

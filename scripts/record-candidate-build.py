@@ -86,7 +86,8 @@ def main():
         npm.append({"location": location, **{key: pkg[key] for key in ("version", "license", "integrity")}})
     inputs = (
         "package-lock.json", "native/Cargo.lock", "native/bare/Cargo.lock", "native/bare/package-lock.json",
-        "native/patches/rgb-lib-bfa.5-onchain.patch", "native/patches/rgb-lib-bfa.5-embedded-lifecycle.patch",
+        "native/scripts/prepare-source.py",
+        *(str(path.relative_to(ROOT)) for path in sorted((ROOT / "native/patches").glob("*.patch"))),
     )
     evidence = {
         "commit": command("git", "rev-parse", "HEAD"),
@@ -94,6 +95,7 @@ def main():
         "rustc": command("rustc", "+1.94.0", "-vV"),
         "node": command("node", "--version"), "npm": command("npm", "--version"),
         "inputDigests": {name: sha256(ROOT / name) for name in inputs}, "artifacts": artifacts,
+        "nativeIntegrationTree": manifest["integrationTree"],
         "npmRuntime": npm,
         "cargoNodeDarwinArm64": cargo_inventory("native/Cargo.toml", "aarch64-apple-darwin"),
         "cargoBareAndroidArm64": cargo_inventory("native/bare/Cargo.toml", "aarch64-linux-android"),

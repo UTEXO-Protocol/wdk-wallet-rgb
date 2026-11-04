@@ -68,7 +68,7 @@ if (parentPort) {
       const openParams = { ...identity, dataDir }
       try {
         const version = request(native, first, 'version').result
-        assert(version.runtime === 'bare-in-process' && version.indexer === 'electrum-only',
+        assert(version.runtime === 'bare-in-process' && version.indexer === 'electrum-and-dev-esplora',
           'Unexpected native profile')
         assert(request(native, first, 'open', openParams).result?.watchOnly, 'Wallet did not open')
         assert(request(native, second, 'open', openParams).error?.code === 'WALLET_IN_USE',

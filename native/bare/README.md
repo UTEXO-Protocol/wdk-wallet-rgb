@@ -1,4 +1,8 @@
-# Electrum-only Bare host candidate
+# Bare host candidate
+
+The alpha.7 qualification record below covers the Electrum-only build. Alpha.8
+adds the Dev Esplora backend with hosted Dev access disabled. See the
+[Dev native test instructions](../README.md#dev-checkpoint-candidate).
 
 The private SDK candidate uses the same watch-only engine for the Node and Bare hosts. The standalone Bare build targets an Apple Silicon Mac. The addon receives public wallet keys, transaction and proof requests. The host owns private signing and durable mutation recovery.
 

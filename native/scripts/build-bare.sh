@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a host addon from the exact admitted Electrum-only graph.
+# Build a host addon from the exact pinned native dependency graph.
 set -euo pipefail
 
 native_dir="$(cd "$(dirname "$0")/.." && pwd -P)"

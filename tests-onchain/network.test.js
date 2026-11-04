@@ -26,7 +26,7 @@ const DEFAULTS = {
   authorize: () => assert.fail('Offline operations must not request transaction authorization')
 }
 
-async function managerFor (t, { nativeVersion = 3, ...options } = {}) {
+async function managerFor (t, { nativeVersion = 4, ...options } = {}) {
   const network = options.network ?? DEFAULTS.network
   const mode = options.mode ?? 'rgb'
   const indexer = (options.indexerUrl ?? INDEXER).replace(/\/$/, '')
@@ -44,10 +44,10 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   const reply = result => process.stdout.write(JSON.stringify({ id, result }) + '\\n')
   if (method === 'version') return reply({
     protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1,
-    indexer: 'electrum-only', runtime: 'node-host-process',
+    indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
     source: '0a9d352f2690902df2b6fae9bca1a6c13c3354d4',
-    overlayTree: 'be8930be04b8d65a704333fe7c215ba1f2186c35',
-    integrationTree: '3697d02a29d126acb22aaf9ac19cccf9412cce84'
+    overlayTree: 'e517dc80f613bee86a9808e8a54c361e4be73810',
+    integrationTree: '8a113320471c79b046c7ea045ccc9b20f4484be6'
   })
   if (method === 'open') {
     assert.equal(params.network, '${network}')
@@ -225,6 +225,12 @@ test('staging rejects unqualified service, profile and payout combinations', () 
   ]) {
     assert.throws(() => new WalletManagerRgb(SEED, { ...DEFAULTS, ...STAGING, ...options }), TypeError, JSON.stringify(options))
   }
+})
+
+test('Dev HTTPS Esplora cannot activate hosted access', () => {
+  assert.throws(() => new WalletManagerRgb(SEED, {
+    ...DEFAULTS, ...STAGING, profile: 'dev', indexerUrl: 'https://dev.esplora-01.mint.utexo.com'
+  }), /Dev Signet hosted access is disabled/)
 })
 
 test('only isolated regtest fixture endpoints and matching authentication schemes are admitted', () => {

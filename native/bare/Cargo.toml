@@ -10,7 +10,7 @@ publish = false
 crate-type = ["staticlib"]
 
 [dependencies]
-rgb-lib = { path = "../.sources/rgb-lib-bfa-bare", default-features = false, features = ["electrum", "camel_case"] }
+rgb-lib = { path = "../.sources/rgb-lib-bfa-bare", default-features = false, features = ["electrum", "esplora", "camel_case"] }
 rgb-invoicing = { version = "=0.11.2-rc.1", default-features = false }
 electrum-client = { version = "=0.25.2", default-features = false }
 reqwest = { version = "=0.13.5", default-features = false, features = ["blocking", "json"] }
@@ -26,6 +26,7 @@ url = "2.5"
 
 
 [patch.crates-io]
+esplora-client = { path = "../.sources/esplora-client" }
 rgb-consensus = { git = "https://github.com/UTEXO-Protocol/rgb-consensus-s-bfa.git", rev = "af0b751dc9e51547cd57e025fdc3508e120ddf8a" }
 rgb-ops = { git = "https://github.com/UTEXO-Protocol/rgb-ops-s-bfa.git", rev = "ed1d60df69f9e4db65640c0ac61a5779ba9c018c" }
 rgb-invoicing = { git = "https://github.com/UTEXO-Protocol/rgb-ops-s-bfa.git", rev = "ed1d60df69f9e4db65640c0ac61a5779ba9c018c" }

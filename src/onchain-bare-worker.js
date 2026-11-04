@@ -70,7 +70,7 @@ export class OnchainWorker {
     const worker = new OnchainWorker()
     try {
       const version = await worker.request('version')
-      if (version?.indexer !== 'electrum-only' || version.integrationTree !== manifest.integrationTree) {
+      if (version?.indexer !== 'electrum-and-dev-esplora' || version.integrationTree !== manifest.integrationTree) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected Bare native build profile')
       }
       return worker

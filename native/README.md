@@ -1,35 +1,37 @@
 # On-chain RGB native qualification worker
 
-This directory contains the watch-only RGB engine and its host adapters. Node launches the worker over private pipes. Bare loads an in-process Electrum-only addon on a dedicated JS worker thread. The host owns transaction authorization, the signer and the durable operation journal. See [Bare build and qualification](bare/README.md) for that profile.
+This directory contains the watch-only RGB engine and its host adapters. Node launches the worker over private pipes. Bare loads an in-process addon on a dedicated JS worker thread. The host owns transaction authorization, the signer and the durable operation journal. See [Bare build and qualification](bare/README.md) for that profile.
 
-The exact private source base is [rgb-lib-bfa BFA.5](https://github.com/UTEXO-Protocol/rgb-lib-bfa/releases/tag/v0.3.0-beta.7-upstream-dev-bfa.5), commit `0a9d352f2690902df2b6fae9bca1a6c13c3354d4`, base tree `5b54078be8e447f7959359b10dfb393649ab9840`. The local candidate patch registers a validated genesis-only contract using the narrow part of [RGB #4](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/4) and applies full mint conservation from [RGB #8](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/8) with checked addition to both receive paths. The overlay carries only the on-chain changes needed by this engine. The Dev checkpoint candidate uses functional tree `355066212303a8a67fe42d507891a22764aedbd8` and Bare tree `6d46c5d44748e713fc5acfcef014fd7077261380`. The functional patches are `patches/rgb-lib-bfa.5-onchain.patch`, `patches/rgb-lib-bfa.5-public-signet.patch`, `patches/rgb-lib-bfa.5-native-egress.patch`, `patches/rgb-lib-bfa.5-staging-evm-egress.patch` and `patches/rgb-lib-bfa.5-dev-signet.patch`. Public networks require HTTPS for peer proxy, issuer reject-list and EVM RPC requests. The shared HTTP connector rejects non-public literals and DNS answers, disables redirects, environment proxies and transport retries, and preserves loopback endpoints for Regtest. The private source checkout stays under the ignored build-only `.sources` directory.
+The exact private source base is [rgb-lib-bfa BFA.5](https://github.com/UTEXO-Protocol/rgb-lib-bfa/releases/tag/v0.3.0-beta.7-upstream-dev-bfa.5), commit `0a9d352f2690902df2b6fae9bca1a6c13c3354d4`, base tree `5b54078be8e447f7959359b10dfb393649ab9840`. The local candidate patch registers a validated genesis-only contract using the narrow part of [RGB #4](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/4) and applies full mint conservation from [RGB #8](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/8) with checked addition to both receive paths. The overlay carries only the on-chain changes needed by this engine. The Dev checkpoint candidate uses functional tree `e517dc80f613bee86a9808e8a54c361e4be73810` and Bare tree `8a113320471c79b046c7ea045ccc9b20f4484be6`. The functional patches are `patches/rgb-lib-bfa.5-onchain.patch`, `patches/rgb-lib-bfa.5-public-signet.patch`, `patches/rgb-lib-bfa.5-native-egress.patch`, `patches/rgb-lib-bfa.5-staging-evm-egress.patch` and `patches/rgb-lib-bfa.5-dev-signet.patch`. Public networks require HTTPS for peer proxy, issuer reject-list and EVM RPC requests. The shared HTTP connector rejects non-public literals and DNS answers, disables redirects, environment proxies and transport retries, and preserves loopback endpoints for Regtest. The private source checkout stays under the ignored build-only `.sources` directory.
 
 ## Dev checkpoint candidate
 
-The Dev profile binds both Electrum clients to Signet genesis and Dev block one
-(`0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb`). The
-witness resolver checks verbose transaction support using a transaction from
-Dev's block one. The native profile has no admitted Dev services, so opening it
-fails before wallet storage or network access. Activation needs the confirmed
-Dev deployment, issuer-approved USDT export and TLS Electrum endpoint.
+The Dev profile selects `https://dev.esplora-01.mint.utexo.com`. The wallet
+indexer and RGB witness resolver each check Signet genesis and Dev block one
+(`0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb`).
+The blocking Esplora transport uses the pinned reqwest stack, with redirects
+and automatic retries disabled for Dev. The native profile has no admitted
+hosted services, so Dev open fails before wallet storage or network access.
 
-This source candidate has new native tree identities. The existing alpha.7 pack
-and Iris APK use the earlier qualified identities. A candidate worker cannot pass
-their identity checks. Android repacking and Iris admission belong to the Dev
-activation step.
+The alpha.8 candidate uses new native tree identities and a new Android library
+name. The prior alpha.7 pack and Iris APK remain separate qualification records.
 
 The loopback matrix uses the historical Dev and public Signet headers. Run it
 after preparing the pinned Bare RGB source. The script uses the SDK lockfile and
-gives the temporary test packages separate Cargo identities.
+gives the temporary test packages separate Cargo identities. The BUSDT import
+test accepts a local copy of the genesis-only contract recovered from Dev E2E
+run 41698713237 and checks its exact SHA-256 and asset ID.
 
 ```sh
 env MACOSX_DEPLOYMENT_TARGET=11.0 CARGO_TARGET_DIR="$PWD/target/dev-signet-host" \
   python3 scripts/check-dev-signet.py
+UTEXO_DEV_BUSDT_CONTRACT=/absolute/path/to/Dev-BUSDT-genesis-e2e-41698713237.rgb \
+  cargo +1.94.0 test --release --offline --locked recovered_dev_busdt_imports_offline -- --ignored
 ```
 
 ## Build
 
-Run these commands from this `native/` directory with Rust 1.94.0. The first build needs authorized GitHub read access to the UTEXO BFA source and its pinned private mirrors (the mirror commit identities match the private sources named by BFA.5). The preparation script uses the local `gh` credential helper. The same commit and tree checks admit a local Git directory via an optional path argument. Build credentials stay with the authorized builder. Consumer installs use the packed artifact.
+Run these commands from this `native/` directory with Rust 1.94.0. The first build needs authorized GitHub read access to the UTEXO BFA source and its pinned private mirrors (the mirror commit identities match the private sources named by BFA.5). The preparation script uses the local `gh` credential helper. The same commit and tree checks admit a local Git directory via an optional path argument. It also verifies the Esplora client crate SHA-256 and patched tree. Build credentials stay with the authorized builder. Consumer installs use the packed artifact.
 
 ```sh
 python3 scripts/prepare-source.py --bare
@@ -50,7 +52,7 @@ Format only the owned adapter source with `rustfmt +1.94.0 --edition 2024 src/ma
 A request is one bounded UTF-8 JSON line such as `{"id":"r1","method":"version","params":{}}`. The response contains the same `id` and exactly one of `result` or `error:{code,message}`. Fields named amount, fee rate, size, timestamp and EVM chain ID use canonical decimal strings. Transfer IDs, vouts, counts and confirmation policies are bounded integers.
 
 - `open` takes `{dataDir,network,accountXpubVanilla,accountXpubColored,masterFingerprint,mode?}`. The private 0700 directory stores an identity marker and an exclusive 0600 file lock. The BIP-86 wallet opens watch-only. The app cannot reuse an RLN directory.
-- `goOnline` takes `{indexerUrl,evmRpcUrls?,proxyAuthKeys?}` and requires a compatible Electrum endpoint. Wallet consistency checks stay enabled. Proxy authentication is distinct from the recipient invoice public key. The worker does not return credentials or raw upstream errors. Native wallet logs remain local to its app-private directory.
+- `goOnline` takes `{indexerUrl,evmRpcUrls?,proxyAuthKeys?}` and requires the indexer protocol admitted by the wallet profile. Wallet consistency checks stay enabled. Proxy authentication is distinct from the recipient invoice public key. The worker does not return credentials or raw upstream errors. Native wallet logs remain local to its app-private directory.
 - Read methods include `getBtcBalance`, `getAssetBalance`, `getAssetMetadata`, `listAssets`, `listTransactions`, `listUnspents`, `listTransfers`, `getFeeRate`, `decodeInvoice`, `getReceivedMint`, and the configured endpoint and tip checks. Offline BTC reads use locally cached history. `getAddress` allocates the next receive index. `refresh` reports results of pending transfer progression.
 - `bindJournal` and `writeJournalRecord` handle both SDK journal scopes while the native worker owns the wallet lock. Records are bounded, written to a private staging file, synced and atomically renamed. A worker that loses the lock can no longer persist an operation.
 - `importContract({contractBase64,expectedAssetId,sha256})` verifies the bounded bytes and contract ID, schema and network before storing only validated genesis. It creates no asset balance. `blindReceive` and `witnessReceive` take exact optional amount and asset, proxy endpoint list, expiry and confirmation floor.
@@ -69,4 +71,4 @@ The PR workflow validates Node tests, public types, runtime npm dependencies and
 
 Run `python3 scripts/record-candidate-build.py --worker <worker> --addon <addon> --tarball <pack> --apk <apk>` from the SDK root after committing the artifact manifest. The record includes the source tree, lock and overlay digests, runtime license metadata and build artifact hashes. It compares the Android addon bytes across the standalone build, npm tarball and APK. Treat the license inventory as input to redistribution review. For a byte-identical package comparison, use the same npm version and extract the clean Git archive with umask `022` inside a private directory. npm includes file permission bits in the tarball.
 
-Both candidate adapters use the same Electrum-only graph and protocol version 2. The Node executable and Android addon require separate runtime qualification. The earlier multi-indexer Node artifact is outside this candidate profile.
+Both candidate adapters use the same locked Electrum and Dev Esplora graph and protocol version 2. The Node executable and Android addon require separate runtime qualification.

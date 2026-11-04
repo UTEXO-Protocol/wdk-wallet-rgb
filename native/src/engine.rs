@@ -40,7 +40,7 @@ mod journal;
 mod send;
 
 const SOURCE: &str = "0a9d352f2690902df2b6fae9bca1a6c13c3354d4";
-const OVERLAY: &str = "355066212303a8a67fe42d507891a22764aedbd8";
+const OVERLAY: &str = "e517dc80f613bee86a9808e8a54c361e4be73810";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -1606,6 +1606,54 @@ mod tests {
         assert_eq!(error.message, "Dev Signet hosted access is disabled.");
         assert!(worker.session.is_none());
         assert!(dir.path().read_dir().unwrap().next().is_none());
+    }
+
+    #[test]
+    #[ignore = "requires the BUSDT contract recovered from Dev E2E run 41698713237"]
+    fn recovered_dev_busdt_imports_offline() {
+        let id = "rgb:fbkO6B_i-qyLXa6d-x3sAOaX-cx~vZB9-rxNSUle-9lXBTf8";
+        let digest = "a678ebf73f3a0523b307cd2fe8019a321ac938eaf547c2c65a7ac079948332ce";
+        let bytes = std::fs::read(std::env::var_os("UTEXO_DEV_BUSDT_CONTRACT").unwrap()).unwrap();
+        assert_eq!(sha256(&bytes), digest);
+        let request = json!({"contractBase64":STANDARD.encode(bytes),"expectedAssetId":id,"sha256":digest});
+        let asset = json!({"assetId":id});
+
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut worker = Worker::default();
+        let mut params = open_params(dir.path(), "signet");
+        // Offline genesis registration depends on the Signet chain tag. The
+        // hosted Dev profile stays disabled and is tested separately.
+        params["profile"] = json!("staging");
+        worker.dispatch("open", params).unwrap();
+        let mut wrong_asset = request.clone();
+        wrong_asset["expectedAssetId"] = CONTRACT_ID.into();
+        assert_eq!(
+            worker.dispatch("importContract", wrong_asset).unwrap_err().code,
+            "CONTRACT_MISMATCH"
+        );
+        assert_eq!(
+            worker.dispatch("getAssetBalance", asset.clone()).unwrap_err().code,
+            "ASSET_NOT_FOUND"
+        );
+        for _ in 0..2 {
+            assert_eq!(worker.dispatch("importContract", request.clone()).unwrap()["assetId"], id);
+        }
+        assert_eq!(
+            worker.dispatch("getAssetMetadata", asset.clone()).unwrap(),
+            json!({"assetId":id,"schema":"Bfa","name":"Bridged USDT","ticker":"BUSDT","precision":6})
+        );
+        assert_eq!(
+            worker.dispatch("getAssetBalance", asset.clone()).unwrap(),
+            json!({"settled":"0","future":"0","spendable":"0"})
+        );
+        assert_eq!(worker.dispatch("listTransfers", asset).unwrap(), json!([]));
+
+        let wrong_chain = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(wrong_chain.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut worker = Worker::default();
+        worker.dispatch("open", open_params(wrong_chain.path(), "regtest")).unwrap();
+        assert!(worker.dispatch("importContract", request).is_err());
     }
 
     #[test]

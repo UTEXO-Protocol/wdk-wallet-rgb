@@ -49,5 +49,7 @@ if (!requireNative) {
   const bytes = readFileSync(new URL(path, root))
   assert.equal(bytes.length, native.byteLength)
   assert.equal(createHash('sha256').update(bytes).digest('hex'), native.sha256)
+  assert.ok(bytes.includes(Buffer.from(native.integrationTree)), 'Native addon does not contain the admitted tree')
+  assert.ok(bytes.includes(Buffer.from('electrum-and-dev-esplora')), 'Native addon lacks the expected indexer capabilities')
   console.log('Package exports and exact native addon inventory passed.')
 }

@@ -4,7 +4,7 @@ The candidate is an on-chain SDK review branch for Node and Android Bare. It rem
 
 ## Current dependencies
 
-The candidate pins the current Tether base wallet `1.0.0-beta.25` and RGB BFA `.5` source with reviewed overlays. It uses the same locked Electrum-only graph on both native entry points. The Android worklet uses Bare Kit `3.0.1` and Bare `1.36.2`. Tether WDK core `1.0.0-beta.22`, Pear worker `1.0.0-beta.17`, React Native core `1.0.0-beta.23`, and WebRGB WalletConnect `0.1.3` were checked separately. They describe the host integration and transport, which have their own compatibility gates.
+The alpha.7 qualification below used Tether base wallet `1.0.0-beta.25` and RGB BFA `.5` with the locked Electrum graph. Its Android worklet used Bare Kit `3.0.1` and Bare `1.36.2`. Tether WDK core `1.0.0-beta.22`, Pear worker `1.0.0-beta.17`, React Native core `1.0.0-beta.23`, and WebRGB WalletConnect `0.1.3` were checked separately. They describe the host integration and transport, which have their own compatibility gates. The alpha.8 Dev Esplora scope and local tests are documented in the [native runbook](native/README.md#dev-checkpoint-candidate).
 
 ## SDK and Iris contract
 

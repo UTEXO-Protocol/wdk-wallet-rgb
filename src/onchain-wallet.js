@@ -23,8 +23,8 @@ const HEX_32 = /^[a-f0-9]{64}$/
 const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
 const NATIVE_SOURCE = '0a9d352f2690902df2b6fae9bca1a6c13c3354d4'
-const NATIVE_OVERLAY = 'be8930be04b8d65a704333fe7c215ba1f2186c35'
-const NATIVE_INTEGRATION = '3697d02a29d126acb22aaf9ac19cccf9412cce84'
+const NATIVE_OVERLAY = 'e517dc80f613bee86a9808e8a54c361e4be73810'
+const NATIVE_INTEGRATION = '8a113320471c79b046c7ea045ccc9b20f4484be6'
 const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
 const STAGING_PROXY = 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
 const STAGING_ARBITRUM_RPC = 'https://arb1.arbitrum.io/rpc'
@@ -97,6 +97,7 @@ function configFor (options) {
   if (options?.network !== 'regtest' && options?.network !== 'signet') throw new TypeError('Unsupported Bitcoin network')
   const mode = options.mode === undefined ? 'rgb' : options.mode
   if (mode !== 'rgb' && mode !== 'btc-only') throw new TypeError('Invalid wallet mode')
+  if (options.profile === 'dev') throw new TypeError('Dev Signet hosted access is disabled')
   const staging = options.network === 'signet' && mode === 'rgb' && options.profile === 'staging'
   if (options.profile !== undefined && !staging) throw new TypeError('The staging profile requires a Signet RGB wallet')
   if (options.network === 'signet' && mode !== 'btc-only' && !staging) {
@@ -117,7 +118,7 @@ function configFor (options) {
   })
   if (new Set(routes.map(route => route.chainId)).size !== routes.length) throw new TypeError('Duplicate V1 bridge route')
 
-  if (options.bitcoindAuth !== undefined) throw new TypeError('The wallet accepts only Electrum configuration')
+  if (options.bitcoindAuth !== undefined) throw new TypeError('The wallet does not accept Bitcoin Core credentials')
   const online = { indexerUrl: indexerUrl(options.indexerUrl, options.network) }
   let transportEndpoint
   if (staging) {
@@ -242,7 +243,7 @@ export class WalletAccountRgb {
     try {
       worker = await OnchainWorker.start(config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir)
       const version = await worker.request('version')
-      if (version?.protocol !== 2 || version.indexer !== 'electrum-only' || version.networkChecks !== 3 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
+      if (version?.protocol !== 2 || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 4 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
         version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION || version.unsignedRecovery !== 1 || version.journalWrites !== 1) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
