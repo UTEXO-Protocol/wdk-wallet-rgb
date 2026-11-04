@@ -10,11 +10,10 @@ The Dev profile selects `https://dev.esplora-01.mint.utexo.com`. The wallet
 indexer and RGB witness resolver each check Signet genesis and Dev block one
 (`0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb`).
 The blocking Esplora transport uses the pinned reqwest stack, with redirects
-and automatic retries disabled for Dev. The native profile has no admitted
-hosted services, so Dev open fails before wallet storage or network access.
-
-The alpha.8 candidate uses new native tree identities and a new Android library
-name. The prior alpha.7 pack and Iris APK remain separate qualification records.
+and automatic retries disabled for Dev. The alpha.10 candidate enables the
+exact Dev service policy for the dedicated manual test build. The alpha.8 and
+alpha.9 candidates retain the closed Dev gate. Each candidate has its own
+Android library name and native artifact identity.
 
 The loopback matrix uses the historical Dev and public Signet headers. Run it
 after preparing the pinned Bare RGB source. The script uses the SDK lockfile and

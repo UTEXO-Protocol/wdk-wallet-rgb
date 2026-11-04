@@ -1,7 +1,7 @@
 {
   "target": "android-arm64",
-  "linkedName": "libutexo__wdk-wallet-rgb.2.1.0-alpha.9.so",
+  "linkedName": "libutexo__wdk-wallet-rgb.2.1.0-alpha.10.so",
   "integrationTree": "8a113320471c79b046c7ea045ccc9b20f4484be6",
-  "byteLength": 64071984,
-  "sha256": "c92a0fac8599f7ef736b443438da0287c1a2452c0a12f404360237307eac1de2"
+  "byteLength": 64072000,
+  "sha256": "5681887be3e7805664c2b593570adc9881ea9c49909648d8e596e0d9c01f3d5c"
 }

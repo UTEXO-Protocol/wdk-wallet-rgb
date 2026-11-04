@@ -2,6 +2,8 @@
 
 The candidate is an on-chain SDK review branch for Node and Android Bare. It remains private while the release gates below are open. It admits isolated Regtest for Bitcoin and RGB, plus separate Bitcoin-only and staging RGB profiles for public Signet.
 
+The dedicated alpha.10 build also admits the explicit Dev RGB profile with its own Signet checkpoint and exact approved services. Its service activation is for manual hosted testing. The local qualification covers native and JavaScript profile admission, checkpoint enforcement, offline Dev BUSDT import and Android addon identity. Funded hosted mint, burn and proof recovery remain separate acceptance cases.
+
 ## Current dependencies
 
 The alpha.7 qualification below used Tether base wallet `1.0.0-beta.25` and RGB BFA `.5` with the locked Electrum graph. Its Android worklet used Bare Kit `3.0.1` and Bare `1.36.2`. Tether WDK core `1.0.0-beta.22`, Pear worker `1.0.0-beta.17`, React Native core `1.0.0-beta.23`, and WebRGB WalletConnect `0.1.3` were checked separately. They describe the host integration and transport, which have their own compatibility gates. The alpha.8 Dev Esplora scope and local tests are documented in the [native runbook](native/README.md#dev-checkpoint-candidate).

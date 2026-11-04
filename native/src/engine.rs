@@ -1595,17 +1595,32 @@ mod tests {
     }
 
     #[test]
-    fn dev_signet_open_is_rejected_before_creating_wallet_state() {
+    fn dev_signet_offline_open_requires_the_explicit_rgb_profile() {
         let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         let mut params = open_params(dir.path(), "signet");
         params["profile"] = json!("dev");
         let mut worker = Worker::default();
-
-        let error = worker.dispatch("open", params).unwrap_err();
-        assert_eq!(error.code, "INVALID_PARAMS");
-        assert_eq!(error.message, "Dev Signet hosted access is disabled.");
+        let mut wrong_mode = params.clone();
+        wrong_mode["mode"] = json!("btc-only");
+        assert_eq!(worker.dispatch("open", wrong_mode).unwrap_err().code, "INVALID_PARAMS");
         assert!(worker.session.is_none());
         assert!(dir.path().read_dir().unwrap().next().is_none());
+        let opened = worker.dispatch("open", params).unwrap();
+        assert_eq!(opened["network"], "signet");
+        assert_eq!(opened["profile"], "dev");
+        assert_eq!(opened["watchOnly"], true);
+        for (method, request) in [
+            ("checkIndexerUrl", json!({"url": "ssl://electrum.iriswallet.com:50033"})),
+            ("checkProxyEndpoint", json!({"url": "rpcs://staging.rgb-proxy.utexo.com/json-rpc"})),
+            ("goOnline", json!({
+                "indexerUrl": "https://dev.esplora-01.mint.utexo.com",
+                "evmRpcUrls": {"42161": "https://example.test"},
+            })),
+        ] {
+            assert_eq!(worker.dispatch(method, request).unwrap_err().code, "INVALID_PARAMS");
+        }
+        assert_eq!(worker.dispatch("getNetworkInfo", json!({})).unwrap_err().code, "WALLET_OFFLINE");
     }
 
     #[test]
@@ -1622,9 +1637,7 @@ mod tests {
         std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         let mut worker = Worker::default();
         let mut params = open_params(dir.path(), "signet");
-        // Offline genesis registration depends on the Signet chain tag. The
-        // hosted Dev profile stays disabled and is tested separately.
-        params["profile"] = json!("staging");
+        params["profile"] = json!("dev");
         worker.dispatch("open", params).unwrap();
         let mut wrong_asset = request.clone();
         wrong_asset["expectedAssetId"] = CONTRACT_ID.into();

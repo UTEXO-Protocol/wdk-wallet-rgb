@@ -173,13 +173,15 @@ mod tests {
     }
 
     #[test]
-    fn dev_selects_only_its_https_esplora_and_has_no_hosted_services() {
+    fn dev_selects_only_its_pinned_hosted_services() {
         const DEV_ESPLORA: &str = "https://dev.esplora-01.mint.utexo.com";
         let services = dev_services().unwrap();
         assert_eq!(services.indexer_url, DEV_ESPLORA);
         assert_eq!(services.proxy_endpoint, "rpcs://dev.rgb-proxy.utexo.com/json-rpc");
         assert_eq!(services.arbitrum_rpc, "https://arb1.arbitrum.io/rpc");
-        assert!(Profile::Dev.services().is_err());
+        let active = Profile::Dev.services().unwrap();
+        assert_eq!(active.proxy, services.proxy_endpoint);
+        assert_eq!(active.arbitrum_rpc, services.arbitrum_rpc);
         for url in [DEV_ESPLORA.into(), format!("{DEV_ESPLORA}/")] {
             assert!(matches!(
                 indexer(url, None, BitcoinNetwork::Signet, Some(Profile::Dev)).unwrap(),
@@ -201,16 +203,13 @@ mod tests {
     }
 
     #[test]
-    fn dev_activation_uses_only_the_compiled_service_policy() {
+    fn a_disabled_dev_service_policy_cannot_return_active_endpoints() {
         let config: DevServices = serde_json::from_str(r#"{
-            "enabled":true,
+            "enabled":false,
             "indexerUrl":"https://dev-esplora.example",
             "proxyEndpoint":"rpcs://dev-proxy.example/json-rpc",
             "arbitrumRpc":"https://arb.example/rpc"
         }"#).unwrap();
-        let services = config.active_services().unwrap();
-        assert_eq!(services.proxy, "rpcs://dev-proxy.example/json-rpc");
-        assert_eq!(services.arbitrum_rpc, "https://arb.example/rpc");
-        assert!(Profile::Dev.services().is_err());
+        assert!(config.active_services().is_none());
     }
 }

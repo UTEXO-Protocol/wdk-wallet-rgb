@@ -33,7 +33,7 @@ const DEFAULTS = {
   authorize: () => assert.fail('Offline operations must not request transaction authorization')
 }
 
-async function managerFor (t, { nativeVersion = 4, Manager = WalletManagerRgb, workerIndexerProtocol, ...options } = {}) {
+async function managerFor (t, { nativeVersion = 4, workerIndexerProtocol, ...options } = {}) {
   const network = options.network ?? DEFAULTS.network
   const mode = options.mode ?? 'rgb'
   const indexer = (options.indexerUrl ?? INDEXER).replace(/\/$/, '')
@@ -102,7 +102,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
 })
 `
   await writeFile(worker, source, { mode: 0o700 })
-  const manager = new Manager(SEED, {
+  const manager = new WalletManagerRgb(SEED, {
     ...DEFAULTS, ...options, dataDir: dir, nativeExecutable: worker,
     nativeSha256: createHash('sha256').update(source).digest('hex')
   })
@@ -112,10 +112,10 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   return manager
 }
 
-async function devFixtureManager () {
-  const fixtureModule = new URL('../src/onchain-wallet.js?dev-fixture', import.meta.url).href
+async function disabledDevFixtureManager () {
+  const fixtureModule = new URL('../src/onchain-wallet.js?dev-disabled-fixture', import.meta.url).href
   const servicesModule = new URL('../src/onchain-dev-services.json', import.meta.url).href
-  const servicesFixture = 'data:application/json,' + encodeURIComponent(JSON.stringify({ ...devServices, enabled: true }))
+  const servicesFixture = 'data:application/json,' + encodeURIComponent(JSON.stringify({ ...devServices, enabled: false }))
   const hooks = registerHooks({
     resolve (specifier, context, nextResolve) {
       const resolved = nextResolve(specifier, context)
@@ -251,20 +251,20 @@ test('staging rejects unqualified service, profile and payout combinations', () 
   }
 })
 
-test('the packaged Dev profile rejects even the exact configured services', () => {
+test('the packaged Dev profile opts in to only its exact reviewed endpoints', async () => {
   assert.deepEqual(devServices, {
-    enabled: false,
+    enabled: true,
     indexerUrl: 'https://dev.esplora-01.mint.utexo.com',
     proxyEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc',
     arbitrumRpc: ARBITRUM_RPC
   })
-  assert.throws(() => new WalletManagerRgb(SEED, { ...DEFAULTS, ...DEV }), /Dev Signet hosted access is disabled/)
+  const DisabledManager = await disabledDevFixtureManager()
+  assert.throws(() => new DisabledManager(SEED, { ...DEFAULTS, ...DEV }), /Dev Signet hosted access is disabled/)
 })
 
-test('the isolated Dev gate fixture uses only Esplora and advertises only direct Arbitrum', async t => {
-  const Manager = await devFixtureManager()
+test('the Dev candidate uses only Esplora and advertises only direct Arbitrum', async t => {
   const manager = await managerFor(t, {
-    Manager, ...DEV, indexerUrl: DEV.indexerUrl + '/', startupMode: 'offline', burnDestinationRoutes: [DIRECT_ARBITRUM]
+    ...DEV, indexerUrl: DEV.indexerUrl + '/', startupMode: 'offline', burnDestinationRoutes: [DIRECT_ARBITRUM]
   })
   const account = await manager.getAccount()
   assert.equal(account.getInfo().ready, false)
@@ -281,8 +281,7 @@ test('the isolated Dev gate fixture uses only Esplora and advertises only direct
   assert.deepEqual(await account.getNetworkInfo(), { network: 'signet', height: 123, blockHash: BLOCK_HASH })
 })
 
-test('the isolated Dev gate fixture rejects alternate services, credentials, routes and native protocol', async t => {
-  const Manager = await devFixtureManager()
+test('the Dev candidate rejects alternate services, credentials, routes and native protocol', async t => {
   for (const override of [
     { profile: undefined }, { profile: 'staging' }, { network: 'regtest' }, { network: 'utexo' }, { mode: 'btc-only' },
     { indexerUrl: SIGNET_INDEXER }, { indexerUrl: DEV.indexerUrl.replace('https:', 'http:') },
@@ -295,10 +294,10 @@ test('the isolated Dev gate fixture rejects alternate services, credentials, rou
     { burnDestinationRoutes: [{ chainId: 'eip155:42161', dstEid: 30101 }] },
     { burnDestinationRoutes: [{ chainId: 'eip155:1', dstEid: 30101 }] }
   ]) {
-    assert.throws(() => new Manager(SEED, { ...DEFAULTS, ...DEV, ...override }), TypeError, JSON.stringify(override))
+    assert.throws(() => new WalletManagerRgb(SEED, { ...DEFAULTS, ...DEV, ...override }), TypeError, JSON.stringify(override))
   }
   const manager = await managerFor(t, {
-    Manager, ...DEV, startupMode: 'offline', workerIndexerProtocol: 'Electrum'
+    ...DEV, startupMode: 'offline', workerIndexerProtocol: 'Electrum'
   })
   const account = await manager.getAccount()
   assert.equal(account.getInfo().burnDestinationRoutes, undefined)

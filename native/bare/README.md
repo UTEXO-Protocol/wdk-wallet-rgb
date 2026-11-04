@@ -1,7 +1,8 @@
 # Bare host candidate
 
 The alpha.7 qualification record below covers the Electrum-only build. Alpha.8
-adds the Dev Esplora backend with hosted Dev access disabled. See the
+and alpha.9 carry the Dev Esplora backend with hosted Dev access disabled.
+Alpha.10 enables the exact Dev profile for manual testing. See the
 [Dev native test instructions](../README.md#dev-checkpoint-candidate).
 
 The private SDK candidate uses the same watch-only engine for the Node and Bare hosts. The standalone Bare build targets an Apple Silicon Mac. The addon receives public wallet keys, transaction and proof requests. The host owns private signing and durable mutation recovery.
@@ -45,7 +46,7 @@ The earlier alpha.1 qualification covered desktop Bare, isolated Regtest and loo
 
 ## Android test addon
 
-The Android test candidate builds the same frozen Electrum-only
+The Android test candidate builds the pinned Electrum and Dev Esplora
 engine on macOS ARM64 with Rust 1.94.0 and Android NDK r28c
 `28.2.13676358`. Its native target is `aarch64-linux-android` with API 26.
 The standalone app's BareKit runtime can impose a higher minimum API.
