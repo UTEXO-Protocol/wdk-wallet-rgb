@@ -23,9 +23,9 @@ const ROUTES = new Map([
 const HEX_32 = /^[a-f0-9]{64}$/
 const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
-const NATIVE_SOURCE = '0a9d352f2690902df2b6fae9bca1a6c13c3354d4'
-const NATIVE_OVERLAY = 'e517dc80f613bee86a9808e8a54c361e4be73810'
-const NATIVE_INTEGRATION = '8a113320471c79b046c7ea045ccc9b20f4484be6'
+const NATIVE_SOURCE = '5010eefa355beb9c42a4c1b69883f7651241a111'
+const NATIVE_OVERLAY = '2b9bf63482d8a472492d065d3edd260e0fa418ac'
+const NATIVE_INTEGRATION = '168fd88d5f1d3e99a34c03e781689d9b2acceb14'
 const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
 const STAGING_SERVICES = {
   proxyEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc',
@@ -575,7 +575,15 @@ export class WalletAccountRgb {
     if (typeof recipientId !== 'string' || recipientId.length === 0 || recipientId.length > 512) {
       throw new TypeError('Invalid RGB recipient ID')
     }
-    return this.#read('getReceivedMint', { recipientId })
+    return this.#read('getReceivedMint', { recipientId }).then(mint => {
+      if (mint === null) return null
+      if (typeof mint?.opid !== 'string' || !HEX_32.test(mint.opid) ||
+          typeof mint.lockId !== 'string' || !HEX_32.test(mint.lockId) ||
+          typeof mint.bridgeContract !== 'string' || !/^0x[a-f0-9]{40}$/i.test(mint.bridgeContract)) {
+        throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid received mint commitment')
+      }
+      return mint
+    })
   }
 
   listUnspents () { return this.#read('listUnspents') }

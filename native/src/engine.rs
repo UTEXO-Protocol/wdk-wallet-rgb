@@ -6,7 +6,8 @@ use rgb_lib::bitcoin::{Address as BitcoinAddress, Network as Bitcoin, Psbt, Txid
 use rgb_lib::keys::WitnessVersion;
 use rgb_lib::no_wallet::{BundleFilter, inspect_consignment};
 use rgb_lib::wallet::{
-    AssetFilter, Balance, DatabaseType, Invoice, Online, OnlineOptions, RecipientInfo, RgbInspection, RgbWalletOpsOffline, RgbWalletOpsOnline, SinglesigKeys,
+    AssetFilter, Balance, DatabaseType, EvmChain, Invoice, Online, OnlineOptions, RecipientInfo,
+    RgbInspection, RgbWalletOpsOffline, RgbWalletOpsOnline, SinglesigKeys, TransferScope,
     TransitionGlobal, Wallet, WalletData,
 };
 use rgb_lib::{AssetSchema, Assignment, BitcoinNetwork, TransferStatus, TypeOfTransition};
@@ -39,8 +40,8 @@ mod journal;
 #[path = "send.rs"]
 mod send;
 
-const SOURCE: &str = "0a9d352f2690902df2b6fae9bca1a6c13c3354d4";
-const OVERLAY: &str = "e517dc80f613bee86a9808e8a54c361e4be73810";
+const SOURCE: &str = "5010eefa355beb9c42a4c1b69883f7651241a111";
+const OVERLAY: &str = "2b9bf63482d8a472492d065d3edd260e0fa418ac";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -49,6 +50,9 @@ const MAX_FEE_RATE: u64 = 100_000;
 const MAX_MONEY: u64 = 2_100_000_000_000_000;
 const LOCK_FILE: &str = ".utexo-rgb-native.lock";
 const IDENTITY_FILE: &str = ".utexo-rgb-native.identity";
+const BACKEND: &str = "rgb-l1-bfa6-v1";
+const REGTEST_MAX_MINT_LOCK_BLOCKS: u64 = 512;
+const SIGNET_MAX_MINT_LOCK_BLOCKS: u64 = 7_200;
 
 pub(crate) type Result<T> = std::result::Result<T, Fault>;
 
@@ -385,7 +389,7 @@ fn open_root(path: &str) -> Result<(PathBuf, File)> {
 fn bind_identity(root: &Path, params: &Open, network: BitcoinNetwork) -> Result<()> {
     let path = root.join(IDENTITY_FILE);
     let mut identity = json!({
-        "backend": "rgb-l1-v1",
+        "backend": BACKEND,
         "network": format!("{network:?}"),
         "accountXpubVanilla": params.account_xpub_vanilla,
         "accountXpubColored": params.account_xpub_colored,
@@ -824,7 +828,7 @@ impl Session {
                 })?;
                 let rows = self
                     .wallet
-                    .list_transfers(AssetFilter::AnyOrNone, Some(p.txid.clone()))
+                    .list_transfers(AssetFilter::AnyOrNone, TransferScope::Txid(p.txid.clone()))
                     .map_err(native)?;
                 let matching = rows
                     .iter()
@@ -885,10 +889,24 @@ impl Session {
         if p.evm_rpc_urls.len() > 16 || p.proxy_auth_keys.len() > 16 {
             return Err(input("Too many network endpoints."));
         }
-        let mut evm_rpc_urls = HashMap::new();
+        let mut evm_chains = HashMap::new();
         for (id, url) in p.evm_rpc_urls {
             validated_url(&url, &["https", "http"], regtest)?;
-            evm_rpc_urls.insert(positive(&id, u64::MAX)?, url);
+            // Bound how long a pending mint can keep its receiving UTXO reserved.
+            // The isolated issuer commits at most 512 Anvil blocks ahead. Signet
+            // admits a fixed Arbitrum-only budget through its pinned RPC policy.
+            evm_chains.insert(
+                positive(&id, u64::MAX)?,
+                EvmChain {
+                    rpc_url: url,
+                    min_mint_lock_blocks: 2,
+                    max_mint_lock_blocks: if regtest {
+                        REGTEST_MAX_MINT_LOCK_BLOCKS
+                    } else {
+                        SIGNET_MAX_MINT_LOCK_BLOCKS
+                    },
+                },
+            );
         }
         for (url, secret) in &p.proxy_auth_keys {
             validate_proxy(url, regtest)?;
@@ -902,7 +920,7 @@ impl Session {
             vanilla_sync_lookback: 20,
             failed_witness_receive_grace_secs: 86_400,
             proxy_auth_keys: p.proxy_auth_keys.into_iter().collect(),
-            evm_rpc_urls,
+            evm_chains,
         };
         let online = self.wallet.go_online(options.clone());
         // The caller-provided copy is no longer needed. Upstream owns the runtime copy of
@@ -1044,7 +1062,7 @@ impl Session {
             .transpose()?;
         let transfers = self
             .wallet
-            .list_transfers(AssetFilter::Id(p.asset_id.clone()), Some(p.txid.clone()))
+            .list_transfers(AssetFilter::Id(p.asset_id.clone()), TransferScope::Txid(p.txid.clone()))
             .map_err(|_| proof_error())?;
         let mut matched = transfers.into_iter().filter(|t| {
             t.kind == rgb_lib::wallet::TransferKind::Burn
@@ -1122,7 +1140,9 @@ impl Session {
             .wallet
             .import_contract(path, Some(p.expected_asset_id))
             .map_err(|e| match e {
-                rgb_lib::Error::InvalidConsignment => fault(
+                rgb_lib::Error::InvalidConsignment
+                | rgb_lib::Error::UnknownRgbSchema { .. }
+                | rgb_lib::Error::UnsupportedSchema { .. } => fault(
                     "CONTRACT_FORMAT_UNSUPPORTED",
                     "The contract cannot be decoded or is not a standalone supported RGB contract.",
                 ),
@@ -1219,18 +1239,28 @@ impl Session {
                 } else {
                     AssetFilter::AnyOrNone
                 };
-                if let Some(txid) = &p.txid {
-                    require_txid(txid)?;
-                }
-                let rows = self.wallet.list_transfers(filter, p.txid).map_err(native)?;
-                Ok(Value::Array(rows.into_iter().map(|r| json!({
-                    "idx":r.idx,"batchTransferIdx":r.batch_transfer_idx,"createdAt":r.created_at.to_string(),
-                    "updatedAt":r.updated_at.to_string(),"status":r.status,"kind":r.kind,"txid":r.txid,
-                    "recipientId":r.recipient_id,"receiveUtxo":r.receive_utxo,"changeUtxo":r.change_utxo,
-                    "invoice":r.invoice_string,"expirationTimestamp":r.expiration_timestamp.map(|v| v.to_string()),
-                    "assignments":r.assignments.iter().map(assignment_value).collect::<Vec<_>>(),
-                    "requestedAssignment":r.requested_assignment.as_ref().map(assignment_value),
-                })).collect()))
+                let scope = if let Some(txid) = p.txid {
+                    require_txid(&txid)?;
+                    TransferScope::Txid(txid)
+                } else {
+                    TransferScope::All
+                };
+                let rows = self.wallet.list_transfers(filter, scope).map_err(native)?;
+                Ok(Value::Array(rows.into_iter().map(|r| {
+                    let change_utxo = match r.change_utxos.as_slice() {
+                        [only] => Some(only),
+                        _ => None,
+                    };
+                    json!({
+                        "idx":r.idx,"batchTransferIdx":r.batch_transfer_idx,"createdAt":r.created_at.to_string(),
+                        "updatedAt":r.updated_at.to_string(),"status":r.status,"kind":r.kind,"txid":r.txid,
+                        "recipientId":r.recipient_id,"receiveUtxo":r.receive_utxo,
+                        "changeUtxo":change_utxo,"changeUtxos":r.change_utxos,
+                        "invoice":r.invoice_string,"expirationTimestamp":r.expiration_timestamp.map(|v| v.to_string()),
+                        "assignments":r.assignments.iter().map(assignment_value).collect::<Vec<_>>(),
+                        "requestedAssignment":r.requested_assignment.as_ref().map(assignment_value),
+                    })
+                }).collect()))
             }
             "getFeeRate" => {
                 let p: FeeEstimate = decode(params)?;
@@ -1301,7 +1331,7 @@ impl Session {
                     return Err(input("Invalid invoice recipient ID."));
                 }
                 Ok(self.wallet.get_received_mint(p.recipient_id).map_err(native)?.map(|m| json!({
-                    "opid":m.opid,"amount":m.amount.to_string(),"beforeBlock":m.before_block.to_string(),
+                    "opid":m.opid,"lockId":m.lock_id,"amount":m.amount.to_string(),"beforeBlock":m.before_block.to_string(),
                     "evmChainId":m.evm_chain_id.to_string(),"bridgeContract":m.bridge_contract,
                 })).unwrap_or(Value::Null))
             }
@@ -1357,10 +1387,10 @@ mod tests {
     use rgb_lib::bitcoin::transaction::Version;
     use rgb_lib::bitcoin::{Amount, ScriptBuf, Transaction, TxIn, TxOut, Witness};
 
-    const CONTRACT_ID: &str = "rgb:rkMVlCDS-TPWWQZK-1Sg4G77-076Bqzl-a6SHf5U-WlnW1yA";
+    const CONTRACT_ID: &str = "rgb:seHWHNYA-~Fy85Df-sLB28o5-EcqC9F8-HW3mUaM-b7kRJgM";
     const CONTRACT_SHA256: &str =
-        "7eabc7ff78e046ad2b6f26e1d61b5c151ffa53870ced7001bc2a15c80ddfd3f8";
-    const CONTRACT: &str = include_str!("../tests/fixtures/regtest-bfa.5.rgb.base64");
+        "60e78d9fc22b69ebd61aafbd37a530f98440cff7b33da5671494790fd3d78be1";
+    const CONTRACT: &str = include_str!("../tests/fixtures/regtest-bfa.6.rgb.base64");
 
     fn open_params(root: &Path, name: &str) -> Value {
         let keys = rgb_lib::keys::generate_keys(chain(name).unwrap(), WitnessVersion::Taproot);
@@ -1384,6 +1414,10 @@ mod tests {
             first.dispatch("open", params.clone()).unwrap()["watchOnly"],
             true
         );
+        let identity: Value =
+            serde_json::from_slice(&std::fs::read(dir.path().join(IDENTITY_FILE)).unwrap())
+                .unwrap();
+        assert_eq!(identity["backend"], BACKEND);
         assert_eq!(
             second.dispatch("open", params.clone()).unwrap_err().code,
             "WALLET_IN_USE"
@@ -1410,6 +1444,38 @@ mod tests {
             address, next,
             "persisted derivation index must advance after reopen"
         );
+    }
+
+    #[test]
+    fn bfa5_identity_blocks_wallet_open_before_database_migration() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let params = open_params(dir.path(), "regtest");
+        let identity = json!({
+            "backend": "rgb-l1-v1",
+            "network": "Regtest",
+            "accountXpubVanilla": params["accountXpubVanilla"],
+            "accountXpubColored": params["accountXpubColored"],
+            "masterFingerprint": params["masterFingerprint"],
+        });
+        let identity_bytes = serde_json::to_vec(&identity).unwrap();
+        let identity_path = dir.path().join(IDENTITY_FILE);
+        std::fs::write(&identity_path, &identity_bytes).unwrap();
+        let wallet_root = dir.path().join(params["masterFingerprint"].as_str().unwrap());
+        std::fs::create_dir(&wallet_root).unwrap();
+        let legacy_database = wallet_root.join("rgb_lib_db");
+        let sentinel = b"old wallet state must remain untouched";
+        std::fs::write(&legacy_database, sentinel).unwrap();
+
+        let mut worker = Worker::default();
+        assert_eq!(
+            worker.dispatch("open", params).unwrap_err().code,
+            "WALLET_IDENTITY_MISMATCH"
+        );
+        assert!(worker.session.is_none());
+        assert_eq!(std::fs::read(identity_path).unwrap(), identity_bytes);
+        assert_eq!(std::fs::read(legacy_database).unwrap(), sentinel);
+        assert_eq!(wallet_root.read_dir().unwrap().count(), 1);
     }
 
     #[test]
@@ -1569,6 +1635,30 @@ mod tests {
     }
 
     #[test]
+    fn bfa5_regtest_contract_is_rejected_without_registration() {
+        const LEGACY_ID: &str = "rgb:rkMVlCDS-TPWWQZK-1Sg4G77-076Bqzl-a6SHf5U-WlnW1yA";
+        const LEGACY_SHA: &str = "7eabc7ff78e046ad2b6f26e1d61b5c151ffa53870ced7001bc2a15c80ddfd3f8";
+        const LEGACY_CONTRACT: &str = include_str!("../tests/fixtures/regtest-bfa.5.rgb.base64");
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut worker = Worker::default();
+        worker.dispatch("open", open_params(dir.path(), "regtest")).unwrap();
+        let request = json!({
+            "contractBase64": LEGACY_CONTRACT.trim(),
+            "expectedAssetId": LEGACY_ID,
+            "sha256": LEGACY_SHA,
+        });
+        assert_eq!(
+            worker.dispatch("importContract", request).unwrap_err().code,
+            "CONTRACT_FORMAT_UNSUPPORTED"
+        );
+        assert_eq!(
+            worker.dispatch("getAssetBalance", json!({"assetId": LEGACY_ID})).unwrap_err().code,
+            "ASSET_NOT_FOUND"
+        );
+    }
+
+    #[test]
     fn public_signet_native_open_and_mutations_require_bitcoin_only() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
@@ -1595,7 +1685,7 @@ mod tests {
     }
 
     #[test]
-    fn dev_signet_offline_open_requires_the_explicit_rgb_profile() {
+    fn disabled_dev_signet_cannot_open_wallet_or_admit_any_hosted_service() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         let mut params = open_params(dir.path(), "signet");
@@ -1606,26 +1696,16 @@ mod tests {
         assert_eq!(worker.dispatch("open", wrong_mode).unwrap_err().code, "INVALID_PARAMS");
         assert!(worker.session.is_none());
         assert!(dir.path().read_dir().unwrap().next().is_none());
-        let opened = worker.dispatch("open", params).unwrap();
-        assert_eq!(opened["network"], "signet");
-        assert_eq!(opened["profile"], "dev");
-        assert_eq!(opened["watchOnly"], true);
-        for (method, request) in [
-            ("checkIndexerUrl", json!({"url": "ssl://electrum.iriswallet.com:50033"})),
-            ("checkProxyEndpoint", json!({"url": "rpcs://staging.rgb-proxy.utexo.com/json-rpc"})),
-            ("goOnline", json!({
-                "indexerUrl": "https://dev.esplora-01.mint.utexo.com",
-                "evmRpcUrls": {"42161": "https://example.test"},
-            })),
-        ] {
-            assert_eq!(worker.dispatch(method, request).unwrap_err().code, "INVALID_PARAMS");
-        }
-        assert_eq!(worker.dispatch("getNetworkInfo", json!({})).unwrap_err().code, "WALLET_OFFLINE");
+        let error = worker.dispatch("open", params).unwrap_err();
+        assert_eq!(error.code, "INVALID_PARAMS");
+        assert_eq!(error.message, "Dev Signet hosted access is disabled.");
+        assert!(worker.session.is_none());
+        assert!(dir.path().read_dir().unwrap().next().is_none());
     }
 
     #[test]
     #[ignore = "requires the BUSDT contract recovered from Dev E2E run 41698713237"]
-    fn recovered_dev_busdt_imports_offline() {
+    fn recovered_bfa5_dev_busdt_is_rejected_offline() {
         let id = "rgb:fbkO6B_i-qyLXa6d-x3sAOaX-cx~vZB9-rxNSUle-9lXBTf8";
         let digest = "a678ebf73f3a0523b307cd2fe8019a321ac938eaf547c2c65a7ac079948332ce";
         let bytes = std::fs::read(std::env::var_os("UTEXO_DEV_BUSDT_CONTRACT").unwrap()).unwrap();
@@ -1637,36 +1717,19 @@ mod tests {
         std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         let mut worker = Worker::default();
         let mut params = open_params(dir.path(), "signet");
-        params["profile"] = json!("dev");
+        // Exercise the contract decoder on the same Bitcoin network independently
+        // of the earlier public dispatch and disabled Dev profile gates.
+        params["mode"] = json!("btc-only");
         worker.dispatch("open", params).unwrap();
-        let mut wrong_asset = request.clone();
-        wrong_asset["expectedAssetId"] = CONTRACT_ID.into();
+        let contract = decode(request).unwrap();
         assert_eq!(
-            worker.dispatch("importContract", wrong_asset).unwrap_err().code,
-            "CONTRACT_MISMATCH"
+            worker.session.as_mut().unwrap().import_contract(contract).unwrap_err().code,
+            "CONTRACT_FORMAT_UNSUPPORTED"
         );
         assert_eq!(
-            worker.dispatch("getAssetBalance", asset.clone()).unwrap_err().code,
+            worker.dispatch("getAssetBalance", asset).unwrap_err().code,
             "ASSET_NOT_FOUND"
         );
-        for _ in 0..2 {
-            assert_eq!(worker.dispatch("importContract", request.clone()).unwrap()["assetId"], id);
-        }
-        assert_eq!(
-            worker.dispatch("getAssetMetadata", asset.clone()).unwrap(),
-            json!({"assetId":id,"schema":"Bfa","name":"Bridged USDT","ticker":"BUSDT","precision":6})
-        );
-        assert_eq!(
-            worker.dispatch("getAssetBalance", asset.clone()).unwrap(),
-            json!({"settled":"0","future":"0","spendable":"0"})
-        );
-        assert_eq!(worker.dispatch("listTransfers", asset).unwrap(), json!([]));
-
-        let wrong_chain = tempfile::tempdir().unwrap();
-        std::fs::set_permissions(wrong_chain.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
-        let mut worker = Worker::default();
-        worker.dispatch("open", open_params(wrong_chain.path(), "regtest")).unwrap();
-        assert!(worker.dispatch("importContract", request).is_err());
     }
 
     #[test]

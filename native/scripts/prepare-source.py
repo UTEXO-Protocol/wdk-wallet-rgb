@@ -13,10 +13,10 @@ import urllib.request
 ROOT = Path(__file__).resolve().parent.parent
 DEST = ROOT / ".sources" / "rgb-lib-bfa"
 SOURCE_URL = "https://github.com/UTEXO-Protocol/rgb-lib-bfa.git"
-PATCH = ROOT / "patches" / "rgb-lib-bfa.5-onchain.patch"
-SHA = "0a9d352f2690902df2b6fae9bca1a6c13c3354d4"
-BASE_TREE = "5b54078be8e447f7959359b10dfb393649ab9840"
-EXPECTED_TREE = "e517dc80f613bee86a9808e8a54c361e4be73810"
+PATCHES = ROOT / "patches"
+SHA = "5010eefa355beb9c42a4c1b69883f7651241a111"
+BASE_TREE = "b57dfd03781f73fb45f852752b6e4311a93afc52"
+EXPECTED_TREE = "2b9bf63482d8a472492d065d3edd260e0fa418ac"
 ESPLORA_PACKAGE = "esplora-client-0.12.3"
 ESPLORA_SHA256 = "f19e3ea99dbfbef0c1ec26d83e69de0c579f6aa6aaac4f44597805fcc27e97af"
 ESPLORA_EXPECTED_TREE = "0b02f9ababbb4f276dcea5168fc8cf59914c6744"
@@ -81,16 +81,14 @@ def main():
         raise SystemExit("usage: prepare-source.py [--bare] [source]")
     prepare_esplora()
     dest = DEST.with_name("rgb-lib-bfa-bare") if bare else DEST
-    patches = [PATCH]
-    if bare:
-        patches.append(ROOT / "patches" / "rgb-lib-bfa.5-embedded-lifecycle.patch")
-    patches += [
-        ROOT / "patches" / "rgb-lib-bfa.5-public-signet.patch",
-        ROOT / "patches" / "rgb-lib-bfa.5-native-egress.patch",
-        ROOT / "patches" / "rgb-lib-bfa.5-staging-evm-egress.patch",
-        ROOT / "patches" / "rgb-lib-bfa.5-dev-signet.patch",
+    patches = [
+        PATCHES / "rgb-lib-bfa.6-registration.patch",
+        PATCHES / "rgb-lib-bfa.6-native-egress.patch",
+        PATCHES / "rgb-lib-bfa.6-signet-checkpoint.patch",
     ]
-    expected_tree = "8a113320471c79b046c7ea045ccc9b20f4484be6" if bare else EXPECTED_TREE
+    if bare:
+        patches.append(PATCHES / "rgb-lib-bfa.6-embedded-lifecycle.patch")
+    expected_tree = "168fd88d5f1d3e99a34c03e781689d9b2acceb14" if bare else EXPECTED_TREE
     if dest.exists():
         verify(dest, expected_tree)
         return

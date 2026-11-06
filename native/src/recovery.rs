@@ -4,7 +4,10 @@ use super::{
     Session, TransactionId, TransferStatus, Value, decode, fault, input, json, native,
     require_txid,
 };
-use rgb_lib::{WalletTransactionType, wallet::TransferKind};
+use rgb_lib::{
+    WalletTransactionType,
+    wallet::{TransferKind, TransferScope},
+};
 use std::collections::BTreeSet;
 
 const MAX_RESERVATIONS: usize = 128;
@@ -105,7 +108,7 @@ impl Session {
                     TransferKind::Burn
                 };
                 self.wallet
-                    .list_transfers(AssetFilter::AnyOrNone, None)
+                    .list_transfers(AssetFilter::AnyOrNone, TransferScope::All)
                     .map_err(native)?
                     .into_iter()
                     .filter(|row| row.kind == expected && row.status == TransferStatus::Initiated)

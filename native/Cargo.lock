@@ -2961,8 +2961,7 @@ dependencies = [
 [[package]]
 name = "rgb-aluvm"
 version = "0.11.2-rc.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21de8dc75b4ce90dffe66cff585053e9f5d2abe6436589c95e6308f0605195f4"
+source = "git+https://github.com/rgb-protocol/rgb-aluvm?rev=eb956ccaadf64930990e2ed08f6c4232caee24f9#eb956ccaadf64930990e2ed08f6c4232caee24f9"
 dependencies = [
  "amplify",
  "baid64",
@@ -2980,8 +2979,7 @@ dependencies = [
 [[package]]
 name = "rgb-ascii-armor"
 version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b3a739537822793adce1f9539bb3fae3d54a16f409e8353ac85281bdfcec078"
+source = "git+https://github.com/rgb-protocol/rgb-ascii-armor?rev=40cdea632fd6d0527494893e83b99cea60ace310#40cdea632fd6d0527494893e83b99cea60ace310"
 dependencies = [
  "amplify",
  "baid64",
@@ -2993,7 +2991,7 @@ dependencies = [
 [[package]]
 name = "rgb-consensus"
 version = "0.11.2-rc.1"
-source = "git+https://github.com/UTEXO-Protocol/rgb-consensus-s-bfa.git?rev=af0b751dc9e51547cd57e025fdc3508e120ddf8a#af0b751dc9e51547cd57e025fdc3508e120ddf8a"
+source = "git+https://github.com/rgb-protocol/rgb-consensus?rev=d4bbbce212e4d9967e10cc3c6a7db2f664d52bd2#d4bbbce212e4d9967e10cc3c6a7db2f664d52bd2"
 dependencies = [
  "amplify",
  "baid64",
@@ -3019,7 +3017,7 @@ dependencies = [
 [[package]]
 name = "rgb-invoicing"
 version = "0.11.2-rc.1"
-source = "git+https://github.com/UTEXO-Protocol/rgb-ops-s-bfa.git?rev=ed1d60df69f9e4db65640c0ac61a5779ba9c018c#ed1d60df69f9e4db65640c0ac61a5779ba9c018c"
+source = "git+https://github.com/rgb-protocol/rgb-ops?rev=00f8d62e6107767cca085d9f9b3183c35ad6d71f#00f8d62e6107767cca085d9f9b3183c35ad6d71f"
 dependencies = [
  "amplify",
  "baid64",
@@ -3088,7 +3086,7 @@ dependencies = [
 [[package]]
 name = "rgb-ops"
 version = "0.11.2-rc.1"
-source = "git+https://github.com/UTEXO-Protocol/rgb-ops-s-bfa.git?rev=ed1d60df69f9e4db65640c0ac61a5779ba9c018c#ed1d60df69f9e4db65640c0ac61a5779ba9c018c"
+source = "git+https://github.com/rgb-protocol/rgb-ops?rev=00f8d62e6107767cca085d9f9b3183c35ad6d71f#00f8d62e6107767cca085d9f9b3183c35ad6d71f"
 dependencies = [
  "amplify",
  "baid64",
@@ -3110,7 +3108,7 @@ dependencies = [
 [[package]]
 name = "rgb-psbt-utils"
 version = "0.11.2-rc.1"
-source = "git+https://github.com/UTEXO-Protocol/rgb-api-s-bfa.git?rev=8e2f515d0f6445e88d3c794a4b592f7bdd3a12df#8e2f515d0f6445e88d3c794a4b592f7bdd3a12df"
+source = "git+https://github.com/rgb-protocol/rgb-api?rev=4922e50734ab456d086546ab2befd5fa0aec99cc#4922e50734ab456d086546ab2befd5fa0aec99cc"
 dependencies = [
  "amplify",
  "getrandom 0.3.4",
@@ -3123,7 +3121,7 @@ dependencies = [
 [[package]]
 name = "rgb-schemas"
 version = "0.11.2-rc.1"
-source = "git+https://github.com/UTEXO-Protocol/rgb-schemas-s-bfa.git?rev=641a06f31cd277c42222504c8040055c8cbafca5#641a06f31cd277c42222504c8040055c8cbafca5"
+source = "git+https://github.com/rgb-protocol/rgb-schemas?rev=b3f88f28c83aa8c73cf9ed2bb40ad6890142d675#b3f88f28c83aa8c73cf9ed2bb40ad6890142d675"
 dependencies = [
  "amplify",
  "rgb-aluvm",

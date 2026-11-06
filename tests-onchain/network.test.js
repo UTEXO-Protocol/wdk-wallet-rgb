@@ -33,7 +33,9 @@ const DEFAULTS = {
   authorize: () => assert.fail('Offline operations must not request transaction authorization')
 }
 
-async function managerFor (t, { nativeVersion = 4, workerIndexerProtocol, ...options } = {}) {
+async function managerFor (t, {
+  nativeVersion = 4, workerIndexerProtocol, Manager = WalletManagerRgb, receivedMint = null, ...options
+} = {}) {
   const network = options.network ?? DEFAULTS.network
   const mode = options.mode ?? 'rgb'
   const indexer = (options.indexerUrl ?? INDEXER).replace(/\/$/, '')
@@ -53,9 +55,9 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   if (method === 'version') return reply({
     protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1,
     indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
-    source: '0a9d352f2690902df2b6fae9bca1a6c13c3354d4',
-    overlayTree: 'e517dc80f613bee86a9808e8a54c361e4be73810',
-    integrationTree: '8a113320471c79b046c7ea045ccc9b20f4484be6'
+    source: '5010eefa355beb9c42a4c1b69883f7651241a111',
+    overlayTree: '2b9bf63482d8a472492d065d3edd260e0fa418ac',
+    integrationTree: '168fd88d5f1d3e99a34c03e781689d9b2acceb14'
   })
   if (method === 'open') {
     assert.equal(params.network, '${network}')
@@ -79,6 +81,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     assert.notEqual(connectionAttempts, 1)
     return reply({ vanilla: { spendable: '42' } })
   }
+  if (method === 'getReceivedMint') return reply(${JSON.stringify(receivedMint)})
   if (method === 'getFeeRate') {
     assert.equal(connectionAttempts, 2)
     return reply({ feeRate: { 2: '3900', 6: '1000', 12: '1.5' }[params.blocks] })
@@ -102,7 +105,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
 })
 `
   await writeFile(worker, source, { mode: 0o700 })
-  const manager = new WalletManagerRgb(SEED, {
+  const manager = new Manager(SEED, {
     ...DEFAULTS, ...options, dataDir: dir, nativeExecutable: worker,
     nativeSha256: createHash('sha256').update(source).digest('hex')
   })
@@ -112,10 +115,10 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   return manager
 }
 
-async function disabledDevFixtureManager () {
-  const fixtureModule = new URL('../src/onchain-wallet.js?dev-disabled-fixture', import.meta.url).href
+async function enabledDevFixtureManager () {
+  const fixtureModule = new URL('../src/onchain-wallet.js?dev-enabled-fixture', import.meta.url).href
   const servicesModule = new URL('../src/onchain-dev-services.json', import.meta.url).href
-  const servicesFixture = 'data:application/json,' + encodeURIComponent(JSON.stringify({ ...devServices, enabled: false }))
+  const servicesFixture = 'data:application/json,' + encodeURIComponent(JSON.stringify({ ...devServices, enabled: true }))
   const hooks = registerHooks({
     resolve (specifier, context, nextResolve) {
       const resolved = nextResolve(specifier, context)
@@ -163,6 +166,17 @@ test('offline open supports cached reads and gates address allocation on retryab
 test('offline open fails closed if the worker does not attest the network API', async t => {
   const manager = await managerFor(t, { startupMode: 'offline', nativeVersion: 1 })
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
+})
+
+test('received mints carry a distinct EVM lock identifier and reject a missing lock', async t => {
+  const mint = {
+    opid: '12'.repeat(32), lockId: '34'.repeat(32), amount: '1000', beforeBlock: '180',
+    evmChainId: '31337', bridgeContract: '0x' + '56'.repeat(20)
+  }
+  const valid = await managerFor(t, { startupMode: 'offline', receivedMint: mint })
+  assert.deepEqual(await (await valid.getAccount()).getReceivedMint('fixture-recipient'), mint)
+  const invalid = await managerFor(t, { startupMode: 'offline', receivedMint: { ...mint, lockId: undefined } })
+  await assert.rejects((await invalid.getAccount()).getReceivedMint('fixture-recipient'), { code: 'NATIVE_PROTOCOL' })
 })
 
 test('public Signet uses the pinned TLS endpoint and enables only Bitcoin operations', async t => {
@@ -251,20 +265,20 @@ test('staging rejects unqualified service, profile and payout combinations', () 
   }
 })
 
-test('the packaged Dev profile opts in to only its exact reviewed endpoints', async () => {
+test('the packaged Dev profile stays disabled with its exact pinned endpoints', () => {
   assert.deepEqual(devServices, {
-    enabled: true,
+    enabled: false,
     indexerUrl: 'https://dev.esplora-01.mint.utexo.com',
     proxyEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc',
     arbitrumRpc: ARBITRUM_RPC
   })
-  const DisabledManager = await disabledDevFixtureManager()
-  assert.throws(() => new DisabledManager(SEED, { ...DEFAULTS, ...DEV }), /Dev Signet hosted access is disabled/)
+  assert.throws(() => new WalletManagerRgb(SEED, { ...DEFAULTS, ...DEV }), /Dev Signet hosted access is disabled/)
 })
 
 test('the Dev candidate uses only Esplora and advertises only direct Arbitrum', async t => {
   const manager = await managerFor(t, {
-    ...DEV, indexerUrl: DEV.indexerUrl + '/', startupMode: 'offline', burnDestinationRoutes: [DIRECT_ARBITRUM]
+    ...DEV, Manager: await enabledDevFixtureManager(), indexerUrl: DEV.indexerUrl + '/',
+    startupMode: 'offline', burnDestinationRoutes: [DIRECT_ARBITRUM]
   })
   const account = await manager.getAccount()
   assert.equal(account.getInfo().ready, false)
@@ -282,6 +296,7 @@ test('the Dev candidate uses only Esplora and advertises only direct Arbitrum', 
 })
 
 test('the Dev candidate rejects alternate services, credentials, routes and native protocol', async t => {
+  const Manager = await enabledDevFixtureManager()
   for (const override of [
     { profile: undefined }, { profile: 'staging' }, { network: 'regtest' }, { network: 'utexo' }, { mode: 'btc-only' },
     { indexerUrl: SIGNET_INDEXER }, { indexerUrl: DEV.indexerUrl.replace('https:', 'http:') },
@@ -294,10 +309,10 @@ test('the Dev candidate rejects alternate services, credentials, routes and nati
     { burnDestinationRoutes: [{ chainId: 'eip155:42161', dstEid: 30101 }] },
     { burnDestinationRoutes: [{ chainId: 'eip155:1', dstEid: 30101 }] }
   ]) {
-    assert.throws(() => new WalletManagerRgb(SEED, { ...DEFAULTS, ...DEV, ...override }), TypeError, JSON.stringify(override))
+    assert.throws(() => new Manager(SEED, { ...DEFAULTS, ...DEV, ...override }), TypeError, JSON.stringify(override))
   }
   const manager = await managerFor(t, {
-    ...DEV, startupMode: 'offline', workerIndexerProtocol: 'Electrum'
+    ...DEV, Manager, startupMode: 'offline', workerIndexerProtocol: 'Electrum'
   })
   const account = await manager.getAccount()
   assert.equal(account.getInfo().burnDestinationRoutes, undefined)

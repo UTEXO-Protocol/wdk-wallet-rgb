@@ -122,6 +122,9 @@ export type Transfer = {
   kind: string
   txid: string | null
   recipientId: string | null
+  /** The sole change output, when the transfer has exactly one. */
+  changeUtxo: { txid: string; vout: number } | null
+  changeUtxos: { txid: string; vout: number }[]
   requestedAssignment: Record<string, string | true> | null
   assignments: Record<string, string | true>[]
 }
@@ -219,7 +222,10 @@ export class WalletAccountRgb {
   getBtcBalance(): Promise<{ vanilla: Balance; colored: Balance }>
   getAssetBalance(assetId: string): Promise<Balance>
   getReceivedMint(recipientId: string): Promise<{
-    opid: string; amount: string; beforeBlock: string; evmChainId: string; bridgeContract: string
+    opid: string
+    /** EVM lock identifier bound to this mint operation and its Bitcoin transaction. */
+    lockId: string
+    amount: string; beforeBlock: string; evmChainId: string; bridgeContract: string
   } | null>
   listUnspents(): Promise<unknown[]>
   listTransfers(filter?: { assetId?: string; txid?: string }): Promise<Transfer[]>

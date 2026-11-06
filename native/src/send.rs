@@ -364,7 +364,7 @@ impl Session {
                     .ok_or_else(|| input("RGB send evidence needs a batch index."))?;
                 let transfers = self
                     .wallet
-                    .list_transfers(AssetFilter::Id(asset), Some(p.txid.clone()))
+                    .list_transfers(AssetFilter::Id(asset), TransferScope::Txid(p.txid.clone()))
                     .map_err(native)?;
                 let mut matching = transfers.iter().filter(|t| {
                     t.kind == TransferKind::Send
@@ -400,6 +400,7 @@ mod tests {
         RgbOutputInfo {
             txid: None,
             vout: None,
+            blinding: None,
             assignment: Assignment::Fungible(amount),
             is_concealed: true,
             recipient_id: Some(recipient_id.into()),

@@ -1,17 +1,17 @@
 # On-chain WDK candidate
 
-`@utexo/wdk-wallet-rgb@2.1.0-alpha.10` is the private Dev Signet candidate for manual hosted testing. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
+`@utexo/wdk-wallet-rgb@2.1.0-alpha.11` is the private BFA.6 qualification candidate. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
 
 | Component | Pinned version or source |
 | --- | --- |
 | Tether WDK Wallet | `1.0.0-beta.25` |
 | Android embedded runtime | Bare Kit `3.0.1`, Bare `1.36.2` |
 | Bare C headers | `1.35.0` |
-| RGB library | `v0.3.0-beta.7-upstream-dev-bfa.5`, `0a9d352f2690902df2b6fae9bca1a6c13c3354d4` |
-| Native overlay | Functional tree `e517dc80f613bee86a9808e8a54c361e4be73810`, embedded tree `8a113320471c79b046c7ea045ccc9b20f4484be6` |
+| RGB library | `v0.3.0-beta.7-upstream-dev-bfa.6`, `5010eefa355beb9c42a4c1b69883f7651241a111` |
+| Native overlay | Functional tree `2b9bf63482d8a472492d065d3edd260e0fa418ac`, embedded tree `168fd88d5f1d3e99a34c03e781689d9b2acceb14` |
 | Signing | `@scure/btc-signer@2.4.1`, `@scure/bip32@2.4.0`, `@scure/base@2.4.0`, `@noble/curves@2.4.0`, `@noble/hashes@2.4.0` |
 
-The RGB overlay ports public-contract registration from [RGB #4](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/4) and exact mint conservation from [RGB #8](https://github.com/UTEXO-Protocol/rgb-lib-bfa/pull/8). Native preparation verifies the upstream commit and patched tree before building from the locked graph.
+The RGB overlay retains standalone genesis registration, native HTTP egress restrictions and Signet checkpoints. The embedded build also disables the process-wide wallet panic hook. BFA.6 enforces full mint conservation upstream. Native preparation verifies the upstream commit and patched tree before building from the locked graph.
 
 ## Build and use
 
@@ -21,7 +21,7 @@ Supply a canonical private data directory and a disposable seed. For Regtest, se
 
 To admit RGB on public Signet, set `network: 'signet'`, `mode: 'rgb'` and `profile: 'staging'`, with the same Electrum endpoint, `transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'` and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. Use a separate wallet directory. The profile forbids proxy credentials. An application can explicitly configure `{ chainId: 'eip155:42161', dstEid: 0 }` as its sole V1 burn route after qualifying its deployment. Compatible asset bytes and a matching hosted deployment remain separate prerequisites for enabling bridge capabilities.
 
-For the dedicated Dev build, select `network: 'signet'`, `mode: 'rgb'`, `profile: 'dev'`, and a new wallet directory. JavaScript and the native worker share an exact service policy for `indexerUrl: 'https://dev.esplora-01.mint.utexo.com'`, `transportEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc'`, and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. Proxy credentials are forbidden. The only configurable V1 payout is direct Arbitrum, `{ chainId: 'eip155:42161', dstEid: 0 }`. The previous alpha.9 keeps its Dev gate closed. Dev checkpoint and contract import are covered by local tests. Hosted settlement and recovery remain manual acceptance items. See the [Dev native test instructions](native/README.md#dev-checkpoint-candidate).
+The BFA.6 candidate requires a fresh wallet directory and contract bytes issued under the BFA.6 schema. Its native and JavaScript gates keep hosted Dev disabled pending qualification of a matching deployment and asset export. The dedicated BFA.5 alpha.10 build remains the manual candidate for the earlier Dev BUSDT deployment. [Dev checkpoint scope](native/README.md#dev-checkpoint-candidate)
 
 The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Android packs a linked worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. The SDK verifies addon hash and native profile before opening.
 
@@ -32,7 +32,7 @@ For a seed-only restore into a new directory, explicitly set `mode: 'btc-only'` 
 ## Wallet operations
 
 - `getAddress()` is stable for the opened account. `getNewAddress()` explicitly allocates another address. `getBalance()` and `getTokenBalance()` return exact bigint base units. Display and history interfaces preserve exact decimal strings.
-- `registerAssetContract()` validates public contract bytes, SHA-256 and the asset ID. `blindReceive()` and `witnessReceive()` use the profile's approved proxy. Read and refresh methods expose assets, transactions, transfers and the outcome of each transfer refresh.
+- `registerAssetContract()` validates public contract bytes, SHA-256 and the asset ID. `blindReceive()` and `witnessReceive()` use the profile's approved proxy. Read and refresh methods expose assets, transactions, transfers and the outcome of each transfer refresh. `getReceivedMint()` returns the EVM `lockId`, which commits to the mint operation and its Bitcoin transaction, alongside the operation ID `opid`.
 - `sendBtc()`, `sendRgbInvoice()`, `createUtxos()` and `burnAsset()` require an application-owned stable operation ID. The caller's authorization receives the exact fee and the reviewed PSBT identity. RGB sends require an admitted invoice network, asset, amount, recipient key and proxy. Witness sends also require an explicit BTC output amount.
 - RGB output setup can be split into `prepareCreateUtxos()`, `commitPreparedCreateUtxos()` and `cancelCreateUtxosPlan()`. Commit and cancel bind both the operation ID and PSBT digest. An abandoned unsigned reservation can be released only when its exact native transaction is found.
 - `recoverSend()`, `recoverCreateUtxos()` and `recoverBurn()` reconcile operations after submission was attempted. `listUnresolvedOperations()` identifies blocked spends. For an interrupted `starting` or `prepared` operation, `recoverUnsubmittedOperation()` compares the durable pre-Begin reservation checkpoint with the native state and releases an exact, uniquely attributable unsigned reservation. The original operation ID stays consumed. `getConsignment()` reads a committed, bounded burn proof. `createBurnPackage()` exports an already validated proof and its V1 destination.

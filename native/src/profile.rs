@@ -30,11 +30,11 @@ struct DevServices {
 }
 
 impl DevServices {
-    fn active_services(&self) -> Option<SignetServices> {
-        self.enabled.then_some(SignetServices {
-            proxy: self.proxy_endpoint,
-            arbitrum_rpc: self.arbitrum_rpc,
-        })
+    fn require_enabled(&self) -> Result<&Self> {
+        if !self.enabled {
+            return Err(input("Dev Signet hosted access is disabled."));
+        }
+        Ok(self)
     }
 }
 
@@ -63,9 +63,13 @@ impl Profile {
     pub(crate) fn services(self) -> Result<SignetServices> {
         match self {
             Self::Staging => Ok(STAGING_SERVICES),
-            Self::Dev => dev_services()?
-                .active_services()
-                .ok_or_else(|| input("Dev Signet hosted access is disabled.")),
+            Self::Dev => {
+                let services = dev_services()?.require_enabled()?;
+                Ok(SignetServices {
+                    proxy: services.proxy_endpoint,
+                    arbitrum_rpc: services.arbitrum_rpc,
+                })
+            }
         }
     }
 }
@@ -82,7 +86,7 @@ pub(crate) fn version(source: &str, overlay: &str) -> Value {
         "protocol": 2,
         "source": source,
         "overlayTree": overlay,
-        "integrationTree": "8a113320471c79b046c7ea045ccc9b20f4484be6",
+        "integrationTree": "168fd88d5f1d3e99a34c03e781689d9b2acceb14",
         "runtime": crate::RUNTIME,
         "indexer": "electrum-and-dev-esplora",
         "networkChecks": 4,
@@ -106,7 +110,7 @@ pub(crate) fn indexer(
     }
     if network == BitcoinNetwork::Signet {
         if matches!(profile, Some(Profile::Dev)) {
-            let approved = dev_services()?.indexer_url;
+            let approved = dev_services()?.require_enabled()?.indexer_url;
             if indexer_url.strip_suffix('/').unwrap_or(&indexer_url) != approved {
                 return Err(input("Dev Signet requires the approved HTTPS Esplora endpoint."));
             }
@@ -173,22 +177,16 @@ mod tests {
     }
 
     #[test]
-    fn dev_selects_only_its_pinned_hosted_services() {
+    fn dev_rejects_all_indexer_and_service_access_while_disabled() {
         const DEV_ESPLORA: &str = "https://dev.esplora-01.mint.utexo.com";
         let services = dev_services().unwrap();
         assert_eq!(services.indexer_url, DEV_ESPLORA);
         assert_eq!(services.proxy_endpoint, "rpcs://dev.rgb-proxy.utexo.com/json-rpc");
         assert_eq!(services.arbitrum_rpc, "https://arb1.arbitrum.io/rpc");
-        let active = Profile::Dev.services().unwrap();
-        assert_eq!(active.proxy, services.proxy_endpoint);
-        assert_eq!(active.arbitrum_rpc, services.arbitrum_rpc);
-        for url in [DEV_ESPLORA.into(), format!("{DEV_ESPLORA}/")] {
-            assert!(matches!(
-                indexer(url, None, BitcoinNetwork::Signet, Some(Profile::Dev)).unwrap(),
-                IndexerConfig::DevSignetEsplora { url } if url == DEV_ESPLORA
-            ));
-        }
+        assert!(Profile::Dev.services().is_err());
         for url in [
+            DEV_ESPLORA,
+            "https://dev.esplora-01.mint.utexo.com/",
             "http://dev.esplora-01.mint.utexo.com",
             "https://dev.esplora-01.mint.utexo.com/redirect",
             "https://dev.esplora-01.mint.utexo.com?",
@@ -210,6 +208,6 @@ mod tests {
             "proxyEndpoint":"rpcs://dev-proxy.example/json-rpc",
             "arbitrumRpc":"https://arb.example/rpc"
         }"#).unwrap();
-        assert!(config.active_services().is_none());
+        assert!(config.require_enabled().is_err());
     }
 }
