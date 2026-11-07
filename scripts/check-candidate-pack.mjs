@@ -1,0 +1,63 @@
+// SPDX-License-Identifier: Apache-2.0
+import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+
+const root = new URL('../', import.meta.url)
+const readJson = path => JSON.parse(readFileSync(new URL(path, root), 'utf8'))
+const options = process.argv.slice(2)
+const requireNative = options[0] === '--require-native'
+assert.equal(options.length, requireNative ? 1 : 0, 'Usage: check-candidate-pack.mjs [--require-native]')
+const manifest = readJson('package.json')
+assert.equal(manifest.name, '@utexo/wdk-wallet-rgb')
+assert.equal(manifest.private, true, 'The review candidate must remain private')
+const [pack] = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], {
+  cwd: root,
+  encoding: 'utf8'
+}))
+assert.equal(pack.name, manifest.name)
+assert.equal(pack.version, manifest.version)
+const files = new Set(pack.files.map(file => file.path))
+function checkTarget (target) {
+  if (typeof target === 'string') {
+    assert.ok(target.startsWith('./') && files.has(target.slice(2)), 'Missing packed export: ' + target)
+    return
+  }
+  for (const value of Object.values(target)) checkTarget(value)
+}
+checkTarget(manifest.exports)
+assert.ok(files.has('LICENSE'), 'Missing package license')
+assert.ok(files.has('src/onchain-dev-services.json'), 'Missing Dev Signet service policy')
+for (const path of files) {
+  assert.ok(!/^(?:native|scripts|tests[^/]*|evidence|fixtures?)\//.test(path), 'Build-only file packed: ' + path)
+  assert.ok(!/(?:^|\/)\.(?:env|git)(?:[./]|$)/.test(path), 'Private file packed: ' + path)
+}
+
+const artifacts = [...files].filter(path => path.startsWith('prebuilds/'))
+const native = readJson('src/onchain-bare-native.json')
+assert.equal(native.target, 'android-arm64')
+assert.equal(native.linkedName, `libutexo__wdk-wallet-rgb.${manifest.version}.so`)
+assert.match(native.source, /^[a-f0-9]{40}$/)
+assert.match(native.overlayTree, /^[a-f0-9]{40}$/)
+assert.match(native.integrationTree, /^[a-f0-9]{40}$/)
+assert.equal(native.protocol, 2)
+assert.match(native.sha256, /^[a-f0-9]{64}$/)
+assert.ok(Number.isSafeInteger(native.byteLength) && native.byteLength > 0)
+if (!requireNative) {
+  assert.deepEqual(artifacts, [], 'Public source-only CI must not contain staged native binaries')
+  console.log('Package exports and source-only inventory passed. Native admission is a separate gate.')
+} else {
+  const path = 'prebuilds/' + native.target + '/utexo__wdk-wallet-rgb.bare'
+  assert.deepEqual(artifacts, [path], 'Unexpected packed native addon inventory')
+  const bytes = readFileSync(new URL(path, root))
+  assert.equal(bytes.length, native.byteLength)
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), native.sha256)
+  for (const pin of [native.source, native.overlayTree, native.integrationTree]) {
+    assert.ok(bytes.includes(Buffer.from(pin)), 'Native addon does not contain the admitted source identity')
+  }
+  assert.ok(bytes.includes(Buffer.from('electrum-and-dev-esplora')), 'Native addon lacks the expected indexer capabilities')
+  assert.ok(bytes.includes(readFileSync(new URL('src/onchain-dev-services.json', root))),
+    'Native addon and package disagree on the Dev Signet service policy')
+  console.log('Package exports and exact native addon inventory passed.')
+}

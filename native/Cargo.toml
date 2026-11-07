@@ -1,0 +1,43 @@
+[package]
+name = "utexo-rgb-native"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94.0"
+license = "Apache-2.0"
+publish = false
+
+[dependencies]
+rgb-lib = { path = ".sources/rgb-lib-bfa-bare", default-features = false, features = ["electrum", "esplora", "camel_case"] }
+rgb-invoicing = { version = "=0.11.2-rc.1", default-features = false }
+electrum-client = { version = "=0.25.2", default-features = false }
+reqwest = { version = "=0.13.5", default-features = false, features = ["blocking", "json"] }
+base64 = "0.23.1"
+fs2 = "0.4.3"
+libc = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+zeroize = "1.8"
+tempfile = "3.27.0"
+sha2 = "0.11.1"
+url = "2.5"
+
+
+[patch.crates-io]
+esplora-client = { path = ".sources/esplora-client" }
+rgb-aluvm = { git = "https://github.com/rgb-protocol/rgb-aluvm", rev = "eb956ccaadf64930990e2ed08f6c4232caee24f9" }
+rgb-ascii-armor = { git = "https://github.com/rgb-protocol/rgb-ascii-armor", rev = "40cdea632fd6d0527494893e83b99cea60ace310" }
+rgb-consensus = { git = "https://github.com/rgb-protocol/rgb-consensus", rev = "d4bbbce212e4d9967e10cc3c6a7db2f664d52bd2" }
+rgb-invoicing = { git = "https://github.com/rgb-protocol/rgb-ops", rev = "00f8d62e6107767cca085d9f9b3183c35ad6d71f" }
+rgb-ops = { git = "https://github.com/rgb-protocol/rgb-ops", rev = "00f8d62e6107767cca085d9f9b3183c35ad6d71f" }
+rgb-psbt-utils = { git = "https://github.com/rgb-protocol/rgb-api", rev = "4922e50734ab456d086546ab2befd5fa0aec99cc" }
+rgb-schemas = { git = "https://github.com/rgb-protocol/rgb-schemas", rev = "b3f88f28c83aa8c73cf9ed2bb40ad6890142d675" }
+rgb-strict-encoding = { git = "https://github.com/rgb-protocol/rgb-strict-encoding", rev = "e12b9944b30171950de03778d6666b24bc33d994" }
+rgb-strict-encoding-derive = { git = "https://github.com/rgb-protocol/rgb-strict-encoding", rev = "e12b9944b30171950de03778d6666b24bc33d994" }
+rgb-strict-types = { git = "https://github.com/rgb-protocol/rgb-strict-types", rev = "8714cdcc8af25333c27214cdf9f42a6388d484ff" }
+
+[profile.release]
+opt-level = 1
+debug = 0
+strip = "debuginfo"
+# Preserve the upstream rgb-lib release invariant, including for the dependency graph.
+overflow-checks = true

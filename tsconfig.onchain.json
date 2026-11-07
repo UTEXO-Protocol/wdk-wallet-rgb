@@ -1,0 +1,9 @@
+{
+  "files": ["onchain.d.ts", "webrgb-onchain.d.ts"],
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "strict": true,
+    "noEmit": true
+  }
+}

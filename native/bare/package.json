@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "bare": "1.36.2",
+    "bare-headers": "1.35.0"
+  },
+  "name": "utexo-rgb-bare-build",
+  "private": true
+}

@@ -1,35 +1,46 @@
-name: Build and Test
+name: SDK checks
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev]
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  javascript:
+    name: Node ${{ matrix.node }}
     runs-on: ubuntu-latest
-
-    steps: 
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22.23.4', '24.22.2']
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: '22'
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-      
-      - name: Install dependencies
-        run: npm install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GH_TOKEN: ${{ github.token }}
-      
-      - name: Lint
-        run: npm run lint
-      
-      - name: Run tests
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit
+      - name: Unit tests
         run: npm test
-
+      - name: Check public types
+        run: npm run check:types
+      - name: Bundle WebRGB for Android Bare
+        run: |
+          out=$(mktemp -d)
+          trap 'rm -r "$out"' EXIT
+          node_modules/.bin/bare-pack --host android-arm64 --linked --out "$out/webrgb.bundle" src/onchain-webrgb.js
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=moderate
+      - name: Check source-only package inventory
+        run: node scripts/check-candidate-pack.mjs

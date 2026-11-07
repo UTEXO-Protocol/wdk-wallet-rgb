@@ -1,0 +1,29 @@
+diff --git a/src/lib.rs b/src/lib.rs
+index 324f99a..4f2e8b9 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -245,7 +245,6 @@ use std::{
+     fs,
+     hash::Hash,
+     io::{self, Write},
+-    panic,
+     sync::{Arc, LazyLock, Mutex},
+ };
+ use std::{
+diff --git a/src/wallet/core.rs b/src/wallet/core.rs
+index 0ec6dd5..9f245ef 100644
+--- a/src/wallet/core.rs
++++ b/src/wallet/core.rs
+@@ -431,12 +431,6 @@ pub(crate) fn setup_new_wallet(
+     }
+     let (logger, logger_guard) = setup_logger(&wallet_dir, None)?;
+     info!(logger.clone(), "New wallet in '{:?}'", wallet_dir);
+-    let panic_logger = logger.clone();
+-    let prev_hook = panic::take_hook();
+-    panic::set_hook(Box::new(move |info| {
+-        error!(panic_logger.clone(), "PANIC: {:?}", info);
+-        prev_hook(info);
+-    }));
+     Ok((wallet_dir, logger, logger_guard))
+ }
+
