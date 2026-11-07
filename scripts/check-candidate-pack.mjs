@@ -38,7 +38,10 @@ const artifacts = [...files].filter(path => path.startsWith('prebuilds/'))
 const native = readJson('src/onchain-bare-native.json')
 assert.equal(native.target, 'android-arm64')
 assert.equal(native.linkedName, `libutexo__wdk-wallet-rgb.${manifest.version}.so`)
+assert.match(native.source, /^[a-f0-9]{40}$/)
+assert.match(native.overlayTree, /^[a-f0-9]{40}$/)
 assert.match(native.integrationTree, /^[a-f0-9]{40}$/)
+assert.equal(native.protocol, 2)
 assert.match(native.sha256, /^[a-f0-9]{64}$/)
 assert.ok(Number.isSafeInteger(native.byteLength) && native.byteLength > 0)
 if (!requireNative) {
@@ -50,7 +53,9 @@ if (!requireNative) {
   const bytes = readFileSync(new URL(path, root))
   assert.equal(bytes.length, native.byteLength)
   assert.equal(createHash('sha256').update(bytes).digest('hex'), native.sha256)
-  assert.ok(bytes.includes(Buffer.from(native.integrationTree)), 'Native addon does not contain the admitted tree')
+  for (const pin of [native.source, native.overlayTree, native.integrationTree]) {
+    assert.ok(bytes.includes(Buffer.from(pin)), 'Native addon does not contain the admitted source identity')
+  }
   assert.ok(bytes.includes(Buffer.from('electrum-and-dev-esplora')), 'Native addon lacks the expected indexer capabilities')
   assert.ok(bytes.includes(readFileSync(new URL('src/onchain-dev-services.json', root))),
     'Native addon and package disagree on the Dev Signet service policy')

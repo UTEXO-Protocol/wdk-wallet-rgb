@@ -1,13 +1,13 @@
 # Bare host candidate
 
-Alpha.11 is the BFA.6 test candidate. Alpha.10 uses the earlier BFA.5 Dev profile. See the [Dev checkpoint scope](../README.md#dev-checkpoint-candidate).
+Alpha.12 is the BFA.7 test candidate. Alpha.10 uses the earlier BFA.5 Dev profile. See the [Dev checkpoint scope](../README.md#dev-checkpoint-candidate).
 
 The private SDK candidate uses the same watch-only engine for the Node and Bare hosts. The standalone Bare build targets an Apple Silicon Mac. The addon receives public wallet keys, transaction and proof requests. The host owns private signing and durable mutation recovery.
 
 ## Exact sources
 
-- RGB BFA.6 tag at `5010eefa355beb9c42a4c1b69883f7651241a111`.
-- Functional tree `2b9bf63482d8a472492d065d3edd260e0fa418ac` and embedded integration tree `168fd88d5f1d3e99a34c03e781689d9b2acceb14`. The embedded patch removes the process-wide wallet panic hook that retains old loggers after reopen.
+- RGB BFA.7 tag at `9ec49c08be2e68f08521281e3efbd760ec989cb9`.
+- Functional tree `5aa10314f1d20c24ed21bd95c3b6a07d317c92a8` and embedded integration tree `201cd56766598a5f9fdcd8cb51fea406d56e2772`. The embedded patch removes the process-wide wallet panic hook that retains old loggers after reopen.
 - The independent Bare lock enables Electrum and the gated Dev Esplora backend.
 - Build headers `bare-headers@1.35.0` and standalone test CLI `bare@1.36.2`. The macOS CLI run reported runtime `1.36.0`. The Android Bare Kit 3.0.1 worklet reported runtime `1.36.2`. Exact npm tarball integrities are recorded in `package-lock.json`.
 

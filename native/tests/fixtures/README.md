@@ -13,4 +13,4 @@ The earlier hosted compatibility check used the exact dev and staging public exp
 
 The later BUSDT export recovered from Dev run `41698713237` is a separate BFA.5 contract. The offline BFA.6 rejection test reads it from `UTEXO_DEV_BUSDT_CONTRACT` and verifies SHA-256 `a678ebf73f3a0523b307cd2fe8019a321ac938eaf547c2c65a7ac079948332ce` before exercising the adapter.
 
-Use issuer-approved re-exports that preserve the original asset IDs. Qualify the exact deployed invoice, mint and proof protocol with gateway, signer, proxy and contracts together. Keep externally supplied exports and test wallet state outside the checked-in fixture set.
+Use issuer-approved exports that match the runtime's schema and serialization format. A re-export can preserve an asset ID only when its committed genesis and schema stay the same. Moving from BFA.5 to the BFA.6 schema requires a new issuance and asset ID. BFA.7 retains the BFA.6 schema. Qualify the exact deployed invoice, mint and proof protocol with gateway, signer, proxy and contracts together. Keep externally supplied exports and test wallet state outside the checked-in fixture set.

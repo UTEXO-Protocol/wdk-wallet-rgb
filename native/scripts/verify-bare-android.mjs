@@ -20,7 +20,7 @@ const libraries = ['libc.so', 'libdl.so', 'liblog.so', 'libm.so']
 const exportsExpected = ['bare_get_module_name_v0', 'bare_register_module_v0']
 const soname = `libutexo__wdk-wallet-rgb.${version}.so`
 const expectedCargoLock = 'f3d59ddc4bc5b0b225cbed3ded41069682303d6a888041825e08c6d3a96f4d0c'
-const expectedIntegrationTree = '168fd88d5f1d3e99a34c03e781689d9b2acceb14'
+const expectedIntegrationTree = '201cd56766598a5f9fdcd8cb51fea406d56e2772'
 const page = 16 * 1024
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
 const ensure = (condition, message) => {
@@ -126,7 +126,7 @@ console.log(JSON.stringify({
   devPolicySha256: hash(devPolicy),
   devHostedEnabled: JSON.parse(devPolicy).enabled === true,
   rgb: {
-    revision: '5010eefa355beb9c42a4c1b69883f7651241a111',
+    revision: '9ec49c08be2e68f08521281e3efbd760ec989cb9',
     integrationTree: expectedIntegrationTree,
     features: ['electrum', 'esplora', 'camel_case']
   },

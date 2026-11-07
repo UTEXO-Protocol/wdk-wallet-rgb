@@ -14,9 +14,9 @@ ROOT = Path(__file__).resolve().parent.parent
 DEST = ROOT / ".sources" / "rgb-lib-bfa"
 SOURCE_URL = "https://github.com/UTEXO-Protocol/rgb-lib-bfa.git"
 PATCHES = ROOT / "patches"
-SHA = "5010eefa355beb9c42a4c1b69883f7651241a111"
-BASE_TREE = "b57dfd03781f73fb45f852752b6e4311a93afc52"
-EXPECTED_TREE = "2b9bf63482d8a472492d065d3edd260e0fa418ac"
+SHA = "9ec49c08be2e68f08521281e3efbd760ec989cb9"
+BASE_TREE = "a4f8ad11dd975d357f9d2c6baab0d45205416986"
+EXPECTED_TREE = "5aa10314f1d20c24ed21bd95c3b6a07d317c92a8"
 ESPLORA_PACKAGE = "esplora-client-0.12.3"
 ESPLORA_SHA256 = "f19e3ea99dbfbef0c1ec26d83e69de0c579f6aa6aaac4f44597805fcc27e97af"
 ESPLORA_EXPECTED_TREE = "0b02f9ababbb4f276dcea5168fc8cf59914c6744"
@@ -82,13 +82,13 @@ def main():
     prepare_esplora()
     dest = DEST.with_name("rgb-lib-bfa-bare") if bare else DEST
     patches = [
-        PATCHES / "rgb-lib-bfa.6-registration.patch",
-        PATCHES / "rgb-lib-bfa.6-native-egress.patch",
-        PATCHES / "rgb-lib-bfa.6-signet-checkpoint.patch",
+        PATCHES / "rgb-lib-bfa.7-registration.patch",
+        PATCHES / "rgb-lib-bfa.7-native-egress.patch",
+        PATCHES / "rgb-lib-bfa.7-signet-checkpoint.patch",
     ]
     if bare:
-        patches.append(PATCHES / "rgb-lib-bfa.6-embedded-lifecycle.patch")
-    expected_tree = "168fd88d5f1d3e99a34c03e781689d9b2acceb14" if bare else EXPECTED_TREE
+        patches.append(PATCHES / "rgb-lib-bfa.7-embedded-lifecycle.patch")
+    expected_tree = "201cd56766598a5f9fdcd8cb51fea406d56e2772" if bare else EXPECTED_TREE
     if dest.exists():
         verify(dest, expected_tree)
         return

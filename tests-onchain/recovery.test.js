@@ -199,9 +199,9 @@ require('node:readline').createInterface({ input: process.stdin }).on('line', li
   const reply = result => process.stdout.write(JSON.stringify({ id, result }) + '\n')
   if (method === 'version') return reply({
     protocol: 2, unsignedRecovery: 1, journalWrites: 1, networkChecks: 4, runtime: 'node-host-process',
-    indexer: 'electrum-and-dev-esplora', source: '5010eefa355beb9c42a4c1b69883f7651241a111',
-    overlayTree: '2b9bf63482d8a472492d065d3edd260e0fa418ac',
-    integrationTree: '168fd88d5f1d3e99a34c03e781689d9b2acceb14'
+    indexer: 'electrum-and-dev-esplora', source: '9ec49c08be2e68f08521281e3efbd760ec989cb9',
+    overlayTree: '5aa10314f1d20c24ed21bd95c3b6a07d317c92a8',
+    integrationTree: '201cd56766598a5f9fdcd8cb51fea406d56e2772'
   })
   if (method === 'open') return reply({ network: params.network, watchOnly: true })
   if (method === 'bindJournal') return reply({ written: true })

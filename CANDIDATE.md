@@ -1,17 +1,17 @@
 # On-chain WDK candidate
 
-`@utexo/wdk-wallet-rgb@2.1.0-alpha.11` is the private BFA.6 qualification candidate. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
+`@utexo/wdk-wallet-rgb@2.1.0-alpha.12` is the private BFA.7 qualification candidate. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
 
 | Component | Pinned version or source |
 | --- | --- |
 | Tether WDK Wallet | `1.0.0-beta.25` |
 | Android embedded runtime | Bare Kit `3.0.1`, Bare `1.36.2` |
 | Bare C headers | `1.35.0` |
-| RGB library | `v0.3.0-beta.7-upstream-dev-bfa.6`, `5010eefa355beb9c42a4c1b69883f7651241a111` |
-| Native overlay | Functional tree `2b9bf63482d8a472492d065d3edd260e0fa418ac`, embedded tree `168fd88d5f1d3e99a34c03e781689d9b2acceb14` |
+| RGB library | `v0.3.0-beta.7-upstream-dev-bfa.7`, `9ec49c08be2e68f08521281e3efbd760ec989cb9` |
+| Native overlay | Functional tree `5aa10314f1d20c24ed21bd95c3b6a07d317c92a8`, embedded tree `201cd56766598a5f9fdcd8cb51fea406d56e2772` |
 | Signing | `@scure/btc-signer@2.4.1`, `@scure/bip32@2.4.0`, `@scure/base@2.4.0`, `@noble/curves@2.4.0`, `@noble/hashes@2.4.0` |
 
-The RGB overlay retains standalone genesis registration, native HTTP egress restrictions and Signet checkpoints. The embedded build also disables the process-wide wallet panic hook. BFA.6 enforces full mint conservation upstream. Native preparation verifies the upstream commit and patched tree before building from the locked graph.
+The RGB overlay retains standalone genesis registration, native HTTP egress restrictions and Signet checkpoints. The embedded build also disables the process-wide wallet panic hook. BFA.7 enforces full mint conservation upstream. Native preparation verifies the upstream commit and patched tree before building from the locked graph.
 
 ## Build and use
 
@@ -21,7 +21,7 @@ Supply a canonical private data directory and a disposable seed. For Regtest, se
 
 To admit RGB on public Signet, set `network: 'signet'`, `mode: 'rgb'` and `profile: 'staging'`, with the same Electrum endpoint, `transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'` and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. Use a separate wallet directory. The profile forbids proxy credentials. An application can explicitly configure `{ chainId: 'eip155:42161', dstEid: 0 }` as its sole V1 burn route after qualifying its deployment. Compatible asset bytes and a matching hosted deployment remain separate prerequisites for enabling bridge capabilities.
 
-The BFA.6 candidate requires a fresh wallet directory and contract bytes issued under the BFA.6 schema. Its native and JavaScript gates keep hosted Dev disabled pending qualification of a matching deployment and asset export. The dedicated BFA.5 alpha.10 build remains the manual candidate for the earlier Dev BUSDT deployment. [Dev checkpoint scope](native/README.md#dev-checkpoint-candidate)
+The BFA.7 candidate requires a fresh wallet directory and contract bytes issued under the BFA.7 schema. Its native and JavaScript gates keep hosted Dev disabled pending qualification of a matching deployment and asset export. The dedicated BFA.5 alpha.10 build remains the manual candidate for the earlier Dev BUSDT deployment. [Dev checkpoint scope](native/README.md#dev-checkpoint-candidate)
 
 The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Android packs a linked worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. The SDK verifies addon hash and native profile before opening.
 

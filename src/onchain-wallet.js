@@ -23,9 +23,9 @@ const ROUTES = new Map([
 const HEX_32 = /^[a-f0-9]{64}$/
 const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
-const NATIVE_SOURCE = '5010eefa355beb9c42a4c1b69883f7651241a111'
-const NATIVE_OVERLAY = '2b9bf63482d8a472492d065d3edd260e0fa418ac'
-const NATIVE_INTEGRATION = '168fd88d5f1d3e99a34c03e781689d9b2acceb14'
+const NATIVE_SOURCE = '9ec49c08be2e68f08521281e3efbd760ec989cb9'
+const NATIVE_OVERLAY = '5aa10314f1d20c24ed21bd95c3b6a07d317c92a8'
+const NATIVE_INTEGRATION = '201cd56766598a5f9fdcd8cb51fea406d56e2772'
 const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
 const STAGING_SERVICES = {
   proxyEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc',

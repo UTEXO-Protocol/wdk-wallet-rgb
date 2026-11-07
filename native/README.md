@@ -2,7 +2,7 @@
 
 This directory contains the watch-only RGB engine and its host adapters. Node launches the worker over private pipes. Bare loads an in-process addon on a dedicated JS worker thread. The host owns transaction authorization, the signer and the durable operation journal. See [Bare build and qualification](bare/README.md) for that profile.
 
-The build uses [rgb-lib-bfa BFA.6](https://github.com/UTEXO-Protocol/rgb-lib-bfa/releases/tag/v0.3.0-beta.7-upstream-dev-bfa.6), commit `5010eefa355beb9c42a4c1b69883f7651241a111`, base tree `b57dfd03781f73fb45f852752b6e4311a93afc52`. The functional tree is `2b9bf63482d8a472492d065d3edd260e0fa418ac` and the embedded tree is `168fd88d5f1d3e99a34c03e781689d9b2acceb14`. The build retains transactional genesis registration, native HTTP egress safeguards, Signet checkpoints and embedded lifecycle integration. The upstream mint validator enforces conservation, which replaces the BFA.5 mint backport. The shared HTTP connector requires HTTPS on public networks, rejects non-public literals and DNS answers, disables redirects, environment proxies and transport retries, and restricts Regtest to loopback.
+The build uses [rgb-lib-bfa BFA.7](https://github.com/UTEXO-Protocol/rgb-lib-bfa/releases/tag/v0.3.0-beta.7-upstream-dev-bfa.7), commit `9ec49c08be2e68f08521281e3efbd760ec989cb9`, base tree `a4f8ad11dd975d357f9d2c6baab0d45205416986`. The functional tree is `5aa10314f1d20c24ed21bd95c3b6a07d317c92a8` and the embedded tree is `201cd56766598a5f9fdcd8cb51fea406d56e2772`. The build retains transactional genesis registration, native HTTP egress safeguards, Signet checkpoints and embedded lifecycle integration. The upstream mint validator enforces conservation, which replaces the BFA.5 mint backport. The shared HTTP connector requires HTTPS on public networks, rejects non-public literals and DNS answers, disables redirects, environment proxies and transport retries, and restricts Regtest to loopback.
 
 ## Dev checkpoint candidate
 
@@ -10,9 +10,9 @@ The Dev profile selects `https://dev.esplora-01.mint.utexo.com`. The wallet
 indexer and RGB witness resolver each check Signet genesis and Dev block one
 (`0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb`).
 The blocking Esplora transport uses the pinned reqwest stack, with redirects
-and automatic retries disabled for Dev. Alpha.11 keeps hosted Dev admission closed. The earlier alpha.10 APK used BFA.5 and its matching BUSDT export.
+and automatic retries disabled for Dev. Alpha.12 keeps hosted Dev admission closed. The earlier alpha.10 APK used BFA.5 and its matching BUSDT export.
 
-The loopback matrix checks the historical Dev and public Signet headers. Run it after preparing the pinned Bare RGB source. The separate offline compatibility test checks that the exact BFA.5 Dev BUSDT export is rejected by the BFA.6 candidate.
+The loopback matrix checks the historical Dev and public Signet headers. Run it after preparing the pinned Bare RGB source. The separate offline compatibility test checks that the exact BFA.5 Dev BUSDT export is rejected by the BFA.7 candidate.
 
 ```sh
 env MACOSX_DEPLOYMENT_TARGET=11.0 CARGO_TARGET_DIR="$PWD/target/dev-signet-host" \

@@ -40,8 +40,8 @@ mod journal;
 #[path = "send.rs"]
 mod send;
 
-const SOURCE: &str = "5010eefa355beb9c42a4c1b69883f7651241a111";
-const OVERLAY: &str = "2b9bf63482d8a472492d065d3edd260e0fa418ac";
+const SOURCE: &str = "9ec49c08be2e68f08521281e3efbd760ec989cb9";
+const OVERLAY: &str = "5aa10314f1d20c24ed21bd95c3b6a07d317c92a8";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -50,7 +50,7 @@ const MAX_FEE_RATE: u64 = 100_000;
 const MAX_MONEY: u64 = 2_100_000_000_000_000;
 const LOCK_FILE: &str = ".utexo-rgb-native.lock";
 const IDENTITY_FILE: &str = ".utexo-rgb-native.identity";
-const BACKEND: &str = "rgb-l1-bfa6-v1";
+const BACKEND: &str = "rgb-l1-bfa7-v1";
 const REGTEST_MAX_MINT_LOCK_BLOCKS: u64 = 512;
 const SIGNET_MAX_MINT_LOCK_BLOCKS: u64 = 7_200;
 
@@ -1447,35 +1447,37 @@ mod tests {
     }
 
     #[test]
-    fn bfa5_identity_blocks_wallet_open_before_database_migration() {
-        let dir = tempfile::tempdir().unwrap();
-        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
-        let params = open_params(dir.path(), "regtest");
-        let identity = json!({
-            "backend": "rgb-l1-v1",
-            "network": "Regtest",
-            "accountXpubVanilla": params["accountXpubVanilla"],
-            "accountXpubColored": params["accountXpubColored"],
-            "masterFingerprint": params["masterFingerprint"],
-        });
-        let identity_bytes = serde_json::to_vec(&identity).unwrap();
-        let identity_path = dir.path().join(IDENTITY_FILE);
-        std::fs::write(&identity_path, &identity_bytes).unwrap();
-        let wallet_root = dir.path().join(params["masterFingerprint"].as_str().unwrap());
-        std::fs::create_dir(&wallet_root).unwrap();
-        let legacy_database = wallet_root.join("rgb_lib_db");
-        let sentinel = b"old wallet state must remain untouched";
-        std::fs::write(&legacy_database, sentinel).unwrap();
+    fn earlier_identity_blocks_wallet_open_before_database_migration() {
+        for backend in ["rgb-l1-v1", "rgb-l1-bfa6-v1"] {
+            let dir = tempfile::tempdir().unwrap();
+            std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+            let params = open_params(dir.path(), "regtest");
+            let identity = json!({
+                "backend": backend,
+                "network": "Regtest",
+                "accountXpubVanilla": params["accountXpubVanilla"],
+                "accountXpubColored": params["accountXpubColored"],
+                "masterFingerprint": params["masterFingerprint"],
+            });
+            let identity_bytes = serde_json::to_vec(&identity).unwrap();
+            let identity_path = dir.path().join(IDENTITY_FILE);
+            std::fs::write(&identity_path, &identity_bytes).unwrap();
+            let wallet_root = dir.path().join(params["masterFingerprint"].as_str().unwrap());
+            std::fs::create_dir(&wallet_root).unwrap();
+            let legacy_database = wallet_root.join("rgb_lib_db");
+            let sentinel = b"old wallet state must remain untouched";
+            std::fs::write(&legacy_database, sentinel).unwrap();
 
-        let mut worker = Worker::default();
-        assert_eq!(
-            worker.dispatch("open", params).unwrap_err().code,
-            "WALLET_IDENTITY_MISMATCH"
-        );
-        assert!(worker.session.is_none());
-        assert_eq!(std::fs::read(identity_path).unwrap(), identity_bytes);
-        assert_eq!(std::fs::read(legacy_database).unwrap(), sentinel);
-        assert_eq!(wallet_root.read_dir().unwrap().count(), 1);
+            let mut worker = Worker::default();
+            assert_eq!(
+                worker.dispatch("open", params).unwrap_err().code,
+                "WALLET_IDENTITY_MISMATCH"
+            );
+            assert!(worker.session.is_none());
+            assert_eq!(std::fs::read(identity_path).unwrap(), identity_bytes);
+            assert_eq!(std::fs::read(legacy_database).unwrap(), sentinel);
+            assert_eq!(wallet_root.read_dir().unwrap().count(), 1);
+        }
     }
 
     #[test]

@@ -1,5 +1,5 @@
 diff --git a/src/error.rs b/src/error.rs
-index 6564f8d..84361ae 100644
+index 905c120..60e090b 100644
 --- a/src/error.rs
 +++ b/src/error.rs
 @@ -105,6 +105,15 @@ pub enum Error {
@@ -19,7 +19,7 @@ index 6564f8d..84361ae 100644
      #[error("Database error: {details}")]
      Database {
 diff --git a/src/wallet/offline.rs b/src/wallet/offline.rs
-index 8827814..c09e048 100644
+index 586bd5a..bf2381c 100644
 --- a/src/wallet/offline.rs
 +++ b/src/wallet/offline.rs
 @@ -13,6 +13,23 @@ pub(crate) const CONSIGNMENT_RCV_FILE: &str = "rcv_compose.rgbc";
@@ -46,7 +46,7 @@ index 8827814..c09e048 100644
  pub(crate) const UDA_FIXED_INDEX: u32 = 0;
 
  pub(crate) const MAX_ATTACHMENTS: usize = 20;
-@@ -3061,6 +3078,80 @@ pub trait WalletOffline: WalletBackup {
+@@ -3083,6 +3100,80 @@ pub trait WalletOffline: WalletBackup {
 
  /// Offline operations for a wallet.
  pub trait RgbWalletOpsOffline: WalletOffline + WalletBackup {

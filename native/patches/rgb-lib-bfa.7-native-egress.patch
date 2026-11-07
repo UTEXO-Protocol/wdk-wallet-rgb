@@ -276,7 +276,7 @@ index 0000000..1d1eeb0
 +    }
 +}
 diff --git a/src/api/evm.rs b/src/api/evm.rs
-index 47aa1e8..58412f3 100644
+index 40b1d3a..bfd9faf 100644
 --- a/src/api/evm.rs
 +++ b/src/api/evm.rs
 @@ -243,14 +243,22 @@ struct BlockHeader {
@@ -723,10 +723,10 @@ index 58a1efa..15d547f 100644
 
      #[test]
 diff --git a/src/wallet/offline.rs b/src/wallet/offline.rs
-index c09e048..37750af 100644
+index bf2381c..f02f806 100644
 --- a/src/wallet/offline.rs
 +++ b/src/wallet/offline.rs
-@@ -1420,10 +1420,10 @@ pub trait WalletOffline: WalletBackup {
+@@ -1439,10 +1439,10 @@ pub trait WalletOffline: WalletBackup {
              let mut draining = false;
              for endpoint in &endpoints {
                  // skip endpoints that are unreachable or run an unsupported protocol version
@@ -740,7 +740,7 @@ index c09e048..37750af 100644
                  let signature = self.online_data().as_ref().and_then(|online_data| {
                      online_data.proxy_auth_signature(
 diff --git a/src/wallet/online.rs b/src/wallet/online.rs
-index 07a937e..f897839 100644
+index 69f94e5..d527bb0 100644
 --- a/src/wallet/online.rs
 +++ b/src/wallet/online.rs
 @@ -103,6 +103,7 @@ fn list_invoice_transfers(
@@ -775,7 +775,7 @@ index 07a937e..f897839 100644
      if let Some(err) = res.error {
          return Err(map_proxy_error(err));
      }
-@@ -1013,7 +1014,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -1029,7 +1030,7 @@ pub trait WalletOnline: WalletOffline {
          let sk = ed25519_from_seed(&seed);
          let digest = sha256_digest(transfer_ids.concat().as_bytes());
          let sig = hex::encode(sign_ed25519(&sk, &digest));
@@ -784,7 +784,7 @@ index 07a937e..f897839 100644
          let res = proxy_client.clean_ack(&transfer_ids, &sig)?;
          clean_ack_outcome(res.error)
      }
-@@ -1377,7 +1378,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -1397,7 +1398,7 @@ pub trait WalletOnline: WalletOffline {
                  });
              }
              let evm_rpc_url = &evm_chain.rpc_url;
@@ -793,7 +793,7 @@ index 07a937e..f897839 100644
              let actual = evm_client.chain_id().map_err(|e| Error::InvalidEvmRpcUrl {
                  details: e.to_string(),
              })?;
-@@ -1670,7 +1671,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -1690,7 +1691,7 @@ pub trait WalletOnline: WalletOffline {
          let sk = ed25519_from_seed(&seed);
          let digest = Self::ack_digest(transfer_id, ack, consignment_hash);
          let sig = hex::encode(sign_ed25519(&sk, &digest));
@@ -802,7 +802,7 @@ index 07a937e..f897839 100644
          let res = proxy_client.post_ack(transfer_id, ack, &sig)?;
          if let Some(err) = res.error {
              return Err(map_proxy_error(err));
-@@ -1829,7 +1830,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -1849,7 +1850,7 @@ pub trait WalletOnline: WalletOffline {
              }
              match mode {
                  ReceiveMode::Proxy(data) => {
@@ -811,7 +811,7 @@ index 07a937e..f897839 100644
                      let media_id = proxy_derived
                          .as_ref()
                          .expect("proxy mode always derives the shared secret")
-@@ -1892,7 +1893,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -1912,7 +1913,7 @@ pub trait WalletOnline: WalletOffline {
          proxy_url: &str,
          transfer_id: String,
      ) -> Result<GetConsignmentResponse, Error> {
@@ -820,7 +820,7 @@ index 07a937e..f897839 100644
          let consignment_res = proxy_client.get_consignment(&transfer_id);
          if consignment_res.is_err() || consignment_res.as_ref().unwrap().result.as_ref().is_none() {
              debug!(
-@@ -2126,6 +2127,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -2146,6 +2147,7 @@ pub trait WalletOnline: WalletOffline {
          WalletRejectListResolver {
              inner: RemoteRejectListResolver {
                  evm_rpc_urls: self.evm_rpc_urls(),
@@ -828,7 +828,7 @@ index 07a937e..f897839 100644
              },
              logger: self.logger(),
          }
-@@ -2234,7 +2236,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -2254,7 +2256,7 @@ pub trait WalletOnline: WalletOffline {
              &consignment,
              Some(witness_id),
              &self.blockchain_resolver(),
@@ -837,7 +837,7 @@ index 07a937e..f897839 100644
              &validation_config,
          )
          .map_err(|e| match e {
-@@ -2333,7 +2335,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -2353,7 +2355,7 @@ pub trait WalletOnline: WalletOffline {
              && donation_tx.is_none()
              && !mint_consignment
          {
@@ -846,7 +846,7 @@ index 07a937e..f897839 100644
              if grace < min_sender_retention_grace() {
                  warn!(
                      self.logger(),
-@@ -2694,7 +2696,12 @@ pub trait WalletOnline: WalletOffline {
+@@ -2714,7 +2716,12 @@ pub trait WalletOnline: WalletOffline {
          invoice_id: &str,
          recipient_seed: &[u8],
      ) -> Result<Option<(String, GetConsignmentResponse)>, Error> {
@@ -860,7 +860,7 @@ index 07a937e..f897839 100644
              Ok(res) => match (res.result, res.error) {
                  (Some(transfers), None) => transfers,
                  (_, err) => {
-@@ -2775,7 +2782,12 @@ pub trait WalletOnline: WalletOffline {
+@@ -2795,7 +2802,12 @@ pub trait WalletOnline: WalletOffline {
              if tte.kind != TransportEndpointKind::RecipientProxy {
                  continue;
              }
@@ -874,7 +874,7 @@ index 07a937e..f897839 100644
              let nothing_pending = match res {
                  Ok(res) => match (res.result, res.error) {
                      (Some(transfers), None) => transfers
-@@ -2806,7 +2818,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -2826,7 +2838,7 @@ pub trait WalletOnline: WalletOffline {
          let sk = ed25519_from_seed(&seed);
          let digest = sha256_digest(transfer_retrieved_message(transfer_id).as_bytes());
          let signature = hex::encode(sign_ed25519(&sk, &digest));
@@ -883,7 +883,7 @@ index 07a937e..f897839 100644
              .and_then(|client| client.transfer_retrieved(transfer_id, &signature));
          match res {
              Ok(r) if r.error.is_none() => {}
-@@ -2951,7 +2963,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -2971,7 +2983,7 @@ pub trait WalletOnline: WalletOffline {
          let Some(evm_rpc_url) = self.evm_rpc_url(chain_id) else {
              return Ok(false);
          };
@@ -892,7 +892,7 @@ index 07a937e..f897839 100644
          let mint_resolver = MintClaimResolver::new(&evm_client);
          let bridge_location = BridgeLocation::Evm(EvmContract {
              chain_id,
-@@ -3333,7 +3345,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -3358,7 +3370,7 @@ pub trait WalletOnline: WalletOffline {
                  );
                  return Ok(None);
              };
@@ -901,7 +901,7 @@ index 07a937e..f897839 100644
              let mint_resolver = MintClaimResolver::new(&evm_client);
              let claim_resolver = match CheckedClaimResolver::with(&mint_resolver, bridge_location) {
                  Ok(claim_resolver) => claim_resolver,
-@@ -3926,7 +3938,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -3971,7 +3983,7 @@ pub trait WalletOnline: WalletOffline {
                  details: s!("invalid operation secret key"),
              })?;
          let sk = ed25519_from_seed(&seed);
@@ -910,7 +910,7 @@ index 07a937e..f897839 100644
          let ack_res = get_ack_signed(&proxy_client, &transfer_ids, &sk)?;
          debug!(self.logger(), "ACK get response: {:?}", ack_res);
          if let Some(err) = ack_res.error {
-@@ -4659,7 +4671,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -4722,7 +4734,7 @@ pub trait WalletOnline: WalletOffline {
          if batch_transfer.broadcast_deadline.is_none()
              && let Some(deadline) = broadcast_deadline(
                  res.expires_at.as_deref(),
@@ -919,7 +919,7 @@ index 07a937e..f897839 100644
              )
          {
              updated_batch_transfer.broadcast_deadline = ActiveValue::Set(Some(deadline));
-@@ -5833,7 +5845,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -5897,7 +5909,7 @@ pub trait WalletOnline: WalletOffline {
                      self.logger(),
                      "Posting consignment for recipient ID: {recipient_id}"
                  );
@@ -928,7 +928,7 @@ index 07a937e..f897839 100644
 
                  // skip a proxy that would refuse some of the media after the consignment is posted,
                  // or that doesn't tell how many it accepts (unreachable or invalid max_media)
-@@ -6610,6 +6622,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -6674,6 +6686,7 @@ pub trait WalletOnline: WalletOffline {
      /// usable, contacting each distinct endpoint once, however many recipients share it, and refuse
      /// a proxy recipient with none.
      fn check_recipients_transport_endpoints<'a>(
@@ -936,7 +936,7 @@ index 07a937e..f897839 100644
          recipients: impl IntoIterator<Item = &'a mut LocalRecipient>,
      ) -> Result<(), Error> {
          let mut usable_endpoints: HashMap<String, bool> = HashMap::new();
-@@ -6620,7 +6633,9 @@ pub trait WalletOnline: WalletOffline {
+@@ -6684,7 +6697,9 @@ pub trait WalletOnline: WalletOffline {
              for transport_endpoint in &mut local_recipient.transport_endpoints {
                  transport_endpoint.usable = *usable_endpoints
                      .entry(transport_endpoint.endpoint.clone())
@@ -947,7 +947,7 @@ index 07a937e..f897839 100644
              }
              if !local_recipient.transport_endpoints.iter().any(|t| t.usable) {
                  return Err(Error::InvalidTransportEndpoints {
-@@ -6959,7 +6974,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -7023,7 +7038,7 @@ pub trait WalletOnline: WalletOffline {
 
          // whether the transport endpoints are usable is checked once all the recipients have
          // passed the checks that need no network
@@ -956,7 +956,7 @@ index 07a937e..f897839 100644
 
          let receive_ids: Vec<String> = recipient_map
              .values()
-@@ -7032,15 +7047,17 @@ pub trait WalletOnline: WalletOffline {
+@@ -7096,15 +7111,17 @@ pub trait WalletOnline: WalletOffline {
                          for lte in lr.transport_endpoints.iter().filter(|e| e.usable) {
                              // a proxy that cannot be asked is skipped, as another one may still
                              // have the invoice available
@@ -983,7 +983,7 @@ index 07a937e..f897839 100644
                              match result.and_then(|r| r.get(&invoice_id).map(|r| r.status)) {
                                  Some(InvoiceStatus::Available) => {
                                      available = true;
-@@ -7214,9 +7231,10 @@ pub trait WalletOnline: WalletOffline {
+@@ -7279,9 +7296,10 @@ pub trait WalletOnline: WalletOffline {
                      })?;
              let sender_proxy_url =
                  self.convert_transport_endpoint_url(sender_transport_endpoint)?;
@@ -996,7 +996,7 @@ index 07a937e..f897839 100644
              let transfer_ids: Vec<String> = transfer_data.keys().cloned().collect();
              let expiration = expiration.to_string();
              // only needed by proxies with proxy-level authentication enabled
-@@ -7877,7 +7895,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -7943,7 +7961,7 @@ pub trait WalletOnline: WalletOffline {
      /// The EVM RPC client configured for the chain with the given `chain_id`, checked to be
      /// connected to it.
      fn checked_evm_client_for_chain(&self, chain_id: u64) -> Result<EvmClient, Error> {
@@ -1005,7 +1005,7 @@ index 07a937e..f897839 100644
              if let Error::NoEvmRpcUrl { .. } = e {
                  error!(
                      self.logger(),
-@@ -7958,7 +7976,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -8024,7 +8042,7 @@ pub trait WalletOnline: WalletOffline {
              self.parse_recipient(&recipient, schema, chainnet, 1, &operation_sk, now_ts, true)?;
          witness_recipients.extend(witness_output);
          local_recipients.push(local_recipient);
@@ -1015,10 +1015,10 @@ index 07a937e..f897839 100644
          // the lock commits to this operation's ID, so it can only be included after the latest
          // external chain block: refuse a block to commit to (see RGB_METADATA_BEFORE_BLOCK)
 diff --git a/src/wallet/rust_only.rs b/src/wallet/rust_only.rs
-index 12f976d..ac1d6e4 100644
+index afb94f6..b39dd74 100644
 --- a/src/wallet/rust_only.rs
 +++ b/src/wallet/rust_only.rs
-@@ -35,9 +35,19 @@ pub type AssetBeneficiariesMap = BTreeMap<ContractId, Vec<BuilderSeal<GraphSeal>
+@@ -38,9 +38,19 @@ pub type AssetBeneficiariesMap = BTreeMap<ContractId, Vec<BuilderSeal<GraphSeal>
  /// it only if you know what you're doing</div>
  #[cfg(feature = "_online")]
  pub fn check_proxy_url(proxy_url: &str) -> Result<(), Error> {
@@ -1039,7 +1039,7 @@ index 12f976d..ac1d6e4 100644
  /// Load an RGB fascia from the file at the provided path.
  ///
  /// <div class="warning">This method is meant for special usage and is normally not needed, use
-@@ -350,7 +360,7 @@ impl Wallet {
+@@ -428,7 +438,7 @@ impl Wallet {
              &consignment,
              Some(witness_id),
              &self.blockchain_resolver(),
@@ -1048,7 +1048,7 @@ index 12f976d..ac1d6e4 100644
              &validation_config,
          ) {
              Ok(consignment) => consignment,
-@@ -499,7 +509,7 @@ impl Wallet {
+@@ -578,7 +588,7 @@ impl Wallet {
              &consignment,
              Some(witness_id),
              &self.blockchain_resolver(),
@@ -1058,7 +1058,7 @@ index 12f976d..ac1d6e4 100644
          )?;
          let valid_contract = valid_transfer.clone().into_valid_contract();
 diff --git a/src/wallet/test/utils/helpers.rs b/src/wallet/test/utils/helpers.rs
-index 87958e4..2ae091b 100644
+index 4fd357e..ccd73b0 100644
 --- a/src/wallet/test/utils/helpers.rs
 +++ b/src/wallet/test/utils/helpers.rs
 @@ -635,7 +635,7 @@ pub(crate) fn check_receive_schema_assignment_combinations(

@@ -1103,10 +1103,10 @@ index 614bbba..0ec6dd5 100644
              SyncKeychain::Colored => self.reconcile_pending_witness(txn)?,
              SyncKeychain::Vanilla { .. } => HashMap::new(),
 diff --git a/src/wallet/mod.rs b/src/wallet/mod.rs
-index baccfb6..6b1cd4b 100644
+index 5337281..1b7852c 100644
 --- a/src/wallet/mod.rs
 +++ b/src/wallet/mod.rs
-@@ -52,7 +52,10 @@ pub use objects::{
+@@ -56,7 +56,10 @@ pub use objects::{
  };
  pub use offline::RgbWalletOpsOffline;
  #[cfg(feature = "_online")]
@@ -1119,7 +1119,7 @@ index baccfb6..6b1cd4b 100644
 
  pub(crate) use backup::WalletBackup;
 diff --git a/src/wallet/objects.rs b/src/wallet/objects.rs
-index 9fb868c..f256f53 100644
+index b251dd1..2963522 100644
 --- a/src/wallet/objects.rs
 +++ b/src/wallet/objects.rs
 @@ -63,7 +63,7 @@ pub struct OnlineData {
@@ -1132,7 +1132,7 @@ index 9fb868c..f256f53 100644
      pub(crate) evm_chains: HashMap<u64, EvmChain>,
      // the RPC URLs of evm_chains, for what resolves claims and reject lists through them
 diff --git a/src/wallet/online.rs b/src/wallet/online.rs
-index 50c23a5..b086de0 100644
+index d527bb0..fa40d01 100644
 --- a/src/wallet/online.rs
 +++ b/src/wallet/online.rs
 @@ -39,7 +39,7 @@ pub fn check_indexer_url(
