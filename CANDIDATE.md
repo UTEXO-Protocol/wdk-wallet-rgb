@@ -15,6 +15,8 @@ The RGB overlay retains standalone genesis registration, native HTTP egress rest
 
 This acknowledgement handling uses the existing SQLite transaction. It does not introduce a pre-dispatch crash journal or establish atomic recovery from process death between remote acknowledgement acceptance and local commit.
 
+The private alpha.13 archive was packed from runtime source `840517fe0f0cfec6457b5e91a5b3dcae428a8fee`. Later qualification documentation does not change that archive or its native binaries. See the [qualification register](QUALIFICATION.md) for exact identities and the separate source, host and Android acceptance scopes.
+
 ## Build and use
 
 Public JavaScript checks run from the lock with `npm ci --ignore-scripts`, `npm test`, and `npm run check:types`. Follow the [native build runbook](native/README.md) to compile and admit a matching native artifact. The reviewed Android pack stages the exact addon with `node scripts/stage-bare.mjs native/target/bare-addon-android/utexo__wdk-wallet-rgb.bare` before `npm pack --ignore-scripts`.
@@ -23,7 +25,7 @@ Supply a canonical private data directory and a disposable seed. For Regtest, se
 
 To admit RGB on public Signet, set `network: 'signet'`, `mode: 'rgb'` and `profile: 'staging'`, with the same Electrum endpoint, `transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'` and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. Use a separate wallet directory. The profile forbids proxy credentials. An application can explicitly configure `{ chainId: 'eip155:42161', dstEid: 0 }` as its sole V1 burn route after qualifying its deployment. Compatible asset bytes and a matching hosted deployment remain separate prerequisites for enabling bridge capabilities.
 
-The BFA.7 candidate requires a fresh wallet directory and contract bytes issued under the BFA.7 schema. Its native and JavaScript gates keep hosted Dev disabled pending qualification of a matching deployment and asset export. The dedicated BFA.5 alpha.10 build remains the manual candidate for the earlier Dev BUSDT deployment. [Dev checkpoint scope](native/README.md#dev-checkpoint-candidate)
+Use the `bfa7-v1` wallet directory generation and contract bytes issued under the shared BFA.6/BFA.7 schema. Alpha.13 does not change that directory generation or migrate older wallet engines. Its native and JavaScript gates keep hosted Dev disabled pending qualification of a matching deployment and asset export. The dedicated BFA.5 alpha.10 build remains the manual candidate for the earlier Dev BUSDT deployment. [Dev checkpoint scope](native/README.md#dev-checkpoint-candidate)
 
 The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Android packs a linked worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. The SDK verifies addon hash and native profile before opening.
 
