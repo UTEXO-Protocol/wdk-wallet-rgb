@@ -200,8 +200,8 @@ require('node:readline').createInterface({ input: process.stdin }).on('line', li
   if (method === 'version') return reply({
     protocol: 2, unsignedRecovery: 1, journalWrites: 1, networkChecks: 4, runtime: 'node-host-process',
     indexer: 'electrum-and-dev-esplora', source: '9ec49c08be2e68f08521281e3efbd760ec989cb9',
-    overlayTree: '5aa10314f1d20c24ed21bd95c3b6a07d317c92a8',
-    integrationTree: '201cd56766598a5f9fdcd8cb51fea406d56e2772'
+    overlayTree: 'd9de67fe9a2512106afd054977a1e32abb9a1184',
+    integrationTree: '5408b3e56cdb7604316b094aa69ffb2d30513189'
   })
   if (method === 'open') return reply({ network: params.network, watchOnly: true })
   if (method === 'bindJournal') return reply({ written: true })

@@ -41,7 +41,7 @@ mod journal;
 mod send;
 
 const SOURCE: &str = "9ec49c08be2e68f08521281e3efbd760ec989cb9";
-const OVERLAY: &str = "5aa10314f1d20c24ed21bd95c3b6a07d317c92a8";
+const OVERLAY: &str = "d9de67fe9a2512106afd054977a1e32abb9a1184";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;

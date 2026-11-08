@@ -1,6 +1,6 @@
 # On-chain WDK candidate
 
-`@utexo/wdk-wallet-rgb@2.1.0-alpha.12` is the private BFA.7 qualification candidate. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
+`@utexo/wdk-wallet-rgb@2.1.0-alpha.13` is the private BFA.7 qualification candidate. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
 
 | Component | Pinned version or source |
 | --- | --- |
@@ -8,10 +8,12 @@
 | Android embedded runtime | Bare Kit `3.0.1`, Bare `1.36.2` |
 | Bare C headers | `1.35.0` |
 | RGB library | `v0.3.0-beta.7-upstream-dev-bfa.7`, `9ec49c08be2e68f08521281e3efbd760ec989cb9` |
-| Native overlay | Functional tree `5aa10314f1d20c24ed21bd95c3b6a07d317c92a8`, embedded tree `201cd56766598a5f9fdcd8cb51fea406d56e2772` |
+| Native overlay | Functional tree `d9de67fe9a2512106afd054977a1e32abb9a1184`, embedded tree `5408b3e56cdb7604316b094aa69ffb2d30513189` |
 | Signing | `@scure/btc-signer@2.4.1`, `@scure/bip32@2.4.0`, `@scure/base@2.4.0`, `@noble/curves@2.4.0`, `@noble/hashes@2.4.0` |
 
-The RGB overlay retains standalone genesis registration, native HTTP egress restrictions and Signet checkpoints. The embedded build also disables the process-wide wallet panic hook. BFA.7 enforces full mint conservation upstream. Native preparation verifies the upstream commit and patched tree before building from the locked graph.
+The RGB overlay retains standalone genesis registration, native HTTP egress restrictions and Signet checkpoints. It also bounds proxy-provided timing and prevents deadline arithmetic overflow. Invalid or ambiguous acknowledgement replies keep the affected transfer pending and its outputs reserved; recovery retries the same signed acknowledgement or saved transaction. Valid deadlines retain their original grace periods. The embedded build also disables the process-wide wallet panic hook. BFA.7 enforces full mint conservation upstream. Native preparation verifies the upstream commit and patched tree before building from the locked graph.
+
+This acknowledgement handling uses the existing SQLite transaction. It does not introduce a pre-dispatch crash journal or establish atomic recovery from process death between remote acknowledgement acceptance and local commit.
 
 ## Build and use
 
