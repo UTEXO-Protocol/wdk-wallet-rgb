@@ -61,6 +61,7 @@ def run_loopback_test(work):
         "#[test]\nfn rgb_dev_electrum_checkpoint() { rgb_lib::no_wallet::run_dev_signet_fixture(); }\n"
         "#[test]\nfn rgb_dev_esplora_checkpoint() { rgb_lib::no_wallet::run_dev_signet_esplora_fixture(); }\n"
         "#[test]\nfn rgb_guarded_http_policy() { rgb_lib::no_wallet::run_egress_fixtures(); }\n"
+        "#[test]\nfn recovered_colored_outputs_require_provenance() { rgb_lib::wallet::run_verified_colored_outputs_fixture(); }\n"
     )
 
     validation = fixture_rgb / "src/no_wallet/validation.rs"
@@ -98,6 +99,16 @@ def run_loopback_test(work):
         + "\n#[doc(hidden)]\npub fn run_dev_signet_fixture() { validation::dev_signet_fixture::run(); }\n"
         + "\n#[doc(hidden)]\npub fn run_dev_signet_esplora_fixture() { validation::dev_signet_esplora_fixture::run(); }\n"
         + expose_egress_fixtures(fixture_rgb / "src/api/egress.rs")
+    )
+    core = fixture_rgb / "src/wallet/core.rs"
+    core.write_text(
+        core.read_text()
+        + "\n" + (ROOT / "tests/fixtures/verified-colored-outputs.rs").read_text()
+    )
+    wallet = fixture_rgb / "src/wallet/mod.rs"
+    wallet.write_text(
+        wallet.read_text()
+        + "\n#[doc(hidden)]\npub fn run_verified_colored_outputs_fixture() { core::run_verified_colored_outputs_fixture(); }\n"
     )
     subprocess.run(
         [
