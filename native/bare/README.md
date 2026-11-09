@@ -1,6 +1,6 @@
 # Bare host candidate
 
-Alpha.12 is the BFA.7 test candidate. Alpha.10 uses the earlier BFA.5 Dev profile. See the [Dev checkpoint scope](../README.md#dev-checkpoint-candidate).
+Alpha.14 is the private BFA.7 Android candidate for manual Dev testing. Alpha.10 uses the earlier BFA.5 Dev profile. See the [Dev checkpoint scope](../README.md#dev-checkpoint-candidate).
 
 The private SDK candidate uses the same watch-only engine for the Node and Bare hosts. The standalone Bare build targets an Apple Silicon Mac. The addon receives public wallet keys, transaction and proof requests. The host owns private signing and durable mutation recovery.
 

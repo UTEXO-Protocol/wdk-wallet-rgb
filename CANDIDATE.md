@@ -1,6 +1,6 @@
 # On-chain WDK candidate
 
-`@utexo/wdk-wallet-rgb@2.1.0-alpha.13` is the private BFA.7 qualification candidate. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
+`@utexo/wdk-wallet-rgb@2.1.0-alpha.14` is the private BFA.7 Android candidate for manual Dev testing. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
 
 | Component | Pinned version or source |
 | --- | --- |
@@ -25,7 +25,7 @@ Supply a canonical private data directory and a disposable seed. For Regtest, se
 
 To admit RGB on public Signet, set `network: 'signet'`, `mode: 'rgb'` and `profile: 'staging'`, with the same Electrum endpoint, `transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'` and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. Use a separate wallet directory. The profile forbids proxy credentials. An application can explicitly configure `{ chainId: 'eip155:42161', dstEid: 0 }` as its sole V1 burn route after qualifying its deployment. Compatible asset bytes and a matching hosted deployment remain separate prerequisites for enabling bridge capabilities.
 
-Use the `bfa7-v1` wallet directory generation and contract bytes issued under the shared BFA.6/BFA.7 schema. Alpha.13 does not change that directory generation or migrate older wallet engines. Its native and JavaScript gates keep hosted Dev disabled pending qualification of a matching deployment and asset export. The dedicated BFA.5 alpha.10 build remains the manual candidate for the earlier Dev BUSDT deployment. [Dev checkpoint scope](native/README.md#dev-checkpoint-candidate)
+Use the `bfa7-v1` wallet directory generation and contract bytes issued under the shared BFA.6/BFA.7 schema. For manual hosted Dev testing, alpha.14 admits the explicit `network: 'signet'`, `mode: 'rgb'`, `profile: 'dev'` combination. Set `indexerUrl: 'https://dev.esplora-01.mint.utexo.com'`, `transportEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc'` and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. The Dev profile requires its distinct block-one checkpoint, a separate wallet directory and the verified Dev BUSDT genesis. Its only admitted V1 route is direct Arbitrum, when the app configures it. Hosted mint, burn and payout acceptance are tracked separately. [Dev checkpoint scope](native/README.md#dev-checkpoint-candidate)
 
 The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Android packs a linked worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. The SDK verifies addon hash and native profile before opening.
 

@@ -1687,7 +1687,7 @@ mod tests {
     }
 
     #[test]
-    fn disabled_dev_signet_cannot_open_wallet_or_admit_any_hosted_service() {
+    fn dev_signet_opens_offline_and_rejects_alternate_services() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         let mut params = open_params(dir.path(), "signet");
@@ -1698,11 +1698,64 @@ mod tests {
         assert_eq!(worker.dispatch("open", wrong_mode).unwrap_err().code, "INVALID_PARAMS");
         assert!(worker.session.is_none());
         assert!(dir.path().read_dir().unwrap().next().is_none());
-        let error = worker.dispatch("open", params).unwrap_err();
-        assert_eq!(error.code, "INVALID_PARAMS");
-        assert_eq!(error.message, "Dev Signet hosted access is disabled.");
-        assert!(worker.session.is_none());
-        assert!(dir.path().read_dir().unwrap().next().is_none());
+        let opened = worker.dispatch("open", params).unwrap();
+        assert_eq!(opened["watchOnly"], true);
+        assert_eq!(opened["network"], "signet");
+        assert_eq!(opened["profile"], "dev");
+
+        const DEV_ESPLORA: &str = "https://dev.esplora-01.mint.utexo.com";
+        for method in ["checkIndexerUrl", "checkProxyEndpoint"] {
+            assert_eq!(worker.dispatch(method, json!({
+                "url": "https://example.test",
+            })).unwrap_err().code, "INVALID_PARAMS");
+        }
+        for request in [
+            json!({"indexerUrl": DEV_ESPLORA, "evmRpcUrls": {"42161": "https://example.test"}}),
+            json!({
+                "indexerUrl": DEV_ESPLORA,
+                "evmRpcUrls": {"42161": "https://arb1.arbitrum.io/rpc"},
+                "proxyAuthKeys": {"rpcs://dev.rgb-proxy.utexo.com/json-rpc": "00".repeat(32)},
+            }),
+            json!({
+                "indexerUrl": "ssl://electrum.iriswallet.com:50033",
+                "evmRpcUrls": {"42161": "https://arb1.arbitrum.io/rpc"},
+            }),
+        ] {
+            assert_eq!(worker.dispatch("goOnline", request).unwrap_err().code, "INVALID_PARAMS");
+        }
+        assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
+    }
+
+    #[test]
+    #[ignore = "requires the current issuer-approved Dev BUSDT genesis in CON1 format"]
+    fn dev_busdt_registers_idempotently_in_the_offline_dev_profile() {
+        let asset_id = "rgb:A6k89KtR-e3oXqRP-uH3jUrz-LU_sYL3-hMZ0k3O-6u8DXbE";
+        let digest = "60a1b4f0d79706a7a51c6388fa14b951e119bae1ceffd811f4ebc62249817c4c";
+        let bytes = std::fs::read(std::env::var_os("UTEXO_DEV_BFA6_GENESIS_CONTRACT").unwrap()).unwrap();
+        assert_eq!(sha256(&bytes), digest);
+
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut params = open_params(dir.path(), "signet");
+        params["profile"] = json!("dev");
+        let mut worker = Worker::default();
+        worker.dispatch("open", params.clone()).unwrap();
+
+        let request = json!({"contractBase64":STANDARD.encode(bytes),"expectedAssetId":asset_id,"sha256":digest});
+        let asset = json!({"assetId":asset_id});
+        assert_eq!(worker.dispatch("importContract", request.clone()).unwrap()["assetId"], asset_id);
+        worker.dispatch("close", json!({})).unwrap();
+        worker.dispatch("open", params).unwrap();
+        assert_eq!(
+            worker.dispatch("getAssetMetadata", asset.clone()).unwrap(),
+            json!({"assetId":asset_id,"schema":"Bfa","name":"Bridged USDT","ticker":"BUSDT","precision":6})
+        );
+        assert_eq!(worker.dispatch("importContract", request).unwrap()["assetId"], asset_id);
+        assert_eq!(
+            worker.dispatch("getAssetBalance", asset.clone()).unwrap(),
+            json!({"settled":"0","future":"0","spendable":"0"})
+        );
+        assert_eq!(worker.dispatch("listTransfers", asset).unwrap(), json!([]));
     }
 
     #[test]

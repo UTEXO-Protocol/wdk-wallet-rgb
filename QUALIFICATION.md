@@ -6,9 +6,13 @@ Alpha.13 retains BFA.7 at `9ec49c08be2e68f08521281e3efbd760ec989cb9` and the `bf
 
 On November 9, the issuer-supplied 691-byte Dev BUSDT export matched SHA-256 `9307e39016e6373bd0ee1ea9fa5d6a4130120513d48da9268777893e150344e9`. The pinned RGB codec decoded its `VCO1` wrapper and saved the same standalone genesis as a 648-byte `CON1` file with SHA-256 `60a1b4f0d79706a7a51c6388fa14b951e119bae1ceffd811f4ebc62249817c4c`. Reloading that file recovered the same contract with zero witness bundles, asset ID `rgb:A6k89KtR-e3oXqRP-uH3jUrz-LU_sYL3-hMZ0k3O-6u8DXbE`, RGB Signet chain tag and Arbitrum `42161` bridge proxy `0x6372ee2f86c3a551290635736b25855124932eed`. [Issuer checksum](https://utexo.slack.com/archives/C0A6286169J/p1794208420561419) · [Pinned RGB file codecs](https://github.com/rgb-protocol/rgb-ops/blob/00f8d62e6107767cca085d9f9b3183c35ad6d71f/src/containers/file.rs#L121-L163)
 
-The exact alpha.13 pack and host worker registered the derived file twice in a disposable offline Signet RGB wallet with network access denied. The wallet retained `Bridged USDT`, `BUSDT` and precision `6` after reopen and accepted a third idempotent import with zero balances and an empty transfer history. It rejected the original issuer wrapper, wrong digest, wrong asset ID and Regtest import. Dev uses its separate Esplora checkpoint. Hosted admission requires successful mint, burn and payout qualification on the current deployment.
+The exact alpha.13 pack and host worker registered the derived file twice in a disposable offline Signet RGB wallet with network access denied. The wallet retained `Bridged USDT`, `BUSDT` and precision `6` after reopen and accepted a third idempotent import with zero balances and an empty transfer history. It rejected the original issuer wrapper, wrong digest, wrong asset ID and Regtest import. Dev uses its separate Esplora checkpoint. Hosted release qualification requires successful mint, burn and payout on the current deployment.
 
 The locked SDK uses Tether base wallet `1.0.0-beta.25`, Bare Kit `3.0.1` and Bare `1.36.2`. The [native build runbook](native/README.md) records the source trees, patches and endpoint checks.
+
+## Private alpha.14 Dev candidate
+
+Alpha.14 enables the explicit Dev RGB profile for manual hosted testing. It retains the exact BFA.7 source, overlays, native protocol, directory generation, endpoint pins and Dev checkpoint from alpha.13. Public Signet and Regtest retain their own service policies. The verified BFA.6 BUSDT genesis is the Dev test asset. Hosted mint, burn and payout acceptance remain open. The funded results below refer to their identified local fixture and artifact.
 
 ## SDK and Iris contract
 

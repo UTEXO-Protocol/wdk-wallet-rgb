@@ -177,16 +177,30 @@ mod tests {
     }
 
     #[test]
-    fn dev_rejects_all_indexer_and_service_access_while_disabled() {
+    fn dev_admits_only_pinned_services_and_its_own_esplora_checkpoint() {
         const DEV_ESPLORA: &str = "https://dev.esplora-01.mint.utexo.com";
         let services = dev_services().unwrap();
         assert_eq!(services.indexer_url, DEV_ESPLORA);
         assert_eq!(services.proxy_endpoint, "rpcs://dev.rgb-proxy.utexo.com/json-rpc");
         assert_eq!(services.arbitrum_rpc, "https://arb1.arbitrum.io/rpc");
-        assert!(Profile::Dev.services().is_err());
+        let active = Profile::Dev.services().unwrap();
+        assert_eq!(active.proxy, services.proxy_endpoint);
+        assert_eq!(active.arbitrum_rpc, services.arbitrum_rpc);
+        assert_eq!(
+            signet_checkpoint(Some(Profile::Dev)).block_one(),
+            "0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb"
+        );
+        assert_ne!(
+            signet_checkpoint(Some(Profile::Dev)).block_one(),
+            signet_checkpoint(Some(Profile::Staging)).block_one()
+        );
+        for url in [DEV_ESPLORA.into(), format!("{DEV_ESPLORA}/")] {
+            assert!(matches!(
+                indexer(url, None, BitcoinNetwork::Signet, Some(Profile::Dev)).unwrap(),
+                IndexerConfig::DevSignetEsplora { url } if url == DEV_ESPLORA
+            ));
+        }
         for url in [
-            DEV_ESPLORA,
-            "https://dev.esplora-01.mint.utexo.com/",
             "http://dev.esplora-01.mint.utexo.com",
             "https://dev.esplora-01.mint.utexo.com/redirect",
             "https://dev.esplora-01.mint.utexo.com?",

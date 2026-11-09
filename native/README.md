@@ -14,7 +14,7 @@ The Dev profile selects `https://dev.esplora-01.mint.utexo.com`. The wallet
 indexer and RGB witness resolver each check Signet genesis and Dev block one
 (`0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb`).
 The blocking Esplora transport uses the pinned reqwest stack, with redirects
-and automatic retries disabled for Dev. Alpha.12 keeps hosted Dev admission closed. The earlier alpha.10 APK used BFA.5 and its matching BUSDT export.
+and automatic retries disabled for Dev. Alpha.14 enables the exact Dev service policy for manual hosted testing. Alpha.13 retains its closed policy and existing qualification. The earlier alpha.10 APK used BFA.5 and its matching BUSDT export.
 
 The loopback matrix checks the historical Dev and public Signet headers. Run it after preparing the pinned Bare RGB source. The separate offline compatibility test checks that the exact BFA.5 Dev BUSDT export is rejected by the BFA.7 candidate.
 
@@ -23,6 +23,8 @@ env MACOSX_DEPLOYMENT_TARGET=11.0 CARGO_TARGET_DIR="$PWD/target/dev-signet-host"
   python3 scripts/check-dev-signet.py
 UTEXO_DEV_BUSDT_CONTRACT=/absolute/path/to/Dev-BUSDT-genesis-e2e-41698713237.rgb \
   cargo +1.94.0 test --release --offline --locked recovered_bfa5_dev_busdt_is_rejected_offline -- --ignored
+UTEXO_DEV_BFA6_GENESIS_CONTRACT=/absolute/path/to/dev-busdt-a6-bfa7-genesis-con1.rgb \
+  cargo +1.94.0 test --release --offline --locked dev_busdt_registers_idempotently_in_the_offline_dev_profile -- --ignored
 ```
 
 ## Build
