@@ -135,9 +135,13 @@ function configFor (options) {
   if (services) {
     const entries = Object.entries(options.evmRpcUrls ?? {})
     if (options.transportEndpoint !== services.proxyEndpoint || entries.length !== 1 ||
-        entries[0][0] !== '42161' || entries[0][1] !== services.arbitrumRpc || options.proxyAuthKeys !== undefined ||
-        routes.some(route => route.chainId !== 'eip155:42161')) {
-      throw new TypeError('The selected Signet profile requires its approved RGB proxy and Arbitrum RPC without credentials or unrelated burn routes')
+        entries[0][0] !== '42161' || entries[0][1] !== services.arbitrumRpc || options.proxyAuthKeys !== undefined) {
+      throw new TypeError('The selected Signet profile requires its approved RGB proxy and Arbitrum RPC without credentials')
+    }
+    // Arbitrum hosts the mint verifier. The V1 destination commits to the
+    // payout the bridge will execute and does not grant access to another RPC.
+    if (!dev && routes.some(route => route.chainId !== 'eip155:42161')) {
+      throw new TypeError('The staging profile only admits direct Arbitrum payouts')
     }
     transportEndpoint = services.proxyEndpoint
     online.evmRpcUrls = { 42161: services.arbitrumRpc }

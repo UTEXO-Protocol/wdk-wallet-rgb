@@ -6,7 +6,7 @@ import { registerHooks } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { WalletManagerRgb } from '../onchain.js'
+import { WalletManagerRgb, burnDestinationFor } from '../onchain.js'
 import devServices from '../src/onchain-dev-services.json' with { type: 'json' }
 
 const SEED = Uint8Array.from({ length: 64 }, (_, index) => index + 1)
@@ -24,6 +24,13 @@ const DEV = {
   transportEndpoint: devServices.proxyEndpoint, evmRpcUrls: { 42161: devServices.arbitrumRpc }
 }
 const DIRECT_ARBITRUM = { chainId: 'eip155:42161', dstEid: 0 }
+const DEV_BURN_ROUTES = [
+  DIRECT_ARBITRUM,
+  { chainId: 'eip155:1', dstEid: 30101 },
+  { chainId: 'eip155:137', dstEid: 30109 },
+  { chainId: 'eip155:9745', dstEid: 30383 },
+  { chainId: 'tron:728126428', dstEid: 30420 }
+]
 const BLOCK_HASH = 'ab'.repeat(32)
 const DEFAULTS = {
   network: 'regtest',
@@ -276,15 +283,14 @@ test('the private Dev pack enables only the exact pinned policy and honors a dis
   assert.throws(() => new DisabledManager(SEED, { ...DEFAULTS, ...DEV }), /Dev Signet hosted access is disabled/)
 })
 
-test('the Dev candidate uses only Esplora and advertises only direct Arbitrum', async t => {
+test('the Dev candidate uses pinned Esplora and Arbitrum RPC with the configured V1 payouts', async t => {
   const manager = await managerFor(t, {
     ...DEV, indexerUrl: DEV.indexerUrl + '/',
-    startupMode: 'offline', burnDestinationRoutes: [DIRECT_ARBITRUM]
+    startupMode: 'offline', burnDestinationRoutes: DEV_BURN_ROUTES
   })
   const account = await manager.getAccount()
   assert.equal(account.getInfo().ready, false)
   assert.equal(account.getInfo().network, 'signet')
-  assert.deepEqual(account.getInfo().burnDestinationRoutes, [DIRECT_ARBITRUM])
   assert.deepEqual(await account.checkIndexerUrl(DEV.indexerUrl), { ok: true, indexerProtocol: 'Esplora' })
   assert.deepEqual(await account.checkIndexerUrl(DEV.indexerUrl + '/'), { ok: true, indexerProtocol: 'Esplora' })
   assert.throws(() => account.checkIndexerUrl(SIGNET_INDEXER), /approved HTTPS Esplora/)
@@ -292,8 +298,33 @@ test('the Dev candidate uses only Esplora and advertises only direct Arbitrum', 
   assert.throws(() => account.checkProxyEndpoint(STAGING_PROXY), /configured/)
   await assert.rejects(account.connect(), { code: 'INVALID_INDEXER' })
   await account.connect()
-  assert.equal(account.getInfo().ready, true)
+  const info = account.getInfo()
+  assert.equal(info.ready, true)
+  assert.ok(info.methods.includes('burnAsset'))
+  assert.ok(info.methods.includes('getConsignment'))
+  assert.equal(info.burnDestinationVersion, 1)
+  assert.deepEqual(info.burnDestinationRoutes, DEV_BURN_ROUTES)
+  assert.deepEqual(info.burnRecipientNamespaces, ['eip155', 'tron'])
   assert.deepEqual(await account.getNetworkInfo(), { network: 'signet', height: 123, blockHash: BLOCK_HASH })
+})
+
+test('Dev burn validation admits exact configured destinations and still blocks offline and unconfigured burns', async t => {
+  const routes = DEV_BURN_ROUTES.slice(1, 3)
+  const manager = await managerFor(t, { ...DEV, startupMode: 'offline', burnDestinationRoutes: routes })
+  const account = await manager.getAccount()
+  assert.deepEqual(account.getInfo().burnDestinationRoutes, routes)
+  for (const route of [DIRECT_ARBITRUM, ...routes]) {
+    const burnRecipient = { chainId: route.chainId, address: '0x2222222222222222222222222222222222222222' }
+    const burnDestination = burnDestinationFor(burnRecipient, [route])
+    const request = { operationId: 'dev-burn-route-check', assetId: 'rgb:fixture', amount: '1000', feeRate: '2',
+      burnRecipient, burnDestination }
+    if (route === DIRECT_ARBITRUM) {
+      assert.throws(() => account.burnAsset(request), /payout route is not qualified/)
+    } else {
+      assert.throws(() => account.burnAsset({ ...request, burnDestination: { ...burnDestination, dstEid: 0 } }), /does not match/)
+      await assert.rejects(account.burnAsset(request), { code: 'WALLET_OFFLINE' })
+    }
+  }
 })
 
 test('the Dev candidate rejects alternate services, credentials, routes and native protocol', async t => {
@@ -307,7 +338,8 @@ test('the Dev candidate rejects alternate services, credentials, routes and nati
     { evmRpcUrls: { ...DEV.evmRpcUrls, 1: ARBITRUM_RPC } },
     { burnDestinationRoutes: [DIRECT_ARBITRUM, DIRECT_ARBITRUM] },
     { burnDestinationRoutes: [{ chainId: 'eip155:42161', dstEid: 30101 }] },
-    { burnDestinationRoutes: [{ chainId: 'eip155:1', dstEid: 30101 }] }
+    { burnDestinationRoutes: [{ chainId: 'eip155:137', dstEid: 30101 }] },
+    { burnDestinationRoutes: [{ chainId: 'eip155:999', dstEid: 30101 }] }
   ]) {
     assert.throws(() => new WalletManagerRgb(SEED, { ...DEFAULTS, ...DEV, ...override }), TypeError, JSON.stringify(override))
   }
