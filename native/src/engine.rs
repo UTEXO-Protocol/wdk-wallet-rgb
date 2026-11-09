@@ -53,6 +53,7 @@ const IDENTITY_FILE: &str = ".utexo-rgb-native.identity";
 const BACKEND: &str = "rgb-l1-bfa7-v1";
 const REGTEST_MAX_MINT_LOCK_BLOCKS: u64 = 512;
 const SIGNET_MAX_MINT_LOCK_BLOCKS: u64 = 7_200;
+const DEV_ARBITRUM_MAX_MINT_LOCK_BLOCKS: u64 = 16_000;
 
 pub(crate) type Result<T> = std::result::Result<T, Fault>;
 
@@ -309,6 +310,27 @@ fn chain(network: &str) -> Result<BitcoinNetwork> {
 
 fn public_signet_btc_only() -> Fault {
     fault("RGB_MODE_UNAVAILABLE", "This Signet wallet is configured for Bitcoin only.")
+}
+fn mint_chain(
+    rpc_url: String,
+    network: BitcoinNetwork,
+    profile: Option<crate::profile::Profile>,
+    chain_id: u64,
+) -> EvmChain {
+    // Bound how long a pending mint can reserve a receiving output.
+    // The admitted Dev Arbitrum issuer requests a 14,400-block lock window.
+    let max_mint_lock_blocks = match (network, profile, chain_id) {
+        (BitcoinNetwork::Regtest, _, _) => REGTEST_MAX_MINT_LOCK_BLOCKS,
+        (BitcoinNetwork::Signet, Some(crate::profile::Profile::Dev), 42_161) => {
+            DEV_ARBITRUM_MAX_MINT_LOCK_BLOCKS
+        }
+        _ => SIGNET_MAX_MINT_LOCK_BLOCKS,
+    };
+    EvmChain {
+        rpc_url,
+        min_mint_lock_blocks: 2,
+        max_mint_lock_blocks,
+    }
 }
 fn bitcoin_chain(network: BitcoinNetwork) -> Bitcoin {
     match network {
@@ -895,21 +917,8 @@ impl Session {
         let mut evm_chains = HashMap::new();
         for (id, url) in p.evm_rpc_urls {
             validated_url(&url, &["https", "http"], regtest)?;
-            // Bound how long a pending mint can keep its receiving UTXO reserved.
-            // The isolated issuer commits at most 512 Anvil blocks ahead. Signet
-            // admits a fixed Arbitrum-only budget through its pinned RPC policy.
-            evm_chains.insert(
-                positive(&id, u64::MAX)?,
-                EvmChain {
-                    rpc_url: url,
-                    min_mint_lock_blocks: 2,
-                    max_mint_lock_blocks: if regtest {
-                        REGTEST_MAX_MINT_LOCK_BLOCKS
-                    } else {
-                        SIGNET_MAX_MINT_LOCK_BLOCKS
-                    },
-                },
-            );
+            let id = positive(&id, u64::MAX)?;
+            evm_chains.insert(id, mint_chain(url, self.network, self.profile, id));
         }
         for (url, secret) in &p.proxy_auth_keys {
             validate_proxy(url, regtest)?;
@@ -1727,6 +1736,31 @@ mod tests {
             assert_eq!(worker.dispatch("goOnline", request).unwrap_err().code, "INVALID_PARAMS");
         }
         assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
+    }
+
+    #[test]
+    fn dev_arbitrum_mint_lock_window_is_bounded_and_profile_specific() {
+        use crate::profile::Profile;
+
+        let signet = BitcoinNetwork::Signet;
+        let arbitrum = 42_161;
+        let window = |network, profile, chain| {
+            let policy = mint_chain("https://arb1.arbitrum.io/rpc".into(), network, profile, chain);
+            policy.min_mint_lock_blocks..=policy.max_mint_lock_blocks
+        };
+
+        let dev = window(signet, Some(Profile::Dev), arbitrum);
+        assert!(dev.contains(&14_322));
+        assert!(dev.contains(&14_400));
+        assert!(dev.contains(&16_000));
+        assert!(!dev.contains(&16_001));
+        assert!(dev.contains(&2));
+        assert!(!dev.contains(&1));
+
+        assert_eq!(window(signet, Some(Profile::Staging), arbitrum), 2..=7_200);
+        assert_eq!(window(signet, None, arbitrum), 2..=7_200);
+        assert_eq!(window(signet, Some(Profile::Dev), 1), 2..=7_200);
+        assert_eq!(window(BitcoinNetwork::Regtest, None, 31_337), 2..=512);
     }
 
     #[test]
