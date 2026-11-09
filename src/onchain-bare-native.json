@@ -4,10 +4,56 @@
   "overlayTree": "e8fad4eda8ad85f3d6a6b18a29a79f6f76cb6977",
   "protocol": 2,
   "targets": {
-    "android-arm64": {
-      "byteLength": 65668584,
+    "android-arm": {
+      "byteLength": 46670724,
       "linkedName": "libutexo__wdk-wallet-rgb.2.1.0-alpha.17.so",
-      "sha256": "0c4b726248a030c0a7c74320c694b7eb1fcc7615af935a5b712f3f65e06a3899"
+      "sha256": "b87906ac5cb87e6f741409635df9feef74ae1baa66bbc11418cc77d0f43924bb"
+    },
+    "android-arm64": {
+      "byteLength": 65720376,
+      "linkedName": "libutexo__wdk-wallet-rgb.2.1.0-alpha.17.so",
+      "sha256": "78ba586b6ccad41813c045f6d389f13e880b45c1aedd51096c3689f9cbfeb1db"
+    },
+    "android-ia32": {
+      "byteLength": 66095028,
+      "linkedName": "libutexo__wdk-wallet-rgb.2.1.0-alpha.17.so",
+      "sha256": "267db72ba8da43151a955eba3e3f3acb54d72a63df3e7952f00ae891c1ba4545"
+    },
+    "android-x64": {
+      "byteLength": 67630552,
+      "linkedName": "libutexo__wdk-wallet-rgb.2.1.0-alpha.17.so",
+      "sha256": "1c4e052ac9e621883d7712444b5d6fff5e29dfe5b800a12aeb217fb93274e8c4"
+    },
+    "darwin-arm64": {
+      "byteLength": 44651408,
+      "sha256": "60ad31526f883a005e0518ffa76436a21ca12e94cd701fc39f6f06fbfe604c8d"
+    },
+    "darwin-x64": {
+      "byteLength": 48157600,
+      "sha256": "94d4d7c6b834bad241e2f1482fd34e3e3ef7382780dec00c00f2884bece7dd02"
+    },
+    "ios-arm64": {
+      "byteLength": 45221624,
+      "linkedName": "utexo__wdk-wallet-rgb.2.1.0-alpha.17.framework/utexo__wdk-wallet-rgb.2.1.0-alpha.17",
+      "sha256": "3a14f91bbaec79e2de0de0d757b0992946bd86f3f52d93c36fcba8a5cdb62879"
+    },
+    "ios-arm64-simulator": {
+      "byteLength": 45432448,
+      "linkedName": "utexo__wdk-wallet-rgb.2.1.0-alpha.17.framework/utexo__wdk-wallet-rgb.2.1.0-alpha.17",
+      "sha256": "ae507216f274df28fd5f7420f374ef1dd6c62d8f8e9529bf83a5e8217b84bff0"
+    },
+    "ios-x64-simulator": {
+      "byteLength": 48983736,
+      "linkedName": "utexo__wdk-wallet-rgb.2.1.0-alpha.17.framework/utexo__wdk-wallet-rgb.2.1.0-alpha.17",
+      "sha256": "5d002080bfde2a90e68e3884ca12d37cc5ded813652f4674b5efc59b91cbe26a"
+    },
+    "linux-arm64": {
+      "byteLength": 53254904,
+      "sha256": "8607675a5c24257235b71000718c246b5d47d4d13559693895b608d098bd95ba"
+    },
+    "linux-x64": {
+      "byteLength": 56059864,
+      "sha256": "a204d2d049d8bdc1a59855b7dffe07da13d1d86d38204ed5ce0b5ad4b9a8e752"
     }
   }
 }

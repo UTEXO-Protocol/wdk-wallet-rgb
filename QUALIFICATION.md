@@ -1,6 +1,22 @@
 # On-chain RGB SDK qualification register
 
-The candidate is an on-chain SDK review branch for Node and Android Bare. It remains private while the release gates below are open. It admits isolated Regtest for Bitcoin and RGB, plus separate Bitcoin-only and staging RGB profiles for public Signet.
+The candidate is a private on-chain SDK for Node and Bare. It admits isolated Regtest for Bitcoin and RGB, plus separate Bitcoin-only and staging RGB profiles for public Signet.
+
+## Alpha.17 platform qualification
+
+The [native manifest](src/onchain-bare-native.json) binds all eleven Bare targets to the exact addon hashes and byte lengths. Node uses five separately built protocol-2 workers. The app supplies the worker path and SHA-256.
+
+| Runtime | Targets | Evidence |
+| --- | --- | --- |
+| Android Bare | ARM64, ARMv7, x64, x86 | Built against NDK r28c. Verified ELF ABI, library imports against matching Bare Kit 3.0.1 builds, 16 KiB alignment, RELRO, immediate binding and executable stack protection. [Android builds](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42626822186) |
+| iOS Bare | ARM64 device, ARM64 simulator, x64 simulator | Verified the individual Mach-O slices and linked a signed XCFramework. Checked the versioned install names and symbol compatibility with BareKit Swift 2.2.0. [iOS builds](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42626723865) |
+| macOS Bare | Apple Silicon and Intel | Exercised native handle ownership, eight worker teardown cycles, hash rejection, offline wallet reads and reopen. The cross-built Intel binary passed on both Rosetta and a native Intel runner. [Intel runtime check](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42633915438) |
+| Linux Bare | x64 glibc, ARM64 glibc | The exact staged addons passed the same native and SDK checks on Ubuntu 22.04 x64 and Ubuntu 24.04 ARM64. [Linux runtime checks](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42633683463) |
+| Node | macOS Apple Silicon and Intel, Linux x64 glibc, ARM64 glibc, x64 musl | All five workers passed binary and protocol verification, wrong-hash rejection and offline wallet open, reads, shutdown and reopen. Linux x64 musl ran under Alpine 3.23. [Node worker jobs](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42626802210) |
+
+Android, iOS and Node native inputs were built at `1d7a12d2e4e09deb4d1f4c461008cf9344dd36fb`. Linux and Apple Silicon Bare used `0d7662c8f04856bccf462c6a9822bcf0c80157a0`. Intel Bare used `4bfb76c065011c69828281b31a9d3ed870bd8907`. The latter commits adjust desktop build flags, package metadata and smoke teardown. All use the same locked RGB source, native protocol and wallet engine.
+
+The mobile results cover binary build, ABI and link checks. App execution on the added mobile targets and hosted settlement have separate acceptance gates. The desktop tests use disposable offline Regtest wallets.
 
 Alpha.13 retains BFA.7 at `9ec49c08be2e68f08521281e3efbd760ec989cb9` and the `bfa7-v1` wallet directory generation. BFA.7 retains the BFA.6 schema and transaction-bound lock format, and adds witness receive and prepared sweep support upstream. Dev deployed BFA.6 connector `0.1.0-207` with a new BUSDT asset on November 6. DevOps PR #218 aligned wallet readiness to BFA.6 at `5010eefa355beb9c42a4c1b69883f7651241a111`. The reviewed E2E run `42261217049` failed at mint confirmation. [Deployment](https://github.com/UTEXO-Protocol/devops/pull/217) · [Readiness revision](https://github.com/UTEXO-Protocol/devops/pull/218) · [E2E](https://github.com/UTEXO-Protocol/bridge/actions/runs/42261217049)
 
