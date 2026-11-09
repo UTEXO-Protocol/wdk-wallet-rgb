@@ -15,9 +15,11 @@ const MAX_REQUEST_BYTES = 6 * 1024 * 1024
 const MAX_RESPONSE_BYTES = 14 * 1024 * 1024
 const REQUEST_TIMEOUT_MS = 120_000
 
-async function verifyAddon (addon) {
+async function verifyAddon (addon, expectedSha256, expectedLength) {
   const stat = await lstat(addon)
-  if (!stat.isFile() || await realpath(addon) !== addon || (stat.mode & 0o022) !== 0 || stat.size !== manifest.byteLength) {
+  if (!stat.isFile() || await realpath(addon) !== addon || (stat.mode & 0o022) !== 0 ||
+      stat.size <= 0 || stat.size > 256 * 1024 * 1024 ||
+      (expectedLength !== undefined && stat.size !== expectedLength)) {
     throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Packaged Bare addon failed integrity verification')
   }
   const file = await open(addon, 'r')
@@ -25,18 +27,26 @@ async function verifyAddon (addon) {
   try {
     const chunk = new Uint8Array(64 * 1024)
     let offset = 0
-    while (offset < manifest.byteLength) {
+    while (offset < stat.size) {
       const { bytesRead } = await file.read(chunk, 0, chunk.length, offset)
       if (bytesRead === 0) break
       hash.update(chunk.subarray(0, bytesRead))
       offset += bytesRead
     }
-    if (offset !== manifest.byteLength || hex.encode(hash.digest()) !== manifest.sha256) {
+    if (offset !== stat.size || hex.encode(hash.digest()) !== expectedSha256) {
       throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Packaged Bare addon failed integrity verification')
     }
   } finally {
     await file.close()
   }
+}
+
+async function linkedAddonPath (resolution, linkedName, directory) {
+  if (resolution !== 'linked:' + linkedName || typeof directory !== 'string' ||
+      !isAbsolute(directory) || await realpath(directory) !== directory) {
+    throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Native addon must resolve from the app native library directory')
+  }
+  return join(directory, linkedName)
 }
 
 export class OnchainWorker {
@@ -46,27 +56,30 @@ export class OnchainWorker {
   #failure
   #nextId = 1
 
-  static async start (executable, expectedSha256, androidNativeLibraryDir) {
+  static async start (executable, expectedSha256, androidNativeLibraryDir, iosNativeFrameworkDir) {
     if (executable !== undefined) throw new TypeError('The Bare candidate loads its packaged addon')
-    if (expectedSha256 !== undefined && expectedSha256 !== manifest.sha256) {
-      throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Native addon does not match the supplied SHA-256 pin')
-    }
-    if (Bare.Addon.host !== manifest.target) {
+    const host = Bare.Addon.host
+    const target = Object.hasOwn(manifest.targets, host) ? manifest.targets[host] : undefined
+    if (!target) {
       throw new WalletRuntimeError('NATIVE_PLATFORM_UNSUPPORTED', 'No qualified Bare addon for this platform')
     }
     const resolution = import.meta.addon.resolve('..')
     let addon
-    if (manifest.linkedName) {
-      if (resolution !== 'linked:' + manifest.linkedName ||
-          typeof androidNativeLibraryDir !== 'string' || !isAbsolute(androidNativeLibraryDir) ||
-          await realpath(androidNativeLibraryDir) !== androidNativeLibraryDir) {
-        throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Android addon must resolve from the app native library directory')
+    if (host.startsWith('ios-')) {
+      if (typeof expectedSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(expectedSha256)) {
+        throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'iOS requires a SHA-256 pin for the final embedded framework')
       }
-      addon = join(androidNativeLibraryDir, manifest.linkedName)
+      addon = await linkedAddonPath(resolution, target.linkedName, iosNativeFrameworkDir)
+      await verifyAddon(addon, expectedSha256)
     } else {
-      addon = fileURLToPath(resolution)
+      if (expectedSha256 !== undefined && expectedSha256 !== target.sha256) {
+        throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Native addon does not match the supplied SHA-256 pin')
+      }
+      addon = target.linkedName
+        ? await linkedAddonPath(resolution, target.linkedName, androidNativeLibraryDir)
+        : fileURLToPath(resolution)
+      await verifyAddon(addon, target.sha256, target.byteLength)
     }
-    await verifyAddon(addon)
     const worker = new OnchainWorker()
     try {
       const version = await worker.request('version')

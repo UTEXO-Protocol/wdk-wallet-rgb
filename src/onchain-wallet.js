@@ -166,6 +166,7 @@ function configFor (options) {
     nativeExecutable: options.nativeExecutable,
     nativeSha256: options.nativeSha256,
     androidNativeLibraryDir: options.androidNativeLibraryDir,
+    iosNativeFrameworkDir: options.iosNativeFrameworkDir,
     authorize: options.authorize,
     authorizeMessage: options.authorizeMessage,
     maxFeeSats: u64(options.maxFeeSats, 'Fee cap', 2_100_000_000_000_000n),
@@ -252,7 +253,9 @@ export class WalletAccountRgb {
     const releaseDirectory = () => { OPEN_WALLET_DIRECTORIES.delete(dataDir) }
     let worker
     try {
-      worker = await OnchainWorker.start(config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir)
+      worker = await OnchainWorker.start(
+        config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir, config.iosNativeFrameworkDir
+      )
       const version = await worker.request('version')
       if (version?.protocol !== 2 || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 4 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
         version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION || version.unsignedRecovery !== 1 || version.journalWrites !== 1) {

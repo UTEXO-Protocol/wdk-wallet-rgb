@@ -62,7 +62,18 @@ The tracked fixture is a synthetic Regtest asset issued independently against th
 
 ## Artifact review
 
-Commit the source, patches and both Cargo lockfiles. Rebuild on an authorized host with the documented toolchain and verify the selected target and locked graph. Stage the independently reviewed addon using `node scripts/stage-bare.mjs <built-addon>` from the repository root. Then run `node scripts/check-candidate-pack.mjs --require-native` and exercise the exact tarball on each supported runtime. The private source checkout, build outputs, fixture runtime, wallet data and credentials belong outside the package.
+Build from a committed checkout with the locked graph on an authorized host. The build and execution checks have separate scopes.
+
+| Runtime | Build targets | Command from the repository root |
+| --- | --- | --- |
+| Node worker | macOS ARM64 and x64, Linux glibc ARM64 and x64, Linux musl x64 | `node native/scripts/node-host.mjs build <target> <new-output-directory>` |
+| Desktop Bare | macOS ARM64 and x64, Linux glibc ARM64 and x64 | `bash native/scripts/build-bare.sh` on the target host |
+| Android Bare | ARM64, ARMv7, x64 and x86 | `bash native/scripts/build-bare-android.sh <version> <target>` |
+| iOS Bare | ARM64 device, ARM64 and x64 simulator | `bash native/scripts/build-bare-ios.sh <target>` |
+
+The Node build command executes an offline wallet smoke test on the target host and records the worker hash. Consumers pass that worker's canonical absolute path and SHA-256. Android verification takes the addon, a matching Bare Kit library, the version and the target. The iOS build checks the raw Mach-O slice. Verify the linked and signed app framework separately.
+
+After independent review, record each Bare addon hash and byte count in `src/onchain-bare-native.json`. Stage it with `node scripts/stage-bare.mjs <built-addon> <target>`. Use `node scripts/check-candidate-pack.mjs --require-native` to check the exact pinned inventory, or `--require-all-targets` to require the full Bare matrix. Pack with `npm pack --ignore-scripts` and exercise the tarball on the target runtimes. Keep Node workers, private source, build outputs, fixture data and credentials outside the npm package.
 
 The PR workflow validates Node tests, public types, runtime npm dependencies and the source-only package inventory. Native build and device evidence must be supplied separately because the pinned upstream source is private. Publication requires a separate reviewed workflow. A source build on a different compiler, SDK or absolute build path may produce a different digest, so validate and record that artifact before packing.
 

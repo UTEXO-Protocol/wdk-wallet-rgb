@@ -92,10 +92,19 @@ export type CandidateConfig = SharedCandidateConfig & NetworkConfig & ({
   nativeExecutable: string
   nativeSha256: string
   androidNativeLibraryDir?: never
+  iosNativeFrameworkDir?: never
 } | {
   nativeExecutable?: never
   androidNativeLibraryDir?: string
+  iosNativeFrameworkDir?: never
   nativeSha256?: string
+} | {
+  nativeExecutable?: never
+  androidNativeLibraryDir?: never
+  /** Directory containing the final signed framework in the app bundle. */
+  iosNativeFrameworkDir: string
+  /** SHA-256 of the final framework binary, after linking and signing. */
+  nativeSha256: string
 })
 export type MessageReview = Readonly<{ kind: 'bip322'; message: string; address: string; messageSha256: string }>
 export type Balance = { settled: string; future: string; spendable: string }

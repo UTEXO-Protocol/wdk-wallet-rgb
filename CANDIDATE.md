@@ -1,6 +1,6 @@
 # On-chain WDK candidate
 
-`@utexo/wdk-wallet-rgb@2.1.0-alpha.14` is the private BFA.7 Android candidate for manual Dev testing. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
+`@utexo/wdk-wallet-rgb@2.1.0-alpha.17` is the private BFA.7 candidate for platform qualification. The native protocol is version 2 and requires the network-check, unsigned-recovery and journal-write capabilities. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
 
 | Component | Pinned version or source |
 | --- | --- |
@@ -19,7 +19,7 @@ The private alpha.13 archive was packed from runtime source `840517fe0f0cfec6457
 
 ## Build and use
 
-Public JavaScript checks run from the lock with `npm ci --ignore-scripts`, `npm test`, and `npm run check:types`. Follow the [native build runbook](native/README.md) to compile and admit a matching native artifact. The reviewed Android pack stages the exact addon with `node scripts/stage-bare.mjs native/target/bare-addon-android/utexo__wdk-wallet-rgb.bare` before `npm pack --ignore-scripts`.
+Public JavaScript checks run from the lock with `npm ci --ignore-scripts`, `npm test`, and `npm run check:types`. The [native build runbook](native/README.md) describes how to build and qualify each target. The [native manifest](src/onchain-bare-native.json) lists the reviewed Bare binaries admitted to a private pack.
 
 Supply a canonical private data directory and a disposable seed. For Regtest, set `network: 'regtest'` and a loopback `tcp:` or `ssl:` Electrum endpoint with an explicit port. Regtest RGB also needs a loopback RGB proxy and the EVM validation RPC appropriate to the fixture. For public Signet, set `network: 'signet'`, `mode: 'btc-only'`, and `indexerUrl: 'ssl://electrum.iriswallet.com:50033'`. The Signet profile accepts only that certificate-validated endpoint and checks the genesis and public block-one hashes on the wallet indexer and resolver before synchronization. It uses a separate wallet directory and has Bitcoin address allocation, balance, history, sends and message signing. The Bitcoin-only profile rejects RGB service settings and RGB mutations.
 
@@ -27,7 +27,7 @@ To admit RGB on public Signet, set `network: 'signet'`, `mode: 'rgb'` and `profi
 
 Use the `bfa7-v1` wallet directory generation and contract bytes issued under the shared BFA.6/BFA.7 schema. For manual hosted Dev testing, alpha.14 admits the explicit `network: 'signet'`, `mode: 'rgb'`, `profile: 'dev'` combination. Set `indexerUrl: 'https://dev.esplora-01.mint.utexo.com'`, `transportEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc'` and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. The Dev profile requires its distinct block-one checkpoint, a separate wallet directory and the verified Dev BUSDT genesis. Its only admitted V1 route is direct Arbitrum, when the app configures it. Hosted mint, burn and payout acceptance are tracked separately. [Dev checkpoint scope](native/README.md#dev-checkpoint-candidate)
 
-The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Android packs a linked worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. The SDK verifies addon hash and native profile before opening.
+The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Desktop Bare loads and hashes the addon for its exact host. Android links the worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. iOS uses Bare Link to build and sign the app framework, then supplies `iosNativeFrameworkDir` and `nativeSha256` for the final framework binary. The iOS package prebuild and the final embedded framework have separate hashes. The SDK verifies the native profile before opening on each target.
 
 Set `startupMode: 'offline'` to open without waiting on services. Local reads are cached until `connect()` completes. Address allocation, invoice creation and transaction preparation require a connected session. `getConnectionStatus()` describes session state. `getNetworkInfo()` reads the current tip from the configured indexer and checks the selected Signet block-one checkpoint. The indexer is a trusted service for the chain data it reports. The endpoint checks accept only the configured services. A proxy check verifies the advertised protocol independently of credential and mint readiness.
 

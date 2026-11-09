@@ -3,12 +3,14 @@ import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
+import { addonPath, assertTargetPin, BARE_TARGETS } from './bare-targets.mjs'
 
 const root = new URL('../', import.meta.url)
 const readJson = path => JSON.parse(readFileSync(new URL(path, root), 'utf8'))
 const options = process.argv.slice(2)
-const requireNative = options[0] === '--require-native'
-assert.equal(options.length, requireNative ? 1 : 0, 'Usage: check-candidate-pack.mjs [--require-native]')
+const requireAll = options[0] === '--require-all-targets'
+const requireNative = requireAll || options[0] === '--require-native'
+assert.equal(options.length, requireNative ? 1 : 0, 'Usage: check-candidate-pack.mjs [--require-native|--require-all-targets]')
 const manifest = readJson('package.json')
 assert.equal(manifest.name, '@utexo/wdk-wallet-rgb')
 assert.equal(manifest.private, true, 'The review candidate must remain private')
@@ -36,28 +38,30 @@ for (const path of files) {
 
 const artifacts = [...files].filter(path => path.startsWith('prebuilds/'))
 const native = readJson('src/onchain-bare-native.json')
-assert.equal(native.target, 'android-arm64')
-assert.equal(native.linkedName, `libutexo__wdk-wallet-rgb.${manifest.version}.so`)
 assert.match(native.source, /^[a-f0-9]{40}$/)
 assert.match(native.overlayTree, /^[a-f0-9]{40}$/)
 assert.match(native.integrationTree, /^[a-f0-9]{40}$/)
 assert.equal(native.protocol, 2)
-assert.match(native.sha256, /^[a-f0-9]{64}$/)
-assert.ok(Number.isSafeInteger(native.byteLength) && native.byteLength > 0)
+const targets = Object.keys(native.targets)
+for (const target of targets) assertTargetPin(target, native.targets[target], manifest.version)
 if (!requireNative) {
   assert.deepEqual(artifacts, [], 'Public source-only CI must not contain staged native binaries')
   console.log('Package exports and source-only inventory passed. Native admission is a separate gate.')
 } else {
-  const path = 'prebuilds/' + native.target + '/utexo__wdk-wallet-rgb.bare'
-  assert.deepEqual(artifacts, [path], 'Unexpected packed native addon inventory')
-  const bytes = readFileSync(new URL(path, root))
-  assert.equal(bytes.length, native.byteLength)
-  assert.equal(createHash('sha256').update(bytes).digest('hex'), native.sha256)
-  for (const pin of [native.source, native.overlayTree, native.integrationTree]) {
-    assert.ok(bytes.includes(Buffer.from(pin)), 'Native addon does not contain the admitted source identity')
+  assert.ok(targets.length, 'No reviewed Bare artifacts')
+  if (requireAll) assert.deepEqual(targets.sort(), [...BARE_TARGETS].sort(), 'Incomplete Bare target coverage')
+  assert.deepEqual(artifacts.sort(), targets.map(addonPath).sort(), 'Unexpected packed native addon inventory')
+  const servicePolicy = readFileSync(new URL('src/onchain-dev-services.json', root))
+  for (const target of targets) {
+    const pin = native.targets[target]
+    const bytes = readFileSync(new URL(addonPath(target), root))
+    assert.equal(bytes.length, pin.byteLength)
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), pin.sha256)
+    for (const identity of [native.source, native.overlayTree, native.integrationTree]) {
+      assert.ok(bytes.includes(Buffer.from(identity)), 'Native addon does not contain the admitted source identity')
+    }
+    assert.ok(bytes.includes(Buffer.from('electrum-and-dev-esplora')), 'Native addon lacks the expected indexer capabilities')
+    assert.ok(bytes.includes(servicePolicy), 'Native addon and package disagree on the Dev Signet service policy')
   }
-  assert.ok(bytes.includes(Buffer.from('electrum-and-dev-esplora')), 'Native addon lacks the expected indexer capabilities')
-  assert.ok(bytes.includes(readFileSync(new URL('src/onchain-dev-services.json', root))),
-    'Native addon and package disagree on the Dev Signet service policy')
   console.log('Package exports and exact native addon inventory passed.')
 }

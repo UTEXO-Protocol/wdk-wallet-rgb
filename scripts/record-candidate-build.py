@@ -66,7 +66,8 @@ def main():
         for role, path in vars(args).items()
     }
     manifest = json.loads((ROOT / "src/onchain-bare-native.json").read_text())
-    if (manifest["sha256"], manifest["byteLength"]) != (artifacts["addon"]["sha256"], artifacts["addon"]["bytes"]):
+    pin = manifest["targets"]["android-arm64"]
+    if (pin["sha256"], pin["byteLength"]) != (artifacts["addon"]["sha256"], artifacts["addon"]["bytes"]):
         raise SystemExit("Addon does not match the committed package manifest")
     expected = artifacts["addon"]["sha256"]
     with tarfile.open(args.tarball, "r:gz") as tar:
@@ -74,7 +75,7 @@ def main():
             if stream_sha256(addon) != expected:
                 raise SystemExit("Packed addon does not match the admitted build")
     with zipfile.ZipFile(args.apk) as apk:
-        with apk.open("lib/arm64-v8a/" + manifest["linkedName"]) as addon:
+        with apk.open("lib/arm64-v8a/" + pin["linkedName"]) as addon:
             if stream_sha256(addon) != expected:
                 raise SystemExit("APK addon does not match the admitted build")
     npm = []
