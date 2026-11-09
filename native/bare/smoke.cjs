@@ -52,7 +52,9 @@ if (parentPort) {
           const worker = new Worker(__filename, { workerData: dataDir })
           let value
           worker.once('error', reject)
-          worker.once('message', address => { value = address })
+          // Bare unrefs the port when its last message listener is removed.
+          // Keep the port alive until exit so teardown is part of the test.
+          worker.on('message', address => { value = address })
           worker.once('exit', code => {
             if (code !== 0 || !value) reject(new Error('Bare worker failed before returning an address'))
             else resolve(value)

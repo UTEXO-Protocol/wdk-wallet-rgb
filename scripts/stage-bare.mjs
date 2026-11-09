@@ -1,6 +1,6 @@
 // Copyright 2026 UTEXO. Licensed under the Apache License, Version 2.0.
-import { createHash } from 'node:crypto'
-import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { createHash, randomUUID } from 'node:crypto'
+import { mkdir, open, readFile, rename, unlink } from 'node:fs/promises'
 import { addonPath, assertTargetPin } from './bare-targets.mjs'
 
 const [source, target = 'android-arm64', ...extra] = process.argv.slice(2)
@@ -16,6 +16,19 @@ if (bytes.length !== pin.byteLength || createHash('sha256').update(bytes).digest
   throw new Error('The built addon does not match the qualified native manifest')
 }
 const output = new URL('../' + addonPath(target), import.meta.url)
-await mkdir(new URL('.', output), { recursive: true })
-await writeFile(output, bytes, { mode: 0o644 })
-await chmod(output, 0o644)
+const directory = new URL('.', output)
+await mkdir(directory, { recursive: true })
+const temporary = new URL('.stage-' + randomUUID(), directory)
+const file = await open(temporary, 'wx', 0o644)
+try {
+  try {
+    await file.writeFile(bytes)
+    await file.chmod(0o644)
+  } finally {
+    await file.close()
+  }
+  await rename(temporary, output)
+} catch (error) {
+  await unlink(temporary)
+  throw error
+}
