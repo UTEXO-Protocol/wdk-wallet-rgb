@@ -41,9 +41,9 @@ linker_map=''
 trap '[[ ! -e "$temporary" ]] || unlink "$temporary"; [[ -z "$linker_map" ]] || unlink "$linker_map"' EXIT
 flags=(-std=c11 -Wall -Wextra -Werror -O2 -fPIC
   "-DBARE_MODULE_NAME=\"utexo__wdk-wallet-rgb@$version\""
-  -I "$headers" bare/binding.c "$CARGO_TARGET_DIR/release/libutexo_rgb_native_bare.a")
+  bare/binding.c "$CARGO_TARGET_DIR/release/libutexo_rgb_native_bare.a")
 if [[ "$host" == darwin-* ]]; then
-  xcrun --sdk macosx clang "${flags[@]}" -arch "$arch" \
+  xcrun --sdk macosx clang "${flags[@]}" -I "$headers" -arch "$arch" \
     -mmacosx-version-min=11.0 -dynamiclib -dead_strip -D_DARWIN_C_SOURCE \
     -Wl,-fatal_warnings -Wl,-install_name,utexo__wdk-wallet-rgb@2.bare -Wl,-undefined,dynamic_lookup \
     -Wl,-exported_symbol,_bare_get_module_name_v0 -Wl,-exported_symbol,_bare_register_module_v0 \
@@ -54,7 +54,7 @@ if [[ "$host" == darwin-* ]]; then
 else
   linker_map="$(mktemp "$output.map.XXXXXX")"
   printf '%s\n' '{ global: bare_get_module_name_v0; bare_register_module_v0; local: *; };' > "$linker_map"
-  "${CC:-cc}" "${flags[@]}" -D_GNU_SOURCE -shared \
+  "${CC:-cc}" "${flags[@]}" -isystem "$headers" -D_GNU_SOURCE -shared \
     -Wl,--version-script,"$linker_map",--exclude-libs,ALL,--gc-sections,--fatal-warnings \
     -Wl,-z,relro,-z,now,-z,noexecstack,-z,nodelete -ldl -lpthread -lm -lrt -lutil -lresolv \
     -o "$temporary"

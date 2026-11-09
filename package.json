@@ -16,6 +16,7 @@
   },
   "main": "./onchain.js",
   "type": "module",
+  "addon": true,
   "types": "./onchain.d.ts",
   "scripts": {
     "test": "node --test tests-onchain/*.test.js",
