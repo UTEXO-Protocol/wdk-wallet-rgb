@@ -1,5 +1,5 @@
 {
-  "files": ["onchain.d.ts", "webrgb-onchain.d.ts"],
+  "files": ["onchain.d.ts", "webrgb-onchain.d.ts", "tests-onchain/network-config.types.ts"],
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",

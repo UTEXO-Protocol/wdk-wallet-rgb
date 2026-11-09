@@ -1,9 +1,14 @@
 import type { IWalletAccountReadOnly, TransactionReceipt, WaitForTransactionOptions } from '@tetherto/wdk-wallet'
 
 export type BaseUnits = `${bigint}` | bigint
-export type V1Chain = 'eip155:42161' | 'eip155:1' | 'eip155:137' | 'eip155:9745' | 'tron:728126428'
+export type BurnRoute =
+  | { chainId: 'eip155:42161'; dstEid: 0 }
+  | { chainId: 'eip155:1'; dstEid: 30101 }
+  | { chainId: 'eip155:137'; dstEid: 30109 }
+  | { chainId: 'eip155:9745'; dstEid: 30383 }
+  | { chainId: 'tron:728126428'; dstEid: 30420 }
+export type V1Chain = BurnRoute['chainId']
 export type BurnRecipient = { chainId: V1Chain; address: string }
-export type BurnRoute = { chainId: V1Chain; dstEid: number }
 export type BurnDestination = Readonly<{ version: 1; destinationChainId: number; dstEid: number; recipient: string }>
 export type Proof = {
   assetId: string
@@ -66,16 +71,17 @@ type HostedRgbModeConfig = {
   mode: 'rgb'
   evmRpcUrls: { readonly '42161': 'https://arb1.arbitrum.io/rpc' }
   proxyAuthKeys?: never
-  burnDestinationRoutes?: readonly [] | readonly [{ chainId: 'eip155:42161'; dstEid: 0 }]
 }
 type StagingRgbModeConfig = HostedRgbModeConfig & {
   profile: 'staging'
   transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
+  burnDestinationRoutes?: readonly [] | readonly [Extract<BurnRoute, { chainId: 'eip155:42161' }>]
 }
 type DevRgbModeConfig = HostedRgbModeConfig & {
   /** Hosted access is gated by the reviewed package configuration. */
   profile: 'dev'
   transportEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc'
+  burnDestinationRoutes?: readonly BurnRoute[]
 }
 type CandidateNetwork = 'regtest' | 'signet'
 type NetworkConfig = ({
