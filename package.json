@@ -1,6 +1,6 @@
 {
   "name": "@utexo/wdk-wallet-rgb",
-  "version": "2.1.0-alpha.14",
+  "version": "2.1.0-alpha.15",
   "description": "Isolated on-chain RGB wallet candidate for WDK.",
   "keywords": [
     "wdk",

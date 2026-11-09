@@ -24,8 +24,8 @@ const HEX_32 = /^[a-f0-9]{64}$/
 const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
 const NATIVE_SOURCE = '9ec49c08be2e68f08521281e3efbd760ec989cb9'
-const NATIVE_OVERLAY = 'd9de67fe9a2512106afd054977a1e32abb9a1184'
-const NATIVE_INTEGRATION = '5408b3e56cdb7604316b094aa69ffb2d30513189'
+const NATIVE_OVERLAY = 'e8fad4eda8ad85f3d6a6b18a29a79f6f76cb6977'
+const NATIVE_INTEGRATION = '8a012db8c770db8c10be554dcdd34c95b16f81a8'
 const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
 const STAGING_SERVICES = {
   proxyEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc',

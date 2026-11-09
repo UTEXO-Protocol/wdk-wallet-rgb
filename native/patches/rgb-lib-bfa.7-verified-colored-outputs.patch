@@ -1,0 +1,153 @@
+diff --git a/src/wallet/core.rs b/src/wallet/core.rs
+index 9f245ef..2eddf27 100644
+--- a/src/wallet/core.rs
++++ b/src/wallet/core.rs
+@@ -214,6 +214,7 @@ pub struct WalletInternals {
+     pub(crate) wallet_dir: PathBuf,
+     pub(crate) bdk_wallet: BdkWallet,
+     pub(crate) bdk_pending: Arc<Mutex<ChangeSet>>,
++    pub(crate) require_verified_colored_outputs: bool,
+     #[cfg(feature = "_online")]
+     pub(crate) online_data: Option<OnlineData>,
+ }
+@@ -897,6 +898,24 @@ pub trait WalletCore {
+         pending_witness_scripts: &HashMap<String, bool>,
+     ) -> Result<(), Error> {
+         let db_txos = txn.iter_txos()?;
++        let require_provenance = self.internals().require_verified_colored_outputs;
++        let known_outpoints: HashSet<_> = if require_provenance {
++            db_txos
++                .iter()
++                .map(|txo| txo.outpoint().to_string())
++                .collect()
++        } else {
++            HashSet::new()
++        };
++        let created_txids: HashSet<_> = if require_provenance {
++            txn.iter_wallet_transactions()?
++                .into_iter()
++                .filter(|tx| tx.r#type == WalletTransactionType::CreateUtxos)
++                .map(|tx| tx.txid)
++                .collect()
++        } else {
++            HashSet::new()
++        };
+ 
+         let db_outpoints: HashSet<String> = db_txos
+             .into_iter()
+@@ -914,6 +933,15 @@ pub trait WalletCore {
+             .filter(|u| u.keychain == KeychainKind::External)
+             .filter(|u| !db_outpoints.contains(&u.outpoint.to_string()))
+         {
++            // Seed-only recovery reveals scripts, but supplies no RGB history.
++            // Only an exact saved output (including validated witness/change)
++            // or a locally recorded setup transaction can establish provenance.
++            if require_provenance
++                && !known_outpoints.contains(&new_utxo.outpoint.to_string())
++                && !created_txids.contains(&new_utxo.outpoint.txid.to_string())
++            {
++                continue;
++            }
+             let mut new_db_utxo: DbTxoActMod = new_utxo.clone().into();
+             let script = new_utxo.txout.script_pubkey.to_hex_string();
+             if let Some(receive_pending) = pending_witness_scripts.get(&script) {
+diff --git a/src/wallet/multisig.rs b/src/wallet/multisig.rs
+index 4f69b72..8bea7de 100644
+--- a/src/wallet/multisig.rs
++++ b/src/wallet/multisig.rs
+@@ -1108,6 +1108,7 @@ impl MultisigWallet {
+                 wallet_dir,
+                 bdk_wallet,
+                 bdk_pending: Arc::new(Mutex::new(ChangeSet::default())),
++                require_verified_colored_outputs: false,
+                 #[cfg(feature = "_online")]
+                 online_data: None,
+             },
+diff --git a/src/wallet/offline.rs b/src/wallet/offline.rs
+index ce93f44..935a3cf 100644
+--- a/src/wallet/offline.rs
++++ b/src/wallet/offline.rs
+@@ -1917,10 +1917,17 @@ pub trait WalletOffline: WalletBackup {
+         Ok(asset_medias)
+     }
+ 
+-    fn get_btc_balance_for_keychain(&self, keychain: KeychainKind) -> Result<Balance, Error> {
++    fn get_btc_balance_for_keychain(
++        &self,
++        keychain: KeychainKind,
++        admitted: Option<&HashSet<BdkOutPoint>>,
++    ) -> Result<Balance, Error> {
+         let chain = self.bdk_wallet().local_chain();
+         let chain_tip = self.bdk_wallet().latest_checkpoint().block_id();
+-        let outpoints = self.filter_unspents(keychain).map(|lo| ((), lo.outpoint));
++        let outpoints = self
++            .filter_unspents(keychain)
++            .filter(|lo| admitted.is_none_or(|known| known.contains(&lo.outpoint)))
++            .map(|lo| ((), lo.outpoint));
+         let balance = self.bdk_wallet().as_ref().balance(
+             chain,
+             chain_tip,
+@@ -1948,8 +1955,20 @@ pub trait WalletOffline: WalletBackup {
+     ) -> Result<BtcBalance, Error> {
+         self.sync_if_requested(txn, online, skip_sync, KeychainKind::External)?;
+         self.sync_if_requested(txn, online, skip_sync, KeychainKind::Internal)?;
+-        let mut vanilla = self.get_btc_balance_for_keychain(KeychainKind::Internal)?;
+-        let colored = self.get_btc_balance_for_keychain(KeychainKind::External)?;
++        let admitted_colored = if self.internals().require_verified_colored_outputs {
++            Some(
++                txn.iter_txos()?
++                    .into_iter()
++                    .filter(|txo| txo.exists && !txo.spent)
++                    .map(BdkOutPoint::from)
++                    .collect(),
++            )
++        } else {
++            None
++        };
++        let mut vanilla = self.get_btc_balance_for_keychain(KeychainKind::Internal, None)?;
++        let colored =
++            self.get_btc_balance_for_keychain(KeychainKind::External, admitted_colored.as_ref())?;
+ 
+         let reserved: HashSet<BdkOutPoint> =
+             self.get_reserved_bdk_outpoints(txn)?.into_iter().collect();
+@@ -2185,6 +2204,14 @@ pub trait WalletOffline: WalletBackup {
+             .map(BdkOutPoint::from)
+             .collect();
+         outpoints.extend(self.get_reserved_bdk_outpoints(txn)?);
++        if self.internals().require_verified_colored_outputs {
++            // BDK still tracks unproven colored outputs. Exclude those as well
++            // as the DB TXOs so they can never fund a vanilla Bitcoin send.
++            outpoints.extend(
++                self.filter_unspents(KeychainKind::External)
++                    .map(|lo| lo.outpoint),
++            );
++        }
+         Ok(outpoints)
+     }
+ 
+diff --git a/src/wallet/singlesig.rs b/src/wallet/singlesig.rs
+index 9374659..5e96ad5 100644
+--- a/src/wallet/singlesig.rs
++++ b/src/wallet/singlesig.rs
+@@ -265,6 +265,7 @@ impl Wallet {
+                 wallet_dir,
+                 bdk_wallet,
+                 bdk_pending: Arc::new(Mutex::new(ChangeSet::default())),
++                require_verified_colored_outputs: false,
+                 #[cfg(feature = "_online")]
+                 online_data: None,
+             },
+@@ -273,6 +274,13 @@ impl Wallet {
+         })
+     }
+ 
++    /// Keep chain-discovered colored outputs outside the RGB wallet unless
++    /// their outpoint or output-setup transaction was recorded by this wallet.
++    /// Enable this before any sync when opening a wallet after seed-only recovery.
++    pub fn require_verified_colored_outputs(&mut self) {
++        self.internals.require_verified_colored_outputs = true;
++    }
++
+     /// Load an existing RGB singlesig wallet, identified by its master fingerprint, from the
+     /// wallet directory inside `data_dir`.
+     ///

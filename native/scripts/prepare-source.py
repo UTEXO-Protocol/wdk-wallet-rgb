@@ -16,7 +16,7 @@ SOURCE_URL = "https://github.com/UTEXO-Protocol/rgb-lib-bfa.git"
 PATCHES = ROOT / "patches"
 SHA = "9ec49c08be2e68f08521281e3efbd760ec989cb9"
 BASE_TREE = "a4f8ad11dd975d357f9d2c6baab0d45205416986"
-EXPECTED_TREE = "d9de67fe9a2512106afd054977a1e32abb9a1184"
+EXPECTED_TREE = "e8fad4eda8ad85f3d6a6b18a29a79f6f76cb6977"
 ESPLORA_PACKAGE = "esplora-client-0.12.3"
 ESPLORA_SHA256 = "f19e3ea99dbfbef0c1ec26d83e69de0c579f6aa6aaac4f44597805fcc27e97af"
 ESPLORA_EXPECTED_TREE = "0b02f9ababbb4f276dcea5168fc8cf59914c6744"
@@ -86,10 +86,11 @@ def main():
         PATCHES / "rgb-lib-bfa.7-native-egress.patch",
         PATCHES / "rgb-lib-bfa.7-signet-checkpoint.patch",
         PATCHES / "rgb-lib-bfa.7-proxy-deadline.patch",
+        PATCHES / "rgb-lib-bfa.7-verified-colored-outputs.patch",
     ]
     if bare:
         patches.append(PATCHES / "rgb-lib-bfa.7-embedded-lifecycle.patch")
-    expected_tree = "5408b3e56cdb7604316b094aa69ffb2d30513189" if bare else EXPECTED_TREE
+    expected_tree = "8a012db8c770db8c10be554dcdd34c95b16f81a8" if bare else EXPECTED_TREE
     if dest.exists():
         verify(dest, expected_tree)
         return

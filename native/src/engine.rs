@@ -41,7 +41,7 @@ mod journal;
 mod send;
 
 const SOURCE: &str = "9ec49c08be2e68f08521281e3efbd760ec989cb9";
-const OVERLAY: &str = "d9de67fe9a2512106afd054977a1e32abb9a1184";
+const OVERLAY: &str = "e8fad4eda8ad85f3d6a6b18a29a79f6f76cb6977";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -637,7 +637,10 @@ impl Worker {
                     },
                 );
                 crate::profile::after_wallet_new();
-                let wallet = wallet.map_err(native)?;
+                let mut wallet = wallet.map_err(native)?;
+                if matches!(p.profile, Some(crate::profile::Profile::Dev)) {
+                    wallet.require_verified_colored_outputs();
+                }
                 self.session = Some(Session {
                     wallet,
                     _directory_lock: lock,
