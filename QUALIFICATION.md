@@ -2,7 +2,22 @@
 
 The candidate is a private on-chain SDK for Node and Bare. Mainnet and Public Signet admit Bitcoin and ordinary RGB under the network policies in the [candidate guide](CANDIDATE.md). Regtest, Dev and staging have separate service and bridge policies. This register contains deployment-specific test evidence and stays in the repository outside the package.
 
-## Alpha.20 Regtest asset issuance
+## Alpha.20 full platform and public issuance qualification
+
+The private full archive was packed from `b326df18ae6ee0e69ca4161029673a581bd023a4`. SHA-256 `1ffcaa8568db0524320aa17efa8f94c6d15b25fa59b1eeb6deeca221ac8cddca`, 204,003,454 bytes and 35 files. The [Bare manifest](src/onchain-bare-native.json) pins all eleven addons. An independent archive scan verified their lengths and digests and excluded both Dev contract representations and deployment asset metadata. All sixteen native binaries were built from `63c32e672907f8a8d5bd40064e0464d0a0a171c7` with the same locked BFA.7 graph. Node workers are supplied separately with their SHA-256.
+
+| Runtime | Rebuilt targets | Acceptance |
+| --- | --- | --- |
+| Node | macOS ARM64 and x64, Linux glibc ARM64 and x64, Linux musl x64 | All five executed the packed SDK with the actual worker, including native capability 2, offline open, issuance gates, shutdown and reopen. Nonlocal workers also passed clean native-runner consumers. [Node producer jobs](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42778209313) |
+| Desktop Bare | macOS ARM64 and x64, Linux glibc ARM64 and x64 | All four executed the packed SDK. The original Linux x64 and Intel binaries passed in AMD64 Docker and Rosetta with their original hashes, including native ownership and eight teardown cycles. Hosted reruns for those two tests were blocked by private-runner billing. [Bare producer jobs](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42779551547) |
+| Android Bare | ARM64, ARMv7, x64 and x86 | All four exact packed slices passed ELF and worklet linkage. ARM64 executed the installed standalone package on a 16 KiB emulator, including native hash rejection, five offline profile gates and reopen. The temporary instrumentation left the foreground and preexisting process state unchanged. [Android producer jobs](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42778209400) |
+| iOS Bare | ARM64 device, ARM64 simulator and x64 simulator | All three exact packed slices passed ABI and signed framework linkage. An installed ARM64 iOS 27.0 simulator fixture verified the final framework hash, Mainnet and Public Signet offline issuance gates and shutdown. Focused wallet opens took 20.8 and 38.6 seconds in this fixture. [iOS producer jobs](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42778209229) |
+
+The Apple Silicon host pack from the same SDK source and native binaries passed funded Regtest NIA/CFA issuance, blinded and witness transfers at six confirmations, exact balances and duplicate-free restart recovery on Node and Bare. The full archive's Apple Silicon Node consumer reached the live Mainnet and Public Signet Electrum endpoints and got `INSUFFICIENT_RGB_OUTPUTS` for both issuance methods with an unreachable proxy configured. Public issuance uses a fresh consistency scan and checks all potentially selectable output transactions for confirmation. The public-network runs used empty wallets. Funded public issuance and transfers, plus execution on the other five mobile targets, are separate acceptance scopes.
+
+The SDK passed 57 JavaScript tests, public types, the runtime npm audit, 31 native tests and the separate issuer-approved offline Dev import. The runtime handshake verifies capability 2 directly on executed targets. Compiler-dependent placement of short JSON keys is outside package integrity verification.
+
+## Initial alpha.20 Regtest-only pack (superseded)
 
 The Apple Silicon archive was packed from `b6ee4e611073831c31ebd77324049a25bbc71793` and has SHA-256 `52f288ac9a9beb21f014b7e23d698011c3cadd4713f10d9bb16d0bcb00a06a3a`. The Bare addon SHA-256 is `6d9fdd23a44bffbbb58cbe86801481132b559a97b8cf06cc425f1c9f1efc6703`. The separately built Node worker SHA-256 is `5e81711232f74446546e1432d27dd11fe7db9bf06a3cf86d2916bbdaa4455bf0`. The Node worker matched a second build. The archive inventory excludes both Dev asset contract representations and deployment asset metadata.
 
