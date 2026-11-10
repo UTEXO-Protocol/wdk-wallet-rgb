@@ -318,12 +318,35 @@ impl Session {
             }
         }
 
-        let online = self.online()?;
+        let mut online = self.online()?;
+        let public = self.network != BitcoinNetwork::Regtest;
+        if public {
+            // FastSync does not recheck every free colored output. Refresh the
+            // wallet's full consistency scan before committing a public asset
+            // so an already-spent seal cannot be admitted from its cached row.
+            let url = self.indexer_url.clone().ok_or_else(|| {
+                fault(
+                    "WALLET_OFFLINE",
+                    "The RGB wallet has no online indexer session.",
+                )
+            })?;
+            let config = crate::profile::indexer(url, None, self.network, self.profile)?;
+            online = self.wallet.go_online(Self::online_options(config)).map_err(|error| {
+                match error {
+                    rgb_lib::Error::Inconsistency { .. } => fault(
+                        "WALLET_INCONSISTENT",
+                        "The Bitcoin chain and RGB wallet state disagree. Reconcile the wallet before issuing an asset.",
+                    ),
+                    other => native(other),
+                }
+            })?;
+            self.online = Some(online);
+        }
         let unspents = self
             .wallet
-            .list_unspents(Some(online), false, false)
+            .list_unspents(Some(online), false, public)
             .map_err(native)?;
-        if self.network != BitcoinNetwork::Regtest {
+        if public {
             require_confirmed_slots(&unspents, amounts.len(), |txid| {
                 self.wallet
                     .get_tx_height(online, txid.to_owned())

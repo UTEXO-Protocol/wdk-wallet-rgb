@@ -6,7 +6,7 @@ use rgb_lib::bitcoin::{Address as BitcoinAddress, Network as Bitcoin, Psbt, Txid
 use rgb_lib::keys::WitnessVersion;
 use rgb_lib::no_wallet::{BundleFilter, inspect_consignment};
 use rgb_lib::wallet::{
-    AssetFilter, Balance, DatabaseType, EvmChain, Invoice, Online, OnlineOptions, RecipientInfo,
+    AssetFilter, Balance, DatabaseType, EvmChain, IndexerConfig, Invoice, Online, OnlineOptions, RecipientInfo,
     RgbInspection, RgbWalletOpsOffline, RgbWalletOpsOnline, SinglesigKeys, TransferScope,
     TransitionGlobal, TransportEndpoint, Wallet, WalletData,
 };
@@ -794,6 +794,16 @@ impl Session {
             )
         })
     }
+    fn online_options(indexer_config: IndexerConfig) -> OnlineOptions {
+        OnlineOptions {
+            indexer_config,
+            skip_consistency_check: false,
+            vanilla_sync_lookback: 20,
+            failed_witness_receive_grace_secs: 86_400,
+            proxy_auth_keys: HashMap::new(),
+            evm_chains: HashMap::new(),
+        }
+    }
     fn skip_read_sync(&self) -> bool {
         self.online.is_none() || self.prepared.is_some()
     }
@@ -1003,12 +1013,9 @@ impl Session {
             }
         }
         let mut options = OnlineOptions {
-            indexer_config: config,
-            skip_consistency_check: false,
-            vanilla_sync_lookback: 20,
-            failed_witness_receive_grace_secs: 86_400,
             proxy_auth_keys: p.proxy_auth_keys.into_iter().collect(),
             evm_chains,
+            ..Self::online_options(config)
         };
         let online = self.wallet.go_online(options.clone());
         // The caller-provided copy is no longer needed. Upstream owns the runtime copy of
