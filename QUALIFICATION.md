@@ -2,6 +2,14 @@
 
 The candidate is a private on-chain SDK for Node and Bare. Mainnet and Public Signet admit Bitcoin and ordinary RGB under the network policies in the [candidate guide](CANDIDATE.md). Regtest, Dev and staging have separate service and bridge policies. This register contains deployment-specific test evidence and stays in the repository outside the package.
 
+## Alpha.20 Regtest asset issuance
+
+The Apple Silicon archive was packed from `b6ee4e611073831c31ebd77324049a25bbc71793` and has SHA-256 `52f288ac9a9beb21f014b7e23d698011c3cadd4713f10d9bb16d0bcb00a06a3a`. The Bare addon SHA-256 is `6d9fdd23a44bffbbb58cbe86801481132b559a97b8cf06cc425f1c9f1efc6703`. The separately built Node worker SHA-256 is `5e81711232f74446546e1432d27dd11fe7db9bf06a3cf86d2916bbdaa4455bf0`. The Node worker matched a second build. The archive inventory excludes both Dev asset contract representations and deployment asset metadata.
+
+Clean Node 22.23.3 and Bare 1.36.0 consumers each issued NIA and CFA using two confirmed Regtest RGB outputs per asset, without a Bitcoin broadcast at issuance. Both consumers rejected insufficient slots without partial issuance. Each asset completed a blinded transfer to a receiver without the asset in its catalog and a witness return at six confirmations, with exact 700 and 300 base-unit balances after reopen. Repeating the same issuance request returned the original asset ID. A different request with the same ID and a journal copied to another wallet were rejected. Injected response loss and a missing receipt after the native commit recovered the original asset, with one issuance row.
+
+Passed 57 SDK tests, public types, the runtime npm audit, 29 default native tests, and the separate issuer-approved offline Dev import test. The host API admits issuance on Regtest RGB only. Public-network transfers and the rest of the native matrix have separate qualification scopes.
+
 ## Alpha.19 ordinary RGB qualification
 
 The private Apple Silicon qualification pack has SHA-256 `3b9c630ee674c09a88854c0025db280a4f6abf6e89ecd9af492e2246041bcb47`. Its exact 25-file inventory matched source `71d376ddde51ac8b0dfc15f0bcbe8a3f8f31849b` and the [native manifest](src/onchain-bare-native.json). Neither Dev contract representation nor its deployment metadata appeared in the archive. The separately verified Node worker has SHA-256 `7a9139f8d0b8f092792f0308c9df7843778d33db9e6e7926e2437515280509fe`. Both native artifacts matched byte-for-byte after the test-only fixture update at `00dbebb`.
