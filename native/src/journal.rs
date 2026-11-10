@@ -30,9 +30,11 @@ impl Mode {
 
 #[derive(Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]
-enum Scope {
+pub(super) enum Scope {
     Spend,
     Invoice,
+    #[serde(skip)]
+    Issuance,
 }
 
 impl Scope {
@@ -40,16 +42,12 @@ impl Scope {
         match self {
             Self::Spend => ".wdk-onchain-journal-v1",
             Self::Invoice => ".wdk-onchain-invoices-v1",
+            Self::Issuance => ".wdk-onchain-issuance-v1",
         }
     }
 
     fn record_id(self, record: &Value) -> Result<&str> {
-        let id = record["id"].as_str().filter(|id| {
-            (16..=80).contains(&id.len())
-                && id.bytes().enumerate().all(|(index, b)| {
-                    b.is_ascii_lowercase() || b.is_ascii_digit() || (index > 0 && b == b'-')
-                })
-        });
+        let id = record["id"].as_str().filter(|id| valid_operation_id(id));
         let kind = record["kind"].as_str();
         let scope_matches = match self {
             Self::Spend => matches!(
@@ -57,6 +55,7 @@ impl Scope {
                 Some("rgb-output" | "btc-send" | "rgb-send" | "rgb-burn")
             ),
             Self::Invoice => kind == Some("rgb-receive"),
+            Self::Issuance => false,
         };
         let stage_valid = matches!(
             record["stage"].as_str(),
@@ -65,6 +64,13 @@ impl Scope {
         id.filter(|_| scope_matches && stage_valid)
             .ok_or_else(|| input("Invalid wallet journal record."))
     }
+}
+
+pub(super) fn valid_operation_id(id: &str) -> bool {
+    (16..=80).contains(&id.len())
+        && id.bytes().enumerate().all(|(index, b)| {
+            b.is_ascii_lowercase() || b.is_ascii_digit() || (index > 0 && b == b'-')
+        })
 }
 
 #[derive(Deserialize)]
@@ -81,7 +87,7 @@ struct Save {
     record: Value,
 }
 
-fn corrupt() -> super::Fault {
+pub(super) fn corrupt() -> super::Fault {
     fault("JOURNAL_CORRUPT", "Wallet journal storage requires review.")
 }
 
@@ -103,7 +109,16 @@ fn record_file_exists(path: &Path) -> Result<bool> {
     }
 }
 
-fn commit(dir: &Path, path: PathBuf, record: &Value, creating_identity: bool) -> Result<()> {
+pub(super) fn read_record<T: super::DeserializeOwned>(path: &Path) -> Result<Option<T>> {
+    if !record_file_exists(path)? {
+        return Ok(None);
+    }
+    serde_json::from_slice(&super::read_bounded(path, MAX_RECORD_BYTES).map_err(storage)?)
+        .map(Some)
+        .map_err(|_| corrupt())
+}
+
+pub(super) fn commit(dir: &Path, path: PathBuf, record: &Value, creating_identity: bool) -> Result<()> {
     let data = serde_json::to_vec(record).map_err(|_| input("Invalid wallet journal data."))?;
     if data.len() >= MAX_RECORD_BYTES {
         return Err(input("Wallet journal record exceeds its size limit."));
@@ -184,7 +199,12 @@ impl Session {
                 "Journal belongs to another wallet account.",
             ));
         }
-        let dir = self.journal_directory(p.scope, true)?;
+        self.bind_journal_scope(p.scope)?;
+        Ok(json!({"written": true}))
+    }
+
+    pub(super) fn bind_journal_scope(&self, scope: Scope) -> Result<PathBuf> {
+        let dir = self.journal_directory(scope, true)?;
         let identity = dir.join(IDENTITY);
         if record_file_exists(&identity)? {
             self.check_journal_identity(&identity)?;
@@ -206,7 +226,7 @@ impl Session {
                 true,
             )?;
         }
-        Ok(json!({"written": true}))
+        Ok(dir)
     }
 
     pub(super) fn write_journal_record(&self, params: Value) -> Result<Value> {

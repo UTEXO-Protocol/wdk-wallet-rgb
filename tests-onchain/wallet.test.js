@@ -157,6 +157,8 @@ test('a BTC-only restore can read vanilla BTC but has no RGB or WebRGB mutation 
     () => account.checkProxyEndpoint(),
     () => account.refresh(),
     () => account.registerAssetContract({}),
+    () => account.issueAssetNia({}),
+    () => account.issueAssetCfa({}),
     () => account.blindReceive(),
     () => account.witnessReceive(),
     () => account.createUtxos(plan),
@@ -184,6 +186,64 @@ test('a BTC-only restore can read vanilla BTC but has no RGB or WebRGB mutation 
   assert.deepEqual(calls, ['goOnline', 'getAddress', 'getBtcBalance', 'getBtcBalance'])
 })
 
+test('Regtest issuance sends canonical amounts under the same operation ID and exposes only public asset data', async () => {
+  const calls = []
+  const balance = { settled: '9007199254740996', future: '9007199254740996', spendable: '9007199254740996' }
+  const cfaBalance = { settled: '1', future: '1', spendable: '1' }
+  const operationId = 'regtest-nia-issue-01'
+  const nia = { operationId, ticker: 'TEST1', name: 'Test NIA', precision: 18, amounts: [1, 2n, '9007199254740993'] }
+  const cfa = { operationId: 'regtest-cfa-issue-01', name: 'Test CFA', details: 'Example Ω', precision: 0, amounts: [1n] }
+  const worker = {
+    available: true,
+    request (method, params) {
+      assert.equal(method, 'issueAsset')
+      calls.push(params)
+      return { assetId: 'rgb:fixture', schema: params.schema, name: params.name, precision: params.precision,
+        ticker: params.ticker ?? null, balance: { ...(params.schema === 'Nia' ? balance : cfaBalance), path: '/private' }, path: '/private' }
+    }
+  }
+  const journal = { async assertAvailable () {} }
+  const account = new WalletAccountRgb(worker, {}, { network: 'regtest', mode: 'rgb', routes: [] }, journal)
+  assert.equal(account.getConnectionStatus(), 'offline')
+  assert.deepEqual(await account.issueAssetNia(nia), {
+    assetId: 'rgb:fixture', schema: 'Nia', name: nia.name, precision: 18, ticker: nia.ticker, balance
+  })
+  await account.issueAssetNia(nia)
+  assert.deepEqual(await account.issueAssetCfa(cfa), {
+    assetId: 'rgb:fixture', schema: 'Cfa', name: cfa.name, precision: 0, ticker: null, balance: cfaBalance
+  })
+  const niaRpc = { ...nia, schema: 'Nia', amounts: ['1', '2', '9007199254740993'] }
+  assert.deepEqual(calls, [niaRpc, niaRpc, { ...cfa, schema: 'Cfa', amounts: ['1'] }])
+  assert.ok(account.getInfo().methods.every(method => !method.startsWith('issueAsset')))
+})
+
+test('issuance rejects public profiles, invalid inputs, unresolved spends and invalid native responses', async () => {
+  const valid = { operationId: 'regtest-nia-issue-02', ticker: 'TEST', name: 'Test NIA', precision: 0, amounts: [1n] }
+  const neverWorker = { request: () => assert.fail('Issuance was dispatched unexpectedly') }
+  const config = { network: 'regtest', mode: 'rgb' }
+  for (const profile of [{ network: 'mainnet' }, ...['dev', 'public', 'staging'].map(profile => ({ network: 'signet', profile }))]) {
+    const publicAccount = new WalletAccountRgb(neverWorker, {}, { ...config, ...profile }, {})
+    await assert.rejects(publicAccount.issueAssetNia(valid), { code: 'ASSET_ISSUANCE_UNAVAILABLE' })
+  }
+  const account = new WalletAccountRgb(neverWorker, {}, config, {})
+  for (const options of [
+    { operationId: 'wrong-id' }, { ticker: 'test' }, { ticker: '1TEST' }, { ticker: 'TOOLONG10' }, { name: 'Test\n' },
+    { name: 'x'.repeat(41) }, { precision: 19 }, { precision: 1.5 }, { amounts: [] }, { amounts: Array(21).fill(1) },
+    { amounts: Array(1) }, { amounts: [0] }, { amounts: ['01'] }, { amounts: [1.5] },
+    { amounts: [Number.MAX_SAFE_INTEGER + 1] }, { amounts: [0xffffffffffffffffn, 1n] }, { details: 'CFA only' }
+  ]) await assert.rejects(account.issueAssetNia({ ...valid, ...options }), TypeError)
+  const { ticker, ...cfa } = valid
+  for (const options of [{ details: 'Ω'.repeat(128) }, { details: '\ud800' }, { filePath: '/private/file' }]) {
+    await assert.rejects(account.issueAssetCfa({ ...cfa, ...options }), TypeError)
+  }
+  const unresolved = new WalletAccountRgb(neverWorker, {}, config, {
+    async assertAvailable () { throw Object.assign(new Error('Unresolved spend'), { code: 'OPERATION_UNRESOLVED' }) }
+  })
+  await assert.rejects(unresolved.issueAssetNia(valid), { code: 'OPERATION_UNRESOLVED' })
+  const invalidReply = new WalletAccountRgb({ request: () => ({ assetId: 'rgb:fixture' }) }, {}, config, { assertAvailable () {} })
+  await assert.rejects(invalidReply.issueAssetNia(valid), { code: 'NATIVE_PROTOCOL' })
+})
+
 test('the WDK policy view has no spend, address allocation or post-close authority', async () => {
   const txid = 'ab'.repeat(32)
   const transaction = { txid, fee: '130', confirmationTime: null }
@@ -202,6 +262,8 @@ test('the WDK policy view has no spend, address allocation or post-close authori
   const view = await account.toReadOnlyAccount()
   assert.ok(Object.isFrozen(view))
   assert.equal(view.sendBtc, undefined)
+  assert.equal(view.issueAssetNia, undefined)
+  assert.equal(view.issueAssetCfa, undefined)
   assert.equal(view.getNewAddress, undefined)
   assert.equal(view.dispose, undefined)
   await assert.rejects(view.getAddress(), { code: 'ADDRESS_UNALLOCATED' })

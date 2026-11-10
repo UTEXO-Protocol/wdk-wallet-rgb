@@ -52,6 +52,48 @@ function smallInteger (value, label, min, max) {
   return value
 }
 
+function issuanceParams (schema, options) {
+  if (!options || typeof options !== 'object') throw new TypeError('Asset issuance options are required')
+  const { operationId, name, ticker, details, precision, amounts: allocationAmounts } = options
+  const supported = ['operationId', 'name', 'precision', 'amounts', schema === 'Nia' ? 'ticker' : 'details']
+  if (Object.keys(options).some(key => !supported.includes(key))) throw new TypeError('Unsupported asset issuance option')
+  checkOperationId(operationId)
+  if (typeof name !== 'string' || name.length < 1 || name.length > 40 || /[^\x20-\x7e]/.test(name)) {
+    throw new TypeError('Asset name must have 1 to 40 printable ASCII characters')
+  }
+  smallInteger(precision, 'asset precision', 0, 18)
+  if (schema === 'Nia' && (typeof ticker !== 'string' || !/^[A-Z][A-Z0-9]{0,7}$/.test(ticker))) {
+    throw new TypeError('Asset ticker must start with an uppercase letter and contain 1 to 8 uppercase letters or digits')
+  }
+  if (schema === 'Cfa' && details !== undefined && (typeof details !== 'string' || !details || details.length > 255 ||
+    /[\uD800-\uDFFF]/u.test(details) || new TextEncoder().encode(details).length > 255)) {
+    throw new TypeError('Asset details must have 1 to 255 UTF-8 bytes')
+  }
+  if (!Array.isArray(allocationAmounts) || allocationAmounts.length < 1 || allocationAmounts.length > 20) {
+    throw new TypeError('Asset issuance requires 1 to 20 allocation amounts')
+  }
+  const amounts = Array.from(allocationAmounts, amount => u64(
+    Number.isSafeInteger(amount) ? String(amount) : amount, 'Allocation amount'
+  ))
+  if (amounts.reduce((total, amount) => total + BigInt(amount), 0n) > MAX_U64) {
+    throw new TypeError('Total asset issuance exceeds the unsigned 64-bit limit')
+  }
+  return { operationId, schema, name, precision, amounts, ...(ticker !== undefined && { ticker }), ...(details !== undefined && { details }) }
+}
+
+function admitIssuedAsset (result, params) {
+  const { assetId, schema, name, precision, ticker, balance } = result ?? {}
+  const supply = params.amounts.reduce((total, units) => total + BigInt(units), 0n)
+  const validAmount = value => typeof value === 'string' && /^(0|[1-9]\d{0,19})$/.test(value) && BigInt(value) <= supply
+  if (typeof assetId !== 'string' || !/^rgb:[A-Za-z0-9~_-]{1,156}$/.test(assetId) || schema !== params.schema ||
+      name !== params.name || precision !== params.precision || ticker !== (params.ticker ?? null) ||
+      ![balance?.settled, balance?.future, balance?.spendable].every(validAmount)) {
+    throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Native asset issuance did not return matching asset data')
+  }
+  const { settled, future, spendable } = balance
+  return { assetId, schema, name, precision, ticker, balance: { settled, future, spendable } }
+}
+
 function checkAsset (value) {
   if (typeof value !== 'string' || !/^[A-Za-z0-9:~_-]{1,160}$/.test(value)) throw new TypeError('Invalid asset ID')
   return value
@@ -290,7 +332,7 @@ export class WalletAccountRgb {
       )
       const version = await worker.request('version')
       if (version?.protocol !== 2 || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 5 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
-        version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION || version.unsignedRecovery !== 1 || version.journalWrites !== 1) {
+        version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 1) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
       const identity = signer.identity
@@ -659,6 +701,25 @@ export class WalletAccountRgb {
       contractBase64: base64.encode(contract),
       expectedAssetId: checkAsset(assetId),
       sha256: expectedSha256
+    })
+  }
+
+  issueAssetNia (options) { return this.#issueAsset('Nia', options) }
+
+  issueAssetCfa (options) { return this.#issueAsset('Cfa', options) }
+
+  #issueAsset (schema, options) {
+    return this.#run(async () => {
+      this.#assertRgbMode()
+      if (this.#config.network !== 'regtest') {
+        throw new WalletRuntimeError('ASSET_ISSUANCE_UNAVAILABLE', 'Asset issuance is available only on Regtest')
+      }
+      const params = issuanceParams(schema, options)
+      await this.#journal.assertAvailable()
+      this.#assertOpen()
+      const result = await this.#worker.request('issueAsset', params)
+      this.#assertOpen()
+      return admitIssuedAsset(result, params)
     })
   }
 

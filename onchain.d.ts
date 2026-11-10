@@ -133,6 +133,16 @@ export type AssetView = {
   precision: number
   balance: Balance
 }
+type AssetIssuanceRequest = {
+  /** Reuse the same ID and options to recover the result of an interrupted issuance. */
+  operationId: string
+  name: string
+  precision: number
+  /** Positive base-unit amounts. A number must be a safe integer. */
+  amounts: readonly (BaseUnits | number)[]
+}
+export type IssueAssetNiaRequest = AssetIssuanceRequest & { ticker: string }
+export type IssueAssetCfaRequest = AssetIssuanceRequest & { details?: string }
 export type WalletTransaction = {
   type: 'RgbSend' | 'Drain' | 'CreateUtxos' | 'SendBtc' | 'Incoming'
   txid: string
@@ -260,6 +270,10 @@ export class WalletAccountRgb {
   sync(): Promise<RefreshResult>
   registerAssetContract(options: { contract: Uint8Array; assetId: string; sha256: string }): Promise<{ assetId: string }>
   importRgbContract(options: { contract: Uint8Array; assetId: string; sha256: string }): Promise<{ assetId: string }>
+  /** Issues an ordinary NIA on a Regtest RGB account with available RGB outputs. */
+  issueAssetNia(options: IssueAssetNiaRequest): Promise<AssetView>
+  /** Issues a text-only CFA on a Regtest RGB account with available RGB outputs. */
+  issueAssetCfa(options: IssueAssetCfaRequest): Promise<AssetView>
   blindReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>
   witnessReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>
   createRgbInvoice(options?: ReceiveRequest & { mode?: 'blind' | 'witness' }): Promise<ReceiveInvoice>

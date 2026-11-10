@@ -80,6 +80,7 @@ if (!requireNative) {
     }
     assert.ok(bytes.includes(Buffer.from('electrum-and-dev-esplora')), 'Native addon lacks the expected indexer capabilities')
     assert.ok(bytes.includes(Buffer.from('ssl://electrum.iriswallet.com:50003')), 'Native addon lacks mainnet indexer admission')
+    assert.ok(bytes.includes(Buffer.from('assetIssuance')), 'Native addon lacks Regtest asset issuance')
     assert.ok(bytes.includes(servicePolicy), 'Native addon and package disagree on the Dev Signet service policy')
   }
   console.log('Package exports and exact native addon inventory passed.')

@@ -47,7 +47,7 @@ const DEFAULTS = {
 }
 
 async function managerFor (t, {
-  nativeVersion = 5, workerIndexerProtocol, receivedMint = null, substituteProxy, ...options
+  nativeVersion = 5, nativeAssetIssuance = 1, workerIndexerProtocol, receivedMint = null, substituteProxy, ...options
 } = {}) {
   const network = options.network ?? DEFAULTS.network
   const mode = options.mode ?? 'rgb'
@@ -67,7 +67,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   const { id, method, params } = JSON.parse(line)
   const reply = result => process.stdout.write(JSON.stringify({ id, result }) + '\\n')
   if (method === 'version') return reply({
-    protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1,
+    protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance},
     indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
     source: '9ec49c08be2e68f08521281e3efbd760ec989cb9',
     overlayTree: 'abc20a4b45fcf3b8b918a1326660504b1cffdf38',
@@ -181,6 +181,11 @@ test('offline open supports cached reads and gates address allocation on retryab
 
 test('offline open fails closed if the worker does not attest the network API', async t => {
   const manager = await managerFor(t, { startupMode: 'offline', nativeVersion: 1 })
+  await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
+})
+
+test('offline open fails closed if the worker does not attest the asset issuance API', async t => {
+  const manager = await managerFor(t, { startupMode: 'offline', nativeAssetIssuance: 0 })
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
 })
 

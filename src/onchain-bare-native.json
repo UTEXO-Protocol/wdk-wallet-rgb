@@ -5,8 +5,8 @@
   "protocol": 2,
   "targets": {
     "darwin-arm64": {
-      "byteLength": 44696224,
-      "sha256": "97181cda21e7f91263c527a846127edf1f470fe7568f381597108a312a0f298e"
+      "byteLength": 45141504,
+      "sha256": "6d9fdd23a44bffbbb58cbe86801481132b559a97b8cf06cc425f1c9f1efc6703"
     }
   }
 }

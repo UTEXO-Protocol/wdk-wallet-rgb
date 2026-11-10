@@ -1,6 +1,6 @@
 # On-chain WDK candidate
 
-`@utexo/wdk-wallet-rgb` is a private candidate for platform qualification. The native protocol is version 2 and requires network checks, unsigned-operation recovery and journal writes. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
+`@utexo/wdk-wallet-rgb` is a private candidate for platform qualification. The native protocol is version 2 and requires network checks, unsigned-operation recovery, journal writes and Regtest asset issuance. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
 
 | Component | Pinned version or source |
 | --- | --- |
@@ -55,4 +55,31 @@ For a seed-only restore into a new directory, explicitly set `mode: 'btc-only'` 
 
 The `/webrgb` subpath serves a scoped wallet request. It relies on the application's session and origin admission. Pairing, durable grants, account and network policy, transport generation, and trusted approval UI belong to the consuming application. Every financial request must retain its original identity across reconnect and recovery. A still-authorized replay of an exact receive request can retrieve its saved invoice until expiry. If allocation was interrupted before the invoice could be recorded, that request remains unresolved and cannot allocate a second invoice.
 
-The native lock owner durably writes both journals before releasing the wallet directory. An unresolved spend blocks later spends. Ambiguous reservation state and older records lacking a checkpoint require reconciliation. After submission begins, an absent transaction or a failed reply is insufficient evidence to release the operation.
+The native lock owner durably writes the spend and invoice journals before releasing the wallet directory. An unresolved spend blocks later spends. Ambiguous reservation state and older records lacking a checkpoint require reconciliation. After submission begins, an absent transaction or a failed reply is insufficient evidence to release the operation.
+
+## Issue test assets on Regtest
+
+Open a connected Regtest RGB wallet, fund it with Regtest BTC, create RGB outputs with `createUtxos()`, and mine their confirmation before issuing. Each entry in `amounts` uses a separate available RGB output. Supply positive base-unit amounts as decimal strings or bigint. Safe integer numbers are accepted for compatibility with the old issuance methods.
+
+```js
+const asset = await account.issueAssetNia({
+  operationId: 'local-test-nia-0001',
+  ticker: 'TEST',
+  name: 'Local test token',
+  precision: 2,
+  amounts: [10_000n]
+})
+
+const invoice = await receivingAccount.blindReceive({ amount: 250n })
+await account.sendRgbInvoice({
+  operationId: 'local-test-send-001',
+  assetId: asset.assetId,
+  invoice: invoice.invoice,
+  amount: 250n,
+  feeRate: 2n
+})
+```
+
+For a collectible fungible asset, call `issueAssetCfa()` with `name`, optional text `details`, `precision`, `amounts`, and its own `operationId`. Use a receiver invoice without an asset ID for the first transfer. The receiver learns the asset from the validated consignment. The issuance receipt records a balance snapshot at issuance or reconciliation. Read `getAssetBalance()` for the current balance.
+
+Issuance uses existing local wallet allocations and broadcasts no Bitcoin transaction. It is available to the host account API on Regtest RGB only. Preserve the wallet directory and repeat the exact call with the same operation ID after an interrupted result. A completed call returns the same asset ID on replay. If the wallet reports `INSUFFICIENT_RGB_OUTPUTS`, create and confirm more outputs before retrying.

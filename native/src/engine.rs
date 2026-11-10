@@ -37,6 +37,9 @@ mod recovery;
 #[path = "journal.rs"]
 mod journal;
 
+#[path = "issuance.rs"]
+mod issuance;
+
 #[path = "send.rs"]
 mod send;
 
@@ -1242,7 +1245,7 @@ impl Session {
                 "checkProxyEndpoint" | "refresh" | "blindReceive" | "witnessReceive" |
                 "createUtxosBegin" | "createUtxosEnd" | "cancelAbandonedOutputs" |
                 "sendRgbBegin" | "sendRgbEnd" | "burnBegin" | "burnEnd" | "importContract" |
-                "getConsignment" | "getReceivedMint")
+                "getConsignment" | "getReceivedMint" | "issueAsset")
         {
             return Err(btc_only());
         }
@@ -1416,6 +1419,7 @@ impl Session {
             "discardPrepared" => self.discard_prepared(decode(params)?),
             "getConsignment" => self.proof(decode(params)?),
             "importContract" => self.import_contract(decode(params)?),
+            "issueAsset" => self.issue_asset(params),
             "getReceivedMint" => {
                 let p: RecipientId = decode(params)?;
                 if p.recipient_id.len() > 512 || RecipientInfo::new(p.recipient_id.clone()).is_err()
@@ -1729,6 +1733,37 @@ mod tests {
     }
 
     #[test]
+    fn issuance_checks_exact_input_and_requires_an_online_regtest_wallet() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut worker = Worker::default();
+        worker.dispatch("open", open_params(dir.path(), "regtest")).unwrap();
+        let request = json!({
+            "operationId": "issue-native-test-01", "schema": "Nia", "name": "Local Token",
+            "ticker": "LOCAL1", "precision": 2, "amounts": ["1000", "2000"],
+        });
+        for (key, value) in [
+            ("operationId", json!("../unsafe-issue-id")),
+            ("schema", json!("Bfa")),
+            ("ticker", json!("lower")),
+            ("name", json!("bad\nname")),
+            ("precision", json!(19)),
+            ("details", json!("not a NIA field")),
+            ("amounts", json!(["01"])),
+            ("amounts", json!(["18446744073709551615", "1"])),
+            ("amounts", json!(vec!["1"; 21])),
+            ("filePath", json!("/tmp/attachment")),
+        ] {
+            let mut invalid = request.clone();
+            invalid[key] = value;
+            assert_eq!(worker.dispatch("issueAsset", invalid).unwrap_err().code, "INVALID_PARAMS");
+        }
+        assert_eq!(worker.dispatch("issueAsset", request).unwrap_err().code, "WALLET_OFFLINE");
+        assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
+        assert!(!dir.path().join(".wdk-onchain-issuance-v1/.pending.json").exists());
+    }
+
+    #[test]
     fn bfa5_regtest_contract_is_rejected_without_registration() {
         const LEGACY_ID: &str = "rgb:rkMVlCDS-TPWWQZK-1Sg4G77-076Bqzl-a6SHf5U-WlnW1yA";
         const LEGACY_SHA: &str = "7eabc7ff78e046ad2b6f26e1d61b5c151ffa53870ced7001bc2a15c80ddfd3f8";
@@ -1770,7 +1805,7 @@ mod tests {
             "indexerUrl": "tcp://127.0.0.1:50001",
         })).unwrap_err().code, "INVALID_PARAMS");
         assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
-        for method in ["checkProxyEndpoint", "importContract", "createUtxosBegin", "refresh", "sendRgbBegin", "burnBegin"] {
+        for method in ["checkProxyEndpoint", "importContract", "createUtxosBegin", "refresh", "sendRgbBegin", "burnBegin", "issueAsset"] {
             assert_eq!(worker.dispatch(method, json!({})).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
         }
         assert_eq!(worker.dispatch("discardUnsubmitted", json!({
@@ -1841,6 +1876,7 @@ mod tests {
             for method in ["burnBegin", "burnEnd", "getConsignment", "getReceivedMint"] {
                 assert_eq!(worker.dispatch(method, json!({})).unwrap_err().code, "BRIDGE_MODE_UNAVAILABLE");
             }
+            assert_eq!(worker.dispatch("issueAsset", json!({})).unwrap_err().code, "ASSET_ISSUANCE_UNAVAILABLE");
             assert_eq!(worker.dispatch("snapshotUnsigned", json!({"kind":"rgb-burn"})).unwrap_err().code, "BRIDGE_MODE_UNAVAILABLE");
             assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
             assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
