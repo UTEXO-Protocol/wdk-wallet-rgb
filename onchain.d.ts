@@ -270,9 +270,9 @@ export class WalletAccountRgb {
   sync(): Promise<RefreshResult>
   registerAssetContract(options: { contract: Uint8Array; assetId: string; sha256: string }): Promise<{ assetId: string }>
   importRgbContract(options: { contract: Uint8Array; assetId: string; sha256: string }): Promise<{ assetId: string }>
-  /** Issues an ordinary NIA on a Regtest RGB account with available RGB outputs. */
+  /** Issues an ordinary NIA on a Mainnet, Public Signet or Regtest RGB account with available RGB outputs. */
   issueAssetNia(options: IssueAssetNiaRequest): Promise<AssetView>
-  /** Issues a text-only CFA on a Regtest RGB account with available RGB outputs. */
+  /** Issues a text-only CFA on a Mainnet, Public Signet or Regtest RGB account with available RGB outputs. */
   issueAssetCfa(options: IssueAssetCfaRequest): Promise<AssetView>
   blindReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>
   witnessReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>

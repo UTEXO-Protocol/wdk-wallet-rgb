@@ -96,7 +96,7 @@ pub(crate) fn version(source: &str, overlay: &str) -> Value {
         "networkChecks": 5,
         "unsignedRecovery": 1,
         "journalWrites": 1,
-        "assetIssuance": 1,
+        "assetIssuance": 2,
     })
 }
 

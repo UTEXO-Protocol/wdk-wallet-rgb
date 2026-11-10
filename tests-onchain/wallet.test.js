@@ -186,7 +186,7 @@ test('a BTC-only restore can read vanilla BTC but has no RGB or WebRGB mutation 
   assert.deepEqual(calls, ['goOnline', 'getAddress', 'getBtcBalance', 'getBtcBalance'])
 })
 
-test('Regtest issuance sends canonical amounts under the same operation ID and exposes only public asset data', async () => {
+test('ordinary RGB issuance sends canonical amounts under the same operation ID and exposes only public asset data', async () => {
   const calls = []
   const balance = { settled: '9007199254740996', future: '9007199254740996', spendable: '9007199254740996' }
   const cfaBalance = { settled: '1', future: '1', spendable: '1' }
@@ -203,27 +203,31 @@ test('Regtest issuance sends canonical amounts under the same operation ID and e
     }
   }
   const journal = { async assertAvailable () {} }
-  const account = new WalletAccountRgb(worker, {}, { network: 'regtest', mode: 'rgb', routes: [] }, journal)
-  assert.equal(account.getConnectionStatus(), 'offline')
-  assert.deepEqual(await account.issueAssetNia(nia), {
-    assetId: 'rgb:fixture', schema: 'Nia', name: nia.name, precision: 18, ticker: nia.ticker, balance
-  })
-  await account.issueAssetNia(nia)
-  assert.deepEqual(await account.issueAssetCfa(cfa), {
-    assetId: 'rgb:fixture', schema: 'Cfa', name: cfa.name, precision: 0, ticker: null, balance: cfaBalance
-  })
   const niaRpc = { ...nia, schema: 'Nia', amounts: ['1', '2', '9007199254740993'] }
-  assert.deepEqual(calls, [niaRpc, niaRpc, { ...cfa, schema: 'Cfa', amounts: ['1'] }])
-  assert.ok(account.getInfo().methods.every(method => !method.startsWith('issueAsset')))
+  for (const chain of [{ network: 'regtest' }, { network: 'mainnet' }, { network: 'signet', profile: 'public' }]) {
+    const account = new WalletAccountRgb(worker, {}, { ...chain, mode: 'rgb', routes: [] }, journal)
+    assert.equal(account.getConnectionStatus(), 'offline')
+    assert.deepEqual(await account.issueAssetNia(nia), {
+      assetId: 'rgb:fixture', schema: 'Nia', name: nia.name, precision: 18, ticker: nia.ticker, balance
+    })
+    await account.issueAssetNia(nia)
+    assert.deepEqual(await account.issueAssetCfa(cfa), {
+      assetId: 'rgb:fixture', schema: 'Cfa', name: cfa.name, precision: 0, ticker: null, balance: cfaBalance
+    })
+    assert.deepEqual(calls.splice(0), [niaRpc, niaRpc, { ...cfa, schema: 'Cfa', amounts: ['1'] }])
+    assert.ok(account.getInfo().methods.every(method => !method.startsWith('issueAsset')))
+  }
 })
 
-test('issuance rejects public profiles, invalid inputs, unresolved spends and invalid native responses', async () => {
+test('issuance rejects bridge profiles, invalid inputs, unresolved spends and invalid native responses', async () => {
   const valid = { operationId: 'regtest-nia-issue-02', ticker: 'TEST', name: 'Test NIA', precision: 0, amounts: [1n] }
   const neverWorker = { request: () => assert.fail('Issuance was dispatched unexpectedly') }
   const config = { network: 'regtest', mode: 'rgb' }
-  for (const profile of [{ network: 'mainnet' }, ...['dev', 'public', 'staging'].map(profile => ({ network: 'signet', profile }))]) {
-    const publicAccount = new WalletAccountRgb(neverWorker, {}, { ...config, ...profile }, {})
-    await assert.rejects(publicAccount.issueAssetNia(valid), { code: 'ASSET_ISSUANCE_UNAVAILABLE' })
+  const { ticker, ...cfa } = valid
+  for (const profile of ['dev', 'staging']) {
+    const bridgeAccount = new WalletAccountRgb(neverWorker, {}, { ...config, network: 'signet', profile }, {})
+    await assert.rejects(bridgeAccount.issueAssetNia(valid), { code: 'ASSET_ISSUANCE_UNAVAILABLE' })
+    await assert.rejects(bridgeAccount.issueAssetCfa(cfa), { code: 'ASSET_ISSUANCE_UNAVAILABLE' })
   }
   const account = new WalletAccountRgb(neverWorker, {}, config, {})
   for (const options of [
@@ -232,7 +236,6 @@ test('issuance rejects public profiles, invalid inputs, unresolved spends and in
     { amounts: Array(1) }, { amounts: [0] }, { amounts: ['01'] }, { amounts: [1.5] },
     { amounts: [Number.MAX_SAFE_INTEGER + 1] }, { amounts: [0xffffffffffffffffn, 1n] }, { details: 'CFA only' }
   ]) await assert.rejects(account.issueAssetNia({ ...valid, ...options }), TypeError)
-  const { ticker, ...cfa } = valid
   for (const options of [{ details: 'Ω'.repeat(128) }, { details: '\ud800' }, { filePath: '/private/file' }]) {
     await assert.rejects(account.issueAssetCfa({ ...cfa, ...options }), TypeError)
   }

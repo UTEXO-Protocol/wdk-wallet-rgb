@@ -198,7 +198,7 @@ require('node:readline').createInterface({ input: process.stdin }).on('line', li
   const { id, method, params } = JSON.parse(line)
   const reply = result => process.stdout.write(JSON.stringify({ id, result }) + '\n')
   if (method === 'version') return reply({
-    protocol: 2, unsignedRecovery: 1, journalWrites: 1, assetIssuance: 1, networkChecks: 5, runtime: 'node-host-process',
+    protocol: 2, unsignedRecovery: 1, journalWrites: 1, assetIssuance: 2, networkChecks: 5, runtime: 'node-host-process',
     indexer: 'electrum-and-dev-esplora', source: '9ec49c08be2e68f08521281e3efbd760ec989cb9',
     overlayTree: 'abc20a4b45fcf3b8b918a1326660504b1cffdf38',
     integrationTree: '64e35cf4086cbec8d1adec2e9e29fbdbf2183014'

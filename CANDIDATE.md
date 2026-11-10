@@ -1,6 +1,6 @@
 # On-chain WDK candidate
 
-`@utexo/wdk-wallet-rgb` is a private candidate for platform qualification. The native protocol is version 2 and requires network checks, unsigned-operation recovery, journal writes and Regtest asset issuance. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
+`@utexo/wdk-wallet-rgb` is a private candidate for platform qualification. The native protocol is version 2 and requires network checks, unsigned-operation recovery, journal writes and ordinary RGB asset issuance. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
 
 | Component | Pinned version or source |
 | --- | --- |
@@ -57,9 +57,11 @@ The `/webrgb` subpath serves a scoped wallet request. It relies on the applicati
 
 The native lock owner durably writes the spend and invoice journals before releasing the wallet directory. An unresolved spend blocks later spends. Ambiguous reservation state and older records lacking a checkpoint require reconciliation. After submission begins, an absent transaction or a failed reply is insufficient evidence to release the operation.
 
-## Issue test assets on Regtest
+## Issue RGB assets
 
-Open a connected Regtest RGB wallet, fund it with Regtest BTC, create RGB outputs with `createUtxos()`, and mine their confirmation before issuing. Each entry in `amounts` uses a separate available RGB output. Supply positive base-unit amounts as decimal strings or bigint. Safe integer numbers are accepted for compatibility with the old issuance methods.
+Open a connected Mainnet RGB, Public Signet RGB or Regtest RGB wallet. Create RGB outputs with `createUtxos()` using BTC on the selected chain and wait for their confirmation before issuing. Each entry in `amounts` uses a separate available RGB output. Supply positive base-unit amounts as decimal strings or bigint. Safe integer numbers are accepted for compatibility with the old issuance methods.
+
+The example below uses Regtest. Mine the output confirmations on your local chain before running it.
 
 ```js
 const asset = await account.issueAssetNia({
@@ -82,4 +84,6 @@ await account.sendRgbInvoice({
 
 For a collectible fungible asset, call `issueAssetCfa()` with `name`, optional text `details`, `precision`, `amounts`, and its own `operationId`. Use a receiver invoice without an asset ID for the first transfer. The receiver learns the asset from the validated consignment. The issuance receipt records a balance snapshot at issuance or reconciliation. Read `getAssetBalance()` for the current balance.
 
-Issuance uses existing local wallet allocations and broadcasts no Bitcoin transaction. It is available to the host account API on Regtest RGB only. Preserve the wallet directory and repeat the exact call with the same operation ID after an interrupted result. A completed call returns the same asset ID on replay. If the wallet reports `INSUFFICIENT_RGB_OUTPUTS`, create and confirm more outputs before retrying.
+Issuance uses existing wallet allocations, requires a connected indexer for new assets and broadcasts no Bitcoin transaction. The invoice and transfer in the example use the configured RGB proxy. The SDK exposes issuance through the host account API for ordinary RGB. Preserve the wallet directory and repeat the exact call with the same operation ID after an interrupted result. A completed call returns the same asset ID on replay. If the wallet reports `INSUFFICIENT_RGB_OUTPUTS`, create and confirm more outputs before retrying.
+
+On Mainnet and Public Signet, the wallet checks every potential issuance output against the Bitcoin indexer. If any is awaiting confirmation, issuance returns `RGB_OUTPUT_CONFIRMATION_REQUIRED`. Retry after the setup confirms using the same operation ID. The issuance call needs no proxy connection.

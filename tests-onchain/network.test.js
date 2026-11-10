@@ -47,7 +47,7 @@ const DEFAULTS = {
 }
 
 async function managerFor (t, {
-  nativeVersion = 5, nativeAssetIssuance = 1, workerIndexerProtocol, receivedMint = null, substituteProxy, ...options
+  nativeVersion = 5, nativeAssetIssuance = 2, workerIndexerProtocol, receivedMint = null, substituteProxy, ...options
 } = {}) {
   const network = options.network ?? DEFAULTS.network
   const mode = options.mode ?? 'rgb'
@@ -184,8 +184,8 @@ test('offline open fails closed if the worker does not attest the network API', 
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
 })
 
-test('offline open fails closed if the worker does not attest the asset issuance API', async t => {
-  const manager = await managerFor(t, { startupMode: 'offline', nativeAssetIssuance: 0 })
+test('offline open rejects the previous Regtest-only native issuance policy', async t => {
+  const manager = await managerFor(t, { startupMode: 'offline', nativeAssetIssuance: 1 })
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
 })
 

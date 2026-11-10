@@ -5,8 +5,11 @@ use super::{
     Session, TransferScope, TransferStatus, Value, decode, fault, input, iso_balance, json, native,
     positive, require_asset, sha256,
 };
-use rgb_lib::wallet::{RgbWalletOpsOffline, Transfer, TransferKind};
+use crate::profile::Profile;
+use rgb_lib::wallet::{RgbWalletOpsOffline, Transfer, TransferKind, Unspent};
+use std::collections::HashSet;
 use std::path::Path;
+use std::time::{Duration, Instant};
 
 #[derive(Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 enum Schema {
@@ -123,6 +126,52 @@ fn unresolved() -> super::Fault {
     )
 }
 
+fn insufficient_outputs() -> super::Fault {
+    fault(
+        "INSUFFICIENT_RGB_OUTPUTS",
+        "Create and confirm more RGB outputs before issuing this asset.",
+    )
+}
+
+fn require_confirmed_slots(
+    unspents: &[Unspent],
+    required: usize,
+    mut tx_height: impl FnMut(&str) -> Result<Option<u32>>,
+) -> Result<()> {
+    // rgb-lib selects the seals itself. With one allocation per output, every
+    // selectable seal is in this superset, which may include internal reservations.
+    let candidates = unspents.iter().filter(|row| {
+        row.utxo.colorable
+            && row.utxo.exists
+            && row.pending_blinded == 0
+            && row.rgb_allocations.is_empty()
+    });
+    if candidates.clone().count() < required {
+        return Err(insufficient_outputs());
+    }
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let mut verified = HashSet::new();
+    for row in candidates {
+        let txid = row.utxo.outpoint.txid.as_str();
+        if verified.insert(txid) {
+            let height = tx_height(txid)?;
+            if height.is_none() {
+                return Err(fault(
+                    "RGB_OUTPUT_CONFIRMATION_REQUIRED",
+                    "Wait for possible RGB issuance outputs to confirm before issuing this asset.",
+                ));
+            }
+            if Instant::now() >= deadline {
+                return Err(fault(
+                    "INDEXER_UNAVAILABLE",
+                    "RGB output confirmation checks exceeded the time budget.",
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 impl Session {
     fn issuances(&self) -> Result<impl Iterator<Item = Transfer>> {
         Ok(self
@@ -229,10 +278,14 @@ impl Session {
     }
 
     pub(super) fn issue_asset(&mut self, params: Value) -> Result<Value> {
-        if self.network != BitcoinNetwork::Regtest {
+        if !matches!(
+            (self.network, self.profile),
+            (BitcoinNetwork::Mainnet | BitcoinNetwork::Regtest, None)
+                | (BitcoinNetwork::Signet, Some(Profile::Public))
+        ) {
             return Err(fault(
                 "ASSET_ISSUANCE_UNAVAILABLE",
-                "RGB test asset issuance requires Regtest.",
+                "Asset issuance requires Mainnet, Public Signet or Regtest RGB.",
             ));
         }
         self.idle()?;
@@ -266,9 +319,22 @@ impl Session {
         }
 
         let online = self.online()?;
-        self.wallet
+        let unspents = self
+            .wallet
             .list_unspents(Some(online), false, false)
             .map_err(native)?;
+        if self.network != BitcoinNetwork::Regtest {
+            require_confirmed_slots(&unspents, amounts.len(), |txid| {
+                self.wallet
+                    .get_tx_height(online, txid.to_owned())
+                    .map_err(|_| {
+                        fault(
+                            "INDEXER_UNAVAILABLE",
+                            "Unable to verify RGB output confirmations.",
+                        )
+                    })
+            })?;
+        }
         let after = self
             .issuances()?
             .map(|transfer| transfer.idx)
@@ -304,15 +370,84 @@ impl Session {
                 .map(|asset| (asset.asset_id, asset.balance)),
         }
         .map_err(|error| match error {
-            rgb_lib::Error::InsufficientAllocationSlots => fault(
-                "INSUFFICIENT_RGB_OUTPUTS",
-                "Create and confirm more RGB outputs before issuing this asset.",
-            ),
+            rgb_lib::Error::InsufficientAllocationSlots => insufficient_outputs(),
             other => native(other),
         })?;
         let (asset_id, balance) = issued;
         let result = request.result(asset_id, balance);
         save_receipt(&dir, &request, Some(result.clone()))?;
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rgb_lib::wallet::{Outpoint, Utxo};
+
+    fn slot(txid: &str, vout: u32) -> Unspent {
+        Unspent {
+            utxo: Utxo {
+                outpoint: Outpoint {
+                    txid: txid.into(),
+                    vout,
+                },
+                btc_amount: 1_000,
+                colorable: true,
+                exists: true,
+                derivation_index: Some(vout),
+            },
+            rgb_allocations: vec![],
+            pending_blinded: 0,
+        }
+    }
+
+    #[test]
+    fn checks_all_possible_issuance_seals_and_deduplicates_transaction_lookups() {
+        let mut vanilla = slot("vanilla", 0);
+        vanilla.utxo.colorable = false;
+        let mut pending_blind = slot("blind", 0);
+        pending_blind.pending_blinded = 1;
+        let mut pending_setup = slot("absent", 0);
+        pending_setup.utxo.exists = false;
+        let mut rows = vec![
+            slot("confirmed", 0),
+            slot("confirmed", 1),
+            vanilla,
+            pending_blind,
+            pending_setup,
+        ];
+        let mut looked_up = vec![];
+        require_confirmed_slots(&rows, 2, |txid| {
+            looked_up.push(txid.to_owned());
+            Ok(Some(100))
+        })
+        .unwrap();
+        assert_eq!(looked_up, ["confirmed"]);
+        assert_eq!(
+            require_confirmed_slots(&rows, 3, |_| panic!(
+                "insufficient rows need no network lookup"
+            ))
+            .unwrap_err()
+            .code,
+            "INSUFFICIENT_RGB_OUTPUTS"
+        );
+
+        rows.push(slot("unconfirmed", 0));
+        assert_eq!(
+            require_confirmed_slots(&rows, 2, |txid| Ok((txid == "confirmed").then_some(100)))
+                .unwrap_err()
+                .code,
+            "RGB_OUTPUT_CONFIRMATION_REQUIRED"
+        );
+        assert_eq!(
+            require_confirmed_slots(&rows, 2, |_| Err(fault(
+                "INDEXER_UNAVAILABLE",
+                "fixture lookup failed"
+            )))
+            .unwrap_err()
+            .code,
+            "INDEXER_UNAVAILABLE"
+        );
     }
 }

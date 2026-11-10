@@ -1876,7 +1876,13 @@ mod tests {
             for method in ["burnBegin", "burnEnd", "getConsignment", "getReceivedMint"] {
                 assert_eq!(worker.dispatch(method, json!({})).unwrap_err().code, "BRIDGE_MODE_UNAVAILABLE");
             }
-            assert_eq!(worker.dispatch("issueAsset", json!({})).unwrap_err().code, "ASSET_ISSUANCE_UNAVAILABLE");
+            for request in [
+                json!({"operationId":"issue-public-nia-01", "schema":"Nia", "name":"Native NIA", "ticker":"NIA", "precision":0, "amounts":["1"]}),
+                json!({"operationId":"issue-public-cfa-01", "schema":"Cfa", "name":"Native CFA", "precision":0, "amounts":["1"]}),
+            ] {
+                assert_eq!(worker.dispatch("issueAsset", request).unwrap_err().code, "WALLET_OFFLINE");
+            }
+            assert!(!dir.path().join(".wdk-onchain-issuance-v1/.pending.json").exists());
             assert_eq!(worker.dispatch("snapshotUnsigned", json!({"kind":"rgb-burn"})).unwrap_err().code, "BRIDGE_MODE_UNAVAILABLE");
             assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
             assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
@@ -1890,6 +1896,24 @@ mod tests {
     }
 
     #[test]
+    fn bridge_profiles_cannot_issue_assets() {
+        for profile in ["dev", "staging"] {
+            let dir = tempfile::tempdir().unwrap();
+            std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+            let mut params = open_params(dir.path(), "signet");
+            params["profile"] = json!(profile);
+            let mut worker = Worker::default();
+            worker.dispatch("open", params).unwrap();
+            let request = json!({
+                "operationId":"issue-bridge-nia-01", "schema":"Nia", "name":"Native NIA",
+                "ticker":"NIA", "precision":0, "amounts":["1"],
+            });
+            assert_eq!(worker.dispatch("issueAsset", request).unwrap_err().code, "ASSET_ISSUANCE_UNAVAILABLE");
+            assert!(!dir.path().join(".wdk-onchain-issuance-v1").exists());
+        }
+    }
+
+    #[test]
     fn mainnet_bitcoin_only_does_not_initialize_unsupported_rgb_schemas() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
@@ -1899,6 +1923,7 @@ mod tests {
         assert_eq!(worker.dispatch("open", params.clone()).unwrap()["network"], "mainnet");
         assert_eq!(worker.session.as_ref().unwrap().wallet.get_wallet_data().supported_schemas, vec![AssetSchema::Nia]);
         assert_eq!(worker.dispatch("importContract", json!({})).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
+        assert_eq!(worker.dispatch("issueAsset", json!({})).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
         assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
         worker.dispatch("close", json!({})).unwrap();
         params["mode"] = json!("rgb");

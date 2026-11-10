@@ -332,7 +332,7 @@ export class WalletAccountRgb {
       )
       const version = await worker.request('version')
       if (version?.protocol !== 2 || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 5 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
-        version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 1) {
+        version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 2) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
       const identity = signer.identity
@@ -711,8 +711,9 @@ export class WalletAccountRgb {
   #issueAsset (schema, options) {
     return this.#run(async () => {
       this.#assertRgbMode()
-      if (this.#config.network !== 'regtest') {
-        throw new WalletRuntimeError('ASSET_ISSUANCE_UNAVAILABLE', 'Asset issuance is available only on Regtest')
+      const { network, profile } = this.#config
+      if (network !== 'regtest' && network !== 'mainnet' && !(network === 'signet' && profile === 'public')) {
+        throw new WalletRuntimeError('ASSET_ISSUANCE_UNAVAILABLE', 'Asset issuance requires Regtest, Mainnet or Public Signet RGB')
       }
       const params = issuanceParams(schema, options)
       await this.#journal.assertAvailable()
