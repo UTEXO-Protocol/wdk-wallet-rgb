@@ -2,6 +2,14 @@
 
 The candidate is a private on-chain SDK for Node and Bare. Mainnet and Public Signet admit Bitcoin and ordinary RGB under the network policies in the [candidate guide](CANDIDATE.md). Regtest, Dev and staging have separate service and bridge policies. This register contains deployment-specific test evidence and stays in the repository outside the package.
 
+## Alpha.19 ordinary RGB qualification
+
+The private Apple Silicon qualification pack has SHA-256 `3b9c630ee674c09a88854c0025db280a4f6abf6e89ecd9af492e2246041bcb47`. Its exact 25-file inventory matched source `71d376ddde51ac8b0dfc15f0bcbe8a3f8f31849b` and the [native manifest](src/onchain-bare-native.json). Neither Dev contract representation nor its deployment metadata appeared in the archive. The separately verified Node worker has SHA-256 `7a9139f8d0b8f092792f0308c9df7843778d33db9e6e7926e2437515280509fe`. Both native artifacts matched byte-for-byte after the test-only fixture update at `00dbebb`.
+
+A clean Node 22 consumer completed idempotent registration, a blinded receive from an independent issuer, a witness send and a blinded return for each of NIA and CFA on isolated Regtest. Each transfer settled at six confirmations. An injected loss of the final journal response recovered the original witness send after reopen without a second send. A separate BTC spend preserved both RGB allocations. Packed Node and Bare opened the two new public profiles offline. Native tests covered wrong-chain admission, proxy identity and bridge rejection. Packed Bare also registered and reopened with the externally supplied Dev contract.
+
+Funded public-network acceptance and other native targets require separate qualification. The documented mainnet proxy advertises protocol 0.2. Ordinary RGB requires a supported TLS proxy with protocol 1.0.
+
 ## Alpha.17 platform qualification
 
 The [alpha.17 manifest](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/3c706a0604ab50104ef0a29727dbb8fa5dc69b67/src/onchain-bare-native.json) binds all eleven Bare targets to their exact addon hashes and byte lengths. The five separately built Node workers use protocol 2. The app supplies the worker path and SHA-256.
