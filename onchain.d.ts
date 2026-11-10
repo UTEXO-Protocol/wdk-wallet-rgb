@@ -83,17 +83,28 @@ type DevRgbModeConfig = HostedRgbModeConfig & {
   transportEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc'
   burnDestinationRoutes?: readonly BurnRoute[]
 }
-type CandidateNetwork = 'regtest' | 'signet'
+type OrdinaryRgbModeConfig = {
+  mode: 'rgb'
+  transportEndpoint: `rpcs://${string}`
+  evmRpcUrls?: never
+  proxyAuthKeys?: never
+  burnDestinationRoutes?: never
+}
+type CandidateNetwork = 'regtest' | 'signet' | 'mainnet'
 type NetworkConfig = ({
   network: 'regtest'
   indexerUrl: `${'tcp' | 'ssl'}://${string}`
 } & (RgbModeConfig | BtcOnlyModeConfig)) | ({
   network: 'signet'
   indexerUrl: `ssl://electrum.iriswallet.com:50033${'' | '/'}`
-} & (BtcOnlyModeConfig | StagingRgbModeConfig)) | ({
+} & (BtcOnlyModeConfig | StagingRgbModeConfig | (OrdinaryRgbModeConfig & { profile: 'public' }))) | ({
   network: 'signet'
   indexerUrl: `https://dev.esplora-01.mint.utexo.com${'' | '/'}`
-} & DevRgbModeConfig)
+} & DevRgbModeConfig) | ({
+  network: 'mainnet'
+  profile?: never
+  indexerUrl: `ssl://electrum.iriswallet.com:50003${'' | '/'}`
+} & (BtcOnlyModeConfig | OrdinaryRgbModeConfig))
 export type CandidateConfig = SharedCandidateConfig & NetworkConfig & ({
   nativeExecutable: string
   nativeSha256: string

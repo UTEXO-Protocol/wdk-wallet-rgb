@@ -1,10 +1,10 @@
 # On-chain RGB SDK qualification register
 
-The candidate is a private on-chain SDK for Node and Bare. It admits isolated Regtest for Bitcoin and RGB, plus separate Bitcoin-only and staging RGB profiles for public Signet.
+The candidate is a private on-chain SDK for Node and Bare. Mainnet and Public Signet admit Bitcoin and ordinary RGB under the network policies in the [candidate guide](CANDIDATE.md). Regtest, Dev and staging have separate service and bridge policies. This register contains deployment-specific test evidence and stays in the repository outside the package.
 
 ## Alpha.17 platform qualification
 
-The [native manifest](src/onchain-bare-native.json) binds all eleven Bare targets to the exact addon hashes and byte lengths. Node uses five separately built protocol-2 workers. The app supplies the worker path and SHA-256.
+The [alpha.17 manifest](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/3c706a0604ab50104ef0a29727dbb8fa5dc69b67/src/onchain-bare-native.json) binds all eleven Bare targets to their exact addon hashes and byte lengths. The five separately built Node workers use protocol 2. The app supplies the worker path and SHA-256.
 
 | Runtime | Targets | Evidence |
 | --- | --- | --- |

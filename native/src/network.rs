@@ -200,6 +200,7 @@ mod tests {
         let regtest_genesis = genesis_block(bitcoin_chain(BitcoinNetwork::Regtest)).block_hash();
         for (profile, expected, other) in [
             (None, public, dev),
+            (Some(crate::profile::Profile::Public), public, dev),
             (Some(crate::profile::Profile::Staging), public, dev),
             (Some(crate::profile::Profile::Dev), dev, public),
         ] {
@@ -218,6 +219,35 @@ mod tests {
             )
             .is_ok()
         );
+    }
+
+    #[test]
+    fn mainnet_admission_rejects_wrong_genesis_on_the_wallet_indexer_socket() {
+        use rgb_lib::bitcoin::consensus::encode::serialize_hex;
+        use std::io::{BufRead, BufReader, Write};
+        use std::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("tcp://{}", listener.local_addr().unwrap());
+        let server = std::thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            stream.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+            let mut stream = BufReader::new(stream);
+            let mut line = String::new();
+            stream.read_line(&mut line).unwrap();
+            let request: Value = serde_json::from_str(&line).unwrap();
+            assert_eq!(request["method"], "blockchain.block.header");
+            assert_eq!(request["params"], json!([0]));
+            let wrong_header = genesis_block(bitcoin_chain(BitcoinNetwork::Regtest)).header;
+            let response = json!({"jsonrpc":"2.0","id":request["id"],"result":serialize_hex(&wrong_header)});
+            writeln!(stream.get_mut(), "{response}").unwrap();
+        });
+        // Exercise the real underlying wallet indexer with a local server. The
+        // public adapter itself only admits the pinned TLS Mainnet endpoint.
+        let error = check_indexer_config(&IndexerConfig::Electrum { url }, BitcoinNetwork::Mainnet).unwrap_err();
+        assert!(matches!(error, rgb_lib::Error::InvalidIndexer { details }
+            if details == "the wallet indexer reports a different Bitcoin chain"));
+        server.join().unwrap();
     }
 
     #[test]

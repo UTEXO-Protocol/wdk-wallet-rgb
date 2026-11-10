@@ -8,7 +8,7 @@ use rgb_lib::no_wallet::{BundleFilter, inspect_consignment};
 use rgb_lib::wallet::{
     AssetFilter, Balance, DatabaseType, EvmChain, Invoice, Online, OnlineOptions, RecipientInfo,
     RgbInspection, RgbWalletOpsOffline, RgbWalletOpsOnline, SinglesigKeys, TransferScope,
-    TransitionGlobal, Wallet, WalletData,
+    TransitionGlobal, TransportEndpoint, Wallet, WalletData,
 };
 use rgb_lib::{AssetSchema, Assignment, BitcoinNetwork, TransferStatus, TypeOfTransition};
 use serde::de::DeserializeOwned;
@@ -41,7 +41,7 @@ mod journal;
 mod send;
 
 const SOURCE: &str = "9ec49c08be2e68f08521281e3efbd760ec989cb9";
-const OVERLAY: &str = "e8fad4eda8ad85f3d6a6b18a29a79f6f76cb6977";
+const OVERLAY: &str = "abc20a4b45fcf3b8b918a1326660504b1cffdf38";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -162,9 +162,9 @@ struct Open {
     account_xpub_vanilla: String,
     account_xpub_colored: String,
     master_fingerprint: String,
-    #[serde(default)]
-    mode: journal::Mode,
+    mode: Option<journal::Mode>,
     profile: Option<crate::profile::Profile>,
+    transport_endpoint: Option<String>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -291,6 +291,7 @@ struct Session {
     journal_mode: journal::Mode,
     network: BitcoinNetwork,
     profile: Option<crate::profile::Profile>,
+    transport_endpoint: Option<String>,
     online: Option<Online>,
     indexer_url: Option<String>,
     prepared: Option<Prepared>,
@@ -302,14 +303,18 @@ pub(crate) struct Worker {
 
 fn chain(network: &str) -> Result<BitcoinNetwork> {
     match network {
+        "mainnet" => Ok(BitcoinNetwork::Mainnet),
         "signet" => Ok(BitcoinNetwork::Signet),
         "regtest" => Ok(BitcoinNetwork::Regtest),
         _ => Err(input("Unsupported Bitcoin network.")),
     }
 }
 
-fn public_signet_btc_only() -> Fault {
-    fault("RGB_MODE_UNAVAILABLE", "This Signet wallet is configured for Bitcoin only.")
+fn btc_only() -> Fault {
+    fault("RGB_MODE_UNAVAILABLE", "This wallet is configured for Bitcoin only.")
+}
+fn bridge_unavailable() -> Fault {
+    fault("BRIDGE_MODE_UNAVAILABLE", "This wallet profile does not support bridge operations.")
 }
 fn mint_chain(
     rpc_url: String,
@@ -420,6 +425,12 @@ fn bind_identity(root: &Path, params: &Open, network: BitcoinNetwork) -> Result<
     if let Some(profile) = params.profile {
         identity["profile"] = json!(profile);
     }
+    if network == BitcoinNetwork::Mainnet {
+        identity["mode"] = json!(params.mode.unwrap_or_default().as_str());
+    }
+    if let Some(endpoint) = &params.transport_endpoint {
+        identity["transportEndpoint"] = json!(endpoint);
+    }
     let expected = serde_json::to_vec(&identity)
         .map_err(|_| fault("INTERNAL", "Could not encode wallet identity."))?;
     match read_bounded(&path, 4096) {
@@ -473,6 +484,33 @@ pub(crate) fn validated_url(value: &str, allowed: &[&str], allow_plain: bool) ->
 }
 fn validate_proxy(endpoint: &str, regtest: bool) -> Result<()> {
     validated_url(endpoint, &["rpc", "rpcs"], regtest).map(|_| ())
+}
+fn validate_public_proxy(endpoint: &str) -> Result<()> {
+    let invalid = || input("The public RGB proxy must use a TLS endpoint with a public DNS hostname.");
+    // Invoice parsing decodes percent escapes before splitting transport endpoints.
+    if endpoint.contains([',', '%']) {
+        return Err(invalid());
+    }
+    validated_url(endpoint, &["rpcs"], false)?;
+    let address = endpoint.strip_prefix("rpcs://").ok_or_else(invalid)?;
+    let authority = address.split('/').next().ok_or_else(invalid)?;
+    if !authority.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b':' | b'-')) {
+        return Err(invalid());
+    }
+    // HTTPS parsing catches noncanonical IPv4 literals before they can be treated as DNS names.
+    let https = Url::parse(&format!("https://{address}")).map_err(|_| invalid())?;
+    let domain = https.domain().ok_or_else(invalid)?;
+    if domain.len() > 253 || !domain.contains('.')
+        || !domain.rsplit('.').next().and_then(|label| label.as_bytes().first()).is_some_and(u8::is_ascii_alphabetic)
+        || [".localhost", ".local", ".internal", ".home.arpa"].iter().any(|suffix| domain.ends_with(suffix))
+        || domain.split('.').any(|label| label.is_empty() || label.len() > 63
+            || label.starts_with('-') || label.ends_with('-')
+            || !label.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-'))
+    {
+        return Err(invalid());
+    }
+    TransportEndpoint::new(endpoint.into()).map_err(|_| invalid())?;
+    Ok(())
 }
 fn iso_balance(b: Balance) -> Value {
     json!({
@@ -586,7 +624,16 @@ impl Worker {
                 }
                 let p: Open = decode(params)?;
                 let network = chain(&p.network)?;
-                let signet_rgb = network == BitcoinNetwork::Signet && p.mode == journal::Mode::Rgb;
+                if p.mode.is_none() && (network == BitcoinNetwork::Mainnet
+                    || matches!(p.profile, Some(crate::profile::Profile::Public)))
+                {
+                    return Err(input("The public Bitcoin network requires an explicit wallet mode."));
+                }
+                let mode = p.mode.unwrap_or_default();
+                let signet_rgb = network == BitcoinNetwork::Signet && mode == journal::Mode::Rgb;
+                let ordinary_rgb = mode == journal::Mode::Rgb
+                    && (network == BitcoinNetwork::Mainnet
+                        || matches!(p.profile, Some(crate::profile::Profile::Public)));
                 if signet_rgb && p.profile.is_none() {
                     return Err(fault(
                         "RGB_MODE_UNAVAILABLE",
@@ -597,7 +644,12 @@ impl Worker {
                     if !signet_rgb {
                         return Err(input("The selected profile requires a Signet RGB wallet."));
                     }
-                    profile.services()?;
+                    profile.bridge_services()?;
+                }
+                match (&p.transport_endpoint, ordinary_rgb) {
+                    (Some(endpoint), true) => validate_public_proxy(endpoint)?,
+                    (None, false) => {}
+                    _ => return Err(input("Only ordinary public RGB wallets require a bound RGB proxy.")),
                 }
                 if !lower_hex(&p.master_fingerprint, 8)
                     || !(100..=120).contains(&p.account_xpub_vanilla.len())
@@ -620,8 +672,11 @@ impl Worker {
                 ];
                 if let Some(profile) = p.profile {
                     identity_fields.push(profile.as_str());
-                } else if p.mode == journal::Mode::BtcOnly {
-                    identity_fields.push(p.mode.as_str());
+                } else if mode == journal::Mode::BtcOnly {
+                    identity_fields.push(mode.as_str());
+                }
+                if let Some(endpoint) = &p.transport_endpoint {
+                    identity_fields.push(endpoint);
                 }
                 let journal_identity = sha256(&serde_json::to_vec(&identity_fields)
                     .map_err(|_| input("Invalid wallet journal identity."))?);
@@ -641,13 +696,19 @@ impl Worker {
                         bitcoin_network: network,
                         database_type: DatabaseType::Sqlite,
                         max_allocations_per_utxo: 1,
-                        supported_schemas: vec![
-                            AssetSchema::Bfa,
-                            AssetSchema::Nia,
-                            AssetSchema::Cfa,
-                            AssetSchema::Uda,
-                            AssetSchema::Ifa,
-                        ],
+                        supported_schemas: if mode == journal::Mode::BtcOnly {
+                            vec![AssetSchema::Nia]
+                        } else if ordinary_rgb {
+                            vec![AssetSchema::Nia, AssetSchema::Cfa]
+                        } else {
+                            vec![
+                                AssetSchema::Bfa,
+                                AssetSchema::Nia,
+                                AssetSchema::Cfa,
+                                AssetSchema::Uda,
+                                AssetSchema::Ifa,
+                            ]
+                        },
                     },
                     SinglesigKeys {
                         account_xpub_vanilla: p.account_xpub_vanilla,
@@ -660,25 +721,34 @@ impl Worker {
                 );
                 crate::profile::after_wallet_new();
                 let mut wallet = wallet.map_err(native)?;
-                if matches!(p.profile, Some(crate::profile::Profile::Dev)) {
+                if ordinary_rgb || mode == journal::Mode::BtcOnly
+                    || matches!(p.profile, Some(crate::profile::Profile::Dev))
+                {
                     wallet.require_verified_colored_outputs();
+                }
+                if let Some(endpoint) = &p.transport_endpoint {
+                    wallet.bind_rgb_proxy(endpoint.clone()).map_err(native)?;
+                }
+                let mut opened = json!({"network":p.network,"watchOnly":true});
+                if let Some(profile) = p.profile {
+                    opened["profile"] = json!(profile);
+                }
+                if let Some(endpoint) = &p.transport_endpoint {
+                    opened["transportEndpoint"] = json!(endpoint);
                 }
                 self.session = Some(Session {
                     wallet,
                     _directory_lock: lock,
                     root,
                     journal_identity,
-                    journal_mode: p.mode,
+                    journal_mode: mode,
                     network,
                     profile: p.profile,
+                    transport_endpoint: p.transport_endpoint,
                     online: None,
                     indexer_url: None,
                     prepared: None,
                 });
-                let mut opened = json!({"network":p.network,"watchOnly":true});
-                if let Some(profile) = p.profile {
-                    opened["profile"] = json!(profile);
-                }
                 Ok(opened)
             }
             "close" => {
@@ -696,12 +766,16 @@ impl Worker {
 }
 
 impl Session {
+    fn bridge_services(&self) -> Result<Option<crate::profile::SignetServices>> {
+        Ok(self.profile.map(crate::profile::Profile::bridge_services).transpose()?.flatten())
+    }
+
     fn validate_wallet_proxy(&self, endpoint: &str) -> Result<()> {
-        if self.network == BitcoinNetwork::Signet {
-            let services = self
-                .profile
-                .ok_or_else(|| input("RGB proxy requires a Signet RGB profile."))?
-                .services()?;
+        if let Some(approved) = &self.transport_endpoint {
+            if endpoint != approved {
+                return Err(input("The RGB proxy does not match the wallet's bound endpoint."));
+            }
+        } else if let Some(services) = self.bridge_services()? {
             if endpoint != services.proxy {
                 return Err(input("The wallet requires the approved RGB proxy for its Signet profile."));
             }
@@ -891,16 +965,15 @@ impl Session {
             self.profile,
         )?;
         let indexer_url = config.url().to_owned();
-        if self.journal_mode == journal::Mode::BtcOnly
+        if (self.journal_mode == journal::Mode::BtcOnly || self.transport_endpoint.is_some())
             && (!p.evm_rpc_urls.is_empty() || !p.proxy_auth_keys.is_empty())
         {
             for secret in p.proxy_auth_keys.values_mut() {
                 secret.zeroize();
             }
-            return Err(input("Bitcoin-only mode does not accept RGB service configuration."));
+            return Err(input("This wallet profile does not accept EVM RPC or proxy credentials."));
         }
-        if let Some(profile) = self.profile {
-            let services = profile.services()?;
+        if let Some(services) = self.bridge_services()? {
             if p.evm_rpc_urls.len() != 1
                 || p.evm_rpc_urls.get("42161").map(String::as_str) != Some(services.arbitrum_rpc)
                 || !p.proxy_auth_keys.is_empty()
@@ -955,7 +1028,8 @@ impl Session {
         }
         if p.transport_endpoints.is_empty()
             || p.transport_endpoints.len() > 3
-            || (self.network == BitcoinNetwork::Signet && p.transport_endpoints.len() != 1)
+            || ((self.network == BitcoinNetwork::Signet || self.transport_endpoint.is_some())
+                && p.transport_endpoints.len() != 1)
             || p.min_confirmations == 0
         {
             return Err(input(
@@ -1163,13 +1237,19 @@ impl Session {
         Ok(json!({"assetId":asset_id}))
     }
     fn dispatch(&mut self, method: &str, params: Value) -> Result<Value> {
-        if self.network == BitcoinNetwork::Signet && self.journal_mode == journal::Mode::BtcOnly
+        if self.journal_mode == journal::Mode::BtcOnly
             && matches!(method,
                 "checkProxyEndpoint" | "refresh" | "blindReceive" | "witnessReceive" |
                 "createUtxosBegin" | "createUtxosEnd" | "cancelAbandonedOutputs" |
-                "sendRgbBegin" | "sendRgbEnd" | "burnBegin" | "burnEnd" | "importContract")
+                "sendRgbBegin" | "sendRgbEnd" | "burnBegin" | "burnEnd" | "importContract" |
+                "getConsignment" | "getReceivedMint")
         {
-            return Err(public_signet_btc_only());
+            return Err(btc_only());
+        }
+        if self.transport_endpoint.is_some()
+            && matches!(method, "burnBegin" | "burnEnd" | "getConsignment" | "getReceivedMint")
+        {
+            return Err(bridge_unavailable());
         }
         match method {
             "goOnline" => self.go_online(decode(params)?),
@@ -1179,7 +1259,7 @@ impl Session {
             "getAddress" => {
                 let _: Empty = decode(params)?;
                 self.idle()?;
-                if self.network == BitcoinNetwork::Signet {
+                if self.network != BitcoinNetwork::Regtest {
                     self.online()?;
                 }
                 Ok(json!({"address":self.wallet.get_address().map_err(native)?}))
@@ -1673,7 +1753,7 @@ mod tests {
     }
 
     #[test]
-    fn public_signet_native_open_and_mutations_require_bitcoin_only() {
+    fn public_signet_without_profile_requires_bitcoin_only() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         let mut worker = Worker::default();
@@ -1696,6 +1776,98 @@ mod tests {
         assert_eq!(worker.dispatch("discardUnsubmitted", json!({
             "kind": "rgb-output", "checkpoint": [],
         })).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
+    }
+
+    #[test]
+    fn ordinary_public_rgb_binds_its_proxy_and_admits_only_fungible_schemas() {
+        const PROXY: &str = "rpcs://proxy.example.com/json-rpc";
+        for (network, profile, indexer) in [
+            ("mainnet", None, "ssl://electrum.iriswallet.com:50003"),
+            ("signet", Some("public"), "ssl://electrum.iriswallet.com:50033"),
+        ] {
+            let dir = tempfile::tempdir().unwrap();
+            std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+            let mut params = open_params(dir.path(), network);
+            if let Some(profile) = profile {
+                params["profile"] = json!(profile);
+            }
+            let mut worker = Worker::default();
+            let mut implicit = params.clone();
+            implicit["transportEndpoint"] = json!(PROXY);
+            assert_eq!(worker.dispatch("open", implicit).unwrap_err().code, "INVALID_PARAMS");
+
+            params["mode"] = json!("rgb");
+            assert_eq!(worker.dispatch("open", params.clone()).unwrap_err().code, "INVALID_PARAMS");
+            for invalid in [
+                "rpc://proxy.example.com/json-rpc",
+                "rpcs://proxy.example.com./json-rpc",
+                "rpcs://proxy.example.com-/json-rpc",
+                "rpcs://proxy.internal/json-rpc",
+                "rpcs://0x7f000001/json-rpc",
+                "rpcs://[::1]/json-rpc",
+                "rpcs://proxy%2eexample.com/json-rpc",
+                "rpcs://pröxy.example.com/json-rpc",
+                "rpcs://proxy.example.com/a,b",
+                "rpcs://proxy.example.com/a%2Fb",
+                "rpcs://proxy.example.com/json-rpc?token=no",
+            ] {
+                params["transportEndpoint"] = json!(invalid);
+                assert_eq!(worker.dispatch("open", params.clone()).unwrap_err().code, "INVALID_PARAMS");
+            }
+            assert!(dir.path().read_dir().unwrap().next().is_none());
+
+            params["transportEndpoint"] = json!(PROXY);
+            let opened = worker.dispatch("open", params.clone()).unwrap();
+            assert_eq!(opened["network"], network);
+            assert_eq!(opened["profile"].as_str(), profile);
+            assert_eq!(opened["transportEndpoint"], PROXY);
+            let session = worker.session.as_mut().unwrap();
+            assert_eq!(session.wallet.get_wallet_data().supported_schemas, vec![AssetSchema::Nia, AssetSchema::Cfa]);
+            assert!(session.validate_wallet_proxy(PROXY).is_ok());
+            assert!(session.validate_wallet_proxy("rpcs://other.example.com/json-rpc").is_err());
+            // Exercise the same predicate used for peer-advertised sender ACK
+            // endpoints and restored transfer metadata.
+            session.wallet.bind_rgb_proxy(PROXY.into()).unwrap();
+            assert!(matches!(
+                session.wallet.bind_rgb_proxy("rpcs://other.example.com/json-rpc".into()),
+                Err(rgb_lib::Error::InvalidTransportEndpoint { .. })
+            ));
+            for config in [
+                json!({"indexerUrl":indexer,"evmRpcUrls":{"42161":"https://example.test"}}),
+                json!({"indexerUrl":indexer,"proxyAuthKeys":{(PROXY):"00".repeat(32)}}),
+            ] {
+                assert_eq!(worker.dispatch("goOnline", config).unwrap_err().code, "INVALID_PARAMS");
+            }
+            for method in ["burnBegin", "burnEnd", "getConsignment", "getReceivedMint"] {
+                assert_eq!(worker.dispatch(method, json!({})).unwrap_err().code, "BRIDGE_MODE_UNAVAILABLE");
+            }
+            assert_eq!(worker.dispatch("snapshotUnsigned", json!({"kind":"rgb-burn"})).unwrap_err().code, "BRIDGE_MODE_UNAVAILABLE");
+            assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
+            assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
+
+            worker.dispatch("close", json!({})).unwrap();
+            let mut rotated = params.clone();
+            rotated["transportEndpoint"] = json!("rpcs://other.example.com/json-rpc");
+            assert_eq!(worker.dispatch("open", rotated).unwrap_err().code, "WALLET_IDENTITY_MISMATCH");
+            assert_eq!(worker.dispatch("open", params).unwrap()["transportEndpoint"], PROXY);
+        }
+    }
+
+    #[test]
+    fn mainnet_bitcoin_only_does_not_initialize_unsupported_rgb_schemas() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut params = open_params(dir.path(), "mainnet");
+        let mut worker = Worker::default();
+        params["mode"] = json!("btc-only");
+        assert_eq!(worker.dispatch("open", params.clone()).unwrap()["network"], "mainnet");
+        assert_eq!(worker.session.as_ref().unwrap().wallet.get_wallet_data().supported_schemas, vec![AssetSchema::Nia]);
+        assert_eq!(worker.dispatch("importContract", json!({})).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
+        assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
+        worker.dispatch("close", json!({})).unwrap();
+        params["mode"] = json!("rgb");
+        params["transportEndpoint"] = json!("rpcs://proxy.example.com/json-rpc");
+        assert_eq!(worker.dispatch("open", params).unwrap_err().code, "WALLET_IDENTITY_MISMATCH");
     }
 
     #[test]

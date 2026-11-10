@@ -31,9 +31,25 @@ function checkTarget (target) {
 checkTarget(manifest.exports)
 assert.ok(files.has('LICENSE'), 'Missing package license')
 assert.ok(files.has('src/onchain-dev-services.json'), 'Missing Dev Signet service policy')
+assert.ok(!files.has('QUALIFICATION.md'), 'Keep deployment qualification evidence outside the package')
+
+// These release checks stay in the repository. The host supplies deployment
+// asset metadata and contract bytes at runtime.
+const devAssetMarkers = [
+  'BUSDT',
+  'Bridged USDT',
+  'rgb:A6k89KtR-e3oXqRP-uH3jUrz-LU_sYL3-hMZ0k3O-6u8DXbE',
+  '9307e39016e6373bd0ee1ea9fa5d6a4130120513d48da9268777893e150344e9',
+  '60a1b4f0d79706a7a51c6388fa14b951e119bae1ceffd811f4ebc62249817c4c',
+  '6372ee2f86c3a551290635736b25855124932eed'
+]
+function checkAssetMarkers (path, bytes) {
+  assert.ok(devAssetMarkers.every(marker => !bytes.includes(marker)), 'Dev asset metadata in packed file: ' + path)
+}
 for (const path of files) {
   assert.ok(!/^(?:native|scripts|tests[^/]*|evidence|fixtures?)\//.test(path), 'Build-only file packed: ' + path)
   assert.ok(!/(?:^|\/)\.(?:env|git)(?:[./]|$)/.test(path), 'Private file packed: ' + path)
+  if (!path.startsWith('prebuilds/')) checkAssetMarkers(path, readFileSync(new URL(path, root)))
 }
 
 const artifacts = [...files].filter(path => path.startsWith('prebuilds/'))
@@ -54,13 +70,16 @@ if (!requireNative) {
   const servicePolicy = readFileSync(new URL('src/onchain-dev-services.json', root))
   for (const target of targets) {
     const pin = native.targets[target]
-    const bytes = readFileSync(new URL(addonPath(target), root))
+    const path = addonPath(target)
+    const bytes = readFileSync(new URL(path, root))
+    checkAssetMarkers(path, bytes)
     assert.equal(bytes.length, pin.byteLength)
     assert.equal(createHash('sha256').update(bytes).digest('hex'), pin.sha256)
     for (const identity of [native.source, native.overlayTree, native.integrationTree]) {
       assert.ok(bytes.includes(Buffer.from(identity)), 'Native addon does not contain the admitted source identity')
     }
     assert.ok(bytes.includes(Buffer.from('electrum-and-dev-esplora')), 'Native addon lacks the expected indexer capabilities')
+    assert.ok(bytes.includes(Buffer.from('ssl://electrum.iriswallet.com:50003')), 'Native addon lacks mainnet indexer admission')
     assert.ok(bytes.includes(servicePolicy), 'Native addon and package disagree on the Dev Signet service policy')
   }
   console.log('Package exports and exact native addon inventory passed.')

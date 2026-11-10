@@ -1,0 +1,40 @@
+diff --git a/src/no_wallet/validation.rs b/src/no_wallet/validation.rs
+index 0a46a2d..5321fb1 100644
+--- a/src/no_wallet/validation.rs
++++ b/src/no_wallet/validation.rs
+@@ -874,13 +874,16 @@ impl From<&BitcoindAuth> for BitcoindRpcAuth {
+ #[cfg(feature = "electrum_validation")]
+ pub(crate) fn electrum_config(indexer_config: &IndexerConfig) -> ElectrumConfig {
+     // A replacement connection must repeat chain admission before it can supply data.
+-    let retries = if matches!(indexer_config, IndexerConfig::DevSignetElectrum { .. }) {
++    let pinned_public_tls = matches!(indexer_config, IndexerConfig::Electrum { url }
++        if matches!(url.as_str(), "ssl://electrum.iriswallet.com:50003" | "ssl://electrum.iriswallet.com:50033"));
++    let retries = if pinned_public_tls || matches!(indexer_config, IndexerConfig::DevSignetElectrum { .. }) {
+         0
+     } else {
+         INDEXER_RETRIES
+     };
+     ConfigBuilder::new()
+         .retry(retries)
++        .validate_domain(true)
+         .timeout(Some(Duration::from_secs(INDEXER_TIMEOUT)))
+         .build()
+ }
+diff --git a/src/utils.rs b/src/utils.rs
+index fd846e7..1d4ed6d 100644
+--- a/src/utils.rs
++++ b/src/utils.rs
+@@ -511,6 +511,13 @@ pub(crate) fn get_indexer_and_resolver(
+             })
+     };
+     let genesis = header_hash(0)?;
++    if bitcoin_network == BitcoinNetwork::Mainnet
++        && genesis != bitcoin::constants::genesis_block(bitcoin::Network::Bitcoin).block_hash().to_string()
++    {
++        return Err(Error::InvalidIndexer {
++            details: s!("the wallet indexer reports a different Bitcoin chain"),
++        });
++    }
+     check_signet_indexer(checkpoint, &genesis, || header_hash(1))?;
+     #[allow(irrefutable_let_patterns)]
+     #[cfg(feature = "bitcoind")]

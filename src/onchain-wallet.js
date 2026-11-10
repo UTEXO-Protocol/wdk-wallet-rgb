@@ -24,8 +24,9 @@ const HEX_32 = /^[a-f0-9]{64}$/
 const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
 const NATIVE_SOURCE = '9ec49c08be2e68f08521281e3efbd760ec989cb9'
-const NATIVE_OVERLAY = 'e8fad4eda8ad85f3d6a6b18a29a79f6f76cb6977'
-const NATIVE_INTEGRATION = '8a012db8c770db8c10be554dcdd34c95b16f81a8'
+const NATIVE_OVERLAY = 'abc20a4b45fcf3b8b918a1326660504b1cffdf38'
+const NATIVE_INTEGRATION = '64e35cf4086cbec8d1adec2e9e29fbdbf2183014'
+const MAINNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50003'
 const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
 const STAGING_SERVICES = {
   proxyEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc',
@@ -70,27 +71,46 @@ function checkTxid (txid) {
   return txid
 }
 
-function httpUrl (value, name, protocols = ['http:', 'https:']) {
+function endpointUrl (value, name, protocols) {
   if (typeof value !== 'string' || value.length > 2048 || /[\s\x00-\x1f\x7f\\?#]/.test(value) ||
       !/^[a-z]+:\/\/[^/@]+(?:\/|$)/.test(value)) throw new TypeError('Invalid ' + name)
   const url = new URL(value)
   if (!protocols.includes(url.protocol) || url.username || url.password || url.port === '0') {
     throw new TypeError('Invalid ' + name)
   }
+  return url
+}
+
+function httpUrl (value, name, protocols = ['http:', 'https:']) {
+  const url = endpointUrl(value, name, protocols)
   if (!['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)) {
     throw new TypeError('This candidate requires loopback fixture endpoints')
   }
   return value
 }
 
+function publicProxyUrl (value) {
+  endpointUrl(value, 'TLS RGB proxy endpoint', ['rpcs:'])
+  if (/[,%]/.test(value)) throw new TypeError('The TLS RGB proxy must round-trip in an RGB invoice')
+  // Parse the HTTPS equivalent so alternate numeric forms are recognized as IP addresses.
+  const { hostname } = new URL('https:' + value.slice('rpcs:'.length))
+  const authority = value.slice('rpcs://'.length).split('/')[0]
+  if (!/^[a-z0-9.:-]+$/i.test(authority) || hostname.length > 253 ||
+      !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(hostname) ||
+      ['.localhost', '.local', '.internal', '.home.arpa'].some(suffix => hostname.endsWith(suffix))) {
+    throw new TypeError('The TLS RGB proxy requires a public DNS hostname')
+  }
+  return value
+}
+
 function indexerUrl (value, network, profile) {
-  if (network === 'signet') {
+  if (network === 'signet' || network === 'mainnet') {
     const dev = profile === 'dev'
-    const approved = dev ? DEV_SERVICES.indexerUrl : SIGNET_ELECTRUM
+    const approved = network === 'mainnet' ? MAINNET_ELECTRUM : dev ? DEV_SERVICES.indexerUrl : SIGNET_ELECTRUM
     if (value !== approved && value !== approved + '/') {
       throw new TypeError(dev
         ? 'Dev Signet requires the approved HTTPS Esplora endpoint'
-        : 'Public Signet requires the approved TLS Electrum endpoint')
+        : 'The Bitcoin network requires its approved TLS Electrum endpoint')
     }
     return approved
   }
@@ -102,21 +122,26 @@ function indexerUrl (value, network, profile) {
 }
 
 function configFor (options) {
-  if (options?.network !== 'regtest' && options?.network !== 'signet') throw new TypeError('Unsupported Bitcoin network')
-  const mode = options.mode === undefined ? 'rgb' : options.mode
+  const { network, profile } = options ?? {}
+  if (network !== 'regtest' && network !== 'signet' && network !== 'mainnet') throw new TypeError('Unsupported Bitcoin network')
+  const mode = options.mode === undefined && network !== 'mainnet' && profile !== 'public' ? 'rgb' : options.mode
   if (mode !== 'rgb' && mode !== 'btc-only') throw new TypeError('Invalid wallet mode')
-  const dev = options.profile === 'dev'
+  const dev = profile === 'dev'
+  const publicSignet = profile === 'public'
   if (dev && DEV_SERVICES.enabled !== true) throw new TypeError('Dev Signet hosted access is disabled')
-  const services = dev ? DEV_SERVICES : options.profile === 'staging' ? STAGING_SERVICES : undefined
-  if (options.profile !== undefined && (!services || options.network !== 'signet' || mode !== 'rgb')) {
+  const services = dev ? DEV_SERVICES : profile === 'staging' ? STAGING_SERVICES : undefined
+  if (profile !== undefined && ((!services && !publicSignet) || network !== 'signet' || mode !== 'rgb')) {
     throw new TypeError('The selected RGB profile requires a Signet RGB wallet')
   }
-  if (options.network === 'signet' && mode !== 'btc-only' && !services) {
+  if (network === 'signet' && mode !== 'btc-only' && profile === undefined) {
     throw new TypeError('Signet requires Bitcoin-only mode or an explicit RGB profile')
   }
-  if (mode === 'btc-only' && ['transportEndpoint', 'evmRpcUrls', 'proxyAuthKeys', 'burnDestinationRoutes'].some(key => options[key] !== undefined)) {
+  const genericRgb = mode === 'rgb' && (network === 'mainnet' || publicSignet)
+  const hasBridgeConfig = ['evmRpcUrls', 'proxyAuthKeys', 'burnDestinationRoutes'].some(key => options[key] !== undefined)
+  if (mode === 'btc-only' && (hasBridgeConfig || options.transportEndpoint !== undefined)) {
     throw new TypeError('Bitcoin-only mode does not accept RGB service configuration')
   }
+  if (genericRgb && hasBridgeConfig) throw new TypeError('Ordinary RGB mode does not accept bridge or proxy credential configuration')
   const startupMode = options.startupMode ?? 'online'
   if (startupMode !== 'online' && startupMode !== 'offline') throw new TypeError('Invalid wallet startup mode')
   if (typeof options.authorize !== 'function') throw new TypeError('A transaction authorization callback is required')
@@ -130,7 +155,7 @@ function configFor (options) {
   if (new Set(routes.map(route => route.chainId)).size !== routes.length) throw new TypeError('Duplicate V1 bridge route')
 
   if (options.bitcoindAuth !== undefined) throw new TypeError('The wallet does not accept Bitcoin Core credentials')
-  const online = { indexerUrl: indexerUrl(options.indexerUrl, options.network, options.profile) }
+  const online = { indexerUrl: indexerUrl(options.indexerUrl, network, profile) }
   let transportEndpoint
   if (services) {
     const entries = Object.entries(options.evmRpcUrls ?? {})
@@ -145,6 +170,8 @@ function configFor (options) {
     }
     transportEndpoint = services.proxyEndpoint
     online.evmRpcUrls = { 42161: services.arbitrumRpc }
+  } else if (genericRgb) {
+    transportEndpoint = publicProxyUrl(options.transportEndpoint)
   } else if (mode === 'rgb') {
     transportEndpoint = httpUrl(options.transportEndpoint, 'RGB proxy endpoint', ['rpc:', 'rpcs:'])
   }
@@ -162,9 +189,10 @@ function configFor (options) {
     }))
   }
   return {
-    network: options.network,
+    network,
     mode,
-    profile: options.profile,
+    profile,
+    genericRgb,
     startupMode,
     dataDir: options.dataDir,
     nativeExecutable: options.nativeExecutable,
@@ -261,15 +289,17 @@ export class WalletAccountRgb {
         config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir, config.iosNativeFrameworkDir
       )
       const version = await worker.request('version')
-      if (version?.protocol !== 2 || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 4 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
+      if (version?.protocol !== 2 || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 5 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
         version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION || version.unsignedRecovery !== 1 || version.journalWrites !== 1) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
       const identity = signer.identity
+      const transportEndpoint = config.genericRgb ? config.transportEndpoint : undefined
       const opened = await worker.request('open', {
-        ...identity, network: config.network, mode: config.mode, profile: config.profile, dataDir
+        ...identity, network: config.network, mode: config.mode, profile: config.profile, transportEndpoint, dataDir
       })
-      if (opened?.watchOnly !== true || opened.network !== config.network || opened.profile !== config.profile) {
+      if (opened?.watchOnly !== true || opened.network !== config.network || opened.profile !== config.profile ||
+          opened.transportEndpoint !== transportEndpoint) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Native wallet did not attest the requested watch-only profile')
       }
       const journal = new OnchainJournal(dataDir, { worker })
@@ -278,6 +308,7 @@ export class WalletAccountRgb {
       // Domain-separate Signet profiles and BTC-only storage from the legacy RGB profile.
       if (config.profile) identityFields.push(config.profile)
       else if (config.mode === 'btc-only') identityFields.push(config.mode)
+      if (transportEndpoint) identityFields.push(transportEndpoint)
       const journalIdentity = sha256(new TextEncoder().encode(JSON.stringify(identityFields)))
       await journal.bind(journalIdentity, config.mode)
       await invoices.bind(journalIdentity, config.mode)

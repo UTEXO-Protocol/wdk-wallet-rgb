@@ -1,0 +1,163 @@
+diff --git a/src/wallet/core.rs b/src/wallet/core.rs
+index 4b9d589..8397034 100644
+--- a/src/wallet/core.rs
++++ b/src/wallet/core.rs
+@@ -215,11 +215,21 @@ pub struct WalletInternals {
+     pub(crate) bdk_wallet: BdkWallet,
+     pub(crate) bdk_pending: Arc<Mutex<ChangeSet>>,
+     pub(crate) require_verified_colored_outputs: bool,
++    pub(crate) bound_rgb_proxy: Option<String>,
+     #[cfg(feature = "_online")]
+     pub(crate) online_data: Option<OnlineData>,
+ }
+ 
+ impl WalletInternals {
++    pub(crate) fn check_bound_rgb_proxy(&self, endpoint: &str) -> Result<(), Error> {
++        if self.bound_rgb_proxy.as_deref().is_some_and(|bound| endpoint != bound) {
++            return Err(Error::InvalidTransportEndpoint {
++                details: s!("endpoint does not match the wallet's bound RGB proxy"),
++            });
++        }
++        Ok(())
++    }
++
+     /// Borrow the bitcoind client and the BDK wallet at the same time, when the wallet is online
+     /// via a bitcoind indexer. The wallet accessor methods borrow the whole struct, so callers
+     /// needing both use this field-level split borrow instead.
+diff --git a/src/wallet/multisig.rs b/src/wallet/multisig.rs
+index 8bea7de..aa87e6f 100644
+--- a/src/wallet/multisig.rs
++++ b/src/wallet/multisig.rs
+@@ -1109,6 +1109,7 @@ impl MultisigWallet {
+                 bdk_wallet,
+                 bdk_pending: Arc::new(Mutex::new(ChangeSet::default())),
+                 require_verified_colored_outputs: false,
++                bound_rgb_proxy: None,
+                 #[cfg(feature = "_online")]
+                 online_data: None,
+             },
+diff --git a/src/wallet/offline.rs b/src/wallet/offline.rs
+index 935a3cf..90be60f 100644
+--- a/src/wallet/offline.rs
++++ b/src/wallet/offline.rs
+@@ -278,6 +278,7 @@ pub trait WalletOffline: WalletBackup {
+         transfer_idx: i32,
+         endpoint: &str,
+     ) -> Result<(), Error> {
++        self.internals().check_bound_rgb_proxy(endpoint)?;
+         let transport_endpoint_idx = match txn.get_transport_endpoint(endpoint.to_string())? {
+             Some(ce) => ce.idx,
+             None => txn.set_transport_endpoint(DbTransportEndpointActMod {
+@@ -1238,14 +1239,13 @@ pub trait WalletOffline: WalletBackup {
+             let rgb_transport = RgbTransport::from_str(endpoint_str)?;
+             match &rgb_transport {
+                 RgbTransport::JsonRpc { .. } => {
+-                    endpoints.push(
+-                        TransportEndpoint::try_from(rgb_transport)
+-                            .map_err(|e| Error::InvalidTransportEndpoint {
+-                                details: e.to_string(),
+-                            })?
+-                            .endpoint
+-                            .clone(),
+-                    );
++                    let endpoint = TransportEndpoint::try_from(rgb_transport)
++                        .map_err(|e| Error::InvalidTransportEndpoint {
++                            details: e.to_string(),
++                        })?
++                        .endpoint;
++                    self.internals().check_bound_rgb_proxy(&endpoint)?;
++                    endpoints.push(endpoint);
+                 }
+                 _ => {
+                     return Err(Error::UnsupportedTransportType);
+diff --git a/src/wallet/online.rs b/src/wallet/online.rs
+index 5c2f359..8179c13 100644
+--- a/src/wallet/online.rs
++++ b/src/wallet/online.rs
+@@ -1048,6 +1048,7 @@ pub trait WalletOnline: WalletOffline {
+                 let Some(transfer_sender_proxy) = transfer_sender_proxy else {
+                     continue;
+                 };
++                self.internals().check_bound_rgb_proxy(&transfer_sender_proxy)?;
+                 if let Some(tid) = &t.proxy_transfer_id {
+                     transfer_ids.push(tid.clone());
+                 }
+@@ -1742,6 +1743,7 @@ pub trait WalletOnline: WalletOffline {
+         consignment_hash: &str,
+         recipient_seed: &[u8],
+     ) -> Result<PostAckResponse, Error> {
++        self.internals().check_bound_rgb_proxy(sender_proxy)?;
+         let seed: [u8; 32] = recipient_seed.try_into().map_err(|_| Error::Internal {
+             details: s!("invalid recipient secret key"),
+         })?;
+@@ -2399,6 +2401,10 @@ pub trait WalletOnline: WalletOffline {
+     ) -> Result<Option<DbBatchTransfer>, Error> {
+         debug!(self.logger(), "ACKing consignment...");
+ 
++        if let ReceiveMode::Proxy(data) = mode {
++            self.internals().check_bound_rgb_proxy(&data.proxy_url)?;
++            self.internals().check_bound_rgb_proxy(&data.sender_proxy)?;
++        }
+         let recipient_id = transfer
+             .recipient_id
+             .clone()
+@@ -2651,6 +2657,8 @@ pub trait WalletOnline: WalletOffline {
+                 recipient_encryption: transfer.recipient_encryption,
+                 batch: meta.batch,
+             };
++            self.internals().check_bound_rgb_proxy(&data.proxy_url)?;
++            self.internals().check_bound_rgb_proxy(&data.sender_proxy)?;
+             // a failed refresh also rolls back what was saved along with the download
+             if !cached_tte.used {
+                 let mut updated_transfer_transport_endpoint: DbTransferTransportEndpointActMod =
+@@ -2798,6 +2806,7 @@ pub trait WalletOnline: WalletOffline {
+         invoice_id: &str,
+         recipient_seed: &[u8],
+     ) -> Result<Option<(String, GetConsignmentResponse)>, Error> {
++        self.internals().check_bound_rgb_proxy(proxy_url)?;
+         let transfers = match list_invoice_transfers(
+             proxy_url,
+             invoice_id,
+@@ -4034,6 +4043,7 @@ pub trait WalletOnline: WalletOffline {
+                 let Some(transfer_sender_proxy) = transfer_sender_proxy else {
+                     continue;
+                 };
++                self.internals().check_bound_rgb_proxy(&transfer_sender_proxy)?;
+                 // a SenderProxy endpoint is only ever saved for a proxy recipient transfer, which
+                 // always has a transfer ID: a missing one is corrupted data, and skipping it would
+                 // just leave the batch waiting until its expiration, so surface it instead
+@@ -4766,6 +4776,7 @@ pub trait WalletOnline: WalletOffline {
+             );
+             return Ok(None);
+         };
++        self.internals().check_bound_rgb_proxy(&sender_proxy)?;
+ 
+         let consignment_hash =
+             transfer
+diff --git a/src/wallet/singlesig.rs b/src/wallet/singlesig.rs
+index 5e96ad5..44d49ef 100644
+--- a/src/wallet/singlesig.rs
++++ b/src/wallet/singlesig.rs
+@@ -266,6 +266,7 @@ impl Wallet {
+                 bdk_wallet,
+                 bdk_pending: Arc::new(Mutex::new(ChangeSet::default())),
+                 require_verified_colored_outputs: false,
++                bound_rgb_proxy: None,
+                 #[cfg(feature = "_online")]
+                 online_data: None,
+             },
+@@ -281,6 +282,14 @@ impl Wallet {
+         self.internals.require_verified_colored_outputs = true;
+     }
+ 
++    /// Bind proxy requests, including the sender ACK endpoint advertised by a peer.
++    pub fn bind_rgb_proxy(&mut self, transport_endpoint: String) -> Result<(), Error> {
++        let endpoint = TransportEndpoint::new(transport_endpoint)?.endpoint;
++        self.internals.check_bound_rgb_proxy(&endpoint)?;
++        self.internals.bound_rgb_proxy = Some(endpoint);
++        Ok(())
++    }
++
+     /// Load an existing RGB singlesig wallet, identified by its master fingerprint, from the
+     /// wallet directory inside `data_dir`.
+     ///

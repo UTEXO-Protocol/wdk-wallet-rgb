@@ -1,6 +1,6 @@
 {
   "name": "@utexo/wdk-wallet-rgb",
-  "version": "2.1.0-alpha.18",
+  "version": "2.1.0-alpha.19",
   "description": "Isolated on-chain RGB wallet candidate for WDK.",
   "keywords": [
     "wdk",
@@ -68,8 +68,7 @@
     "src/onchain-bare-native.json",
     "src/onchain-dev-services.json",
     "prebuilds/*/utexo__wdk-wallet-rgb.bare",
-    "webrgb-onchain.d.ts",
-    "QUALIFICATION.md"
+    "webrgb-onchain.d.ts"
   ],
   "imports": {
     "#onchain-webrgb-url": {

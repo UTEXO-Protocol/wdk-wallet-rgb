@@ -7,7 +7,7 @@ The private SDK candidate uses the same watch-only engine for the Node and Bare 
 ## Exact sources
 
 - RGB BFA.7 tag at `9ec49c08be2e68f08521281e3efbd760ec989cb9`.
-- Functional tree `d9de67fe9a2512106afd054977a1e32abb9a1184` and embedded integration tree `5408b3e56cdb7604316b094aa69ffb2d30513189`. The embedded patch removes the process-wide wallet panic hook that retains old loggers after reopen.
+- The [source preparation script](../scripts/prepare-source.py) pins the functional and embedded integration trees. The embedded patch removes the process-wide wallet panic hook that retains old loggers after reopen.
 - The independent Bare lock enables Electrum and the gated Dev Esplora backend.
 - Build headers `bare-headers@1.35.0` and standalone test CLI `bare@1.36.2`. The macOS CLI run reported runtime `1.36.0`. The Android Bare Kit 3.0.1 worklet reported runtime `1.36.2`. Exact npm tarball integrities are recorded in `package-lock.json`.
 

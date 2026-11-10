@@ -36,7 +36,7 @@ const libraries = ['libc.so', 'libdl.so', 'liblog.so', 'libm.so']
 const exportsExpected = ['bare_get_module_name_v0', 'bare_register_module_v0']
 const soname = `libutexo__wdk-wallet-rgb.${version}.so`
 const expectedCargoLock = 'f3d59ddc4bc5b0b225cbed3ded41069682303d6a888041825e08c6d3a96f4d0c'
-const expectedIntegrationTree = '8a012db8c770db8c10be554dcdd34c95b16f81a8'
+const expectedIntegrationTree = '64e35cf4086cbec8d1adec2e9e29fbdbf2183014'
 const page = 16 * 1024
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
 const ensure = (condition, message) => {

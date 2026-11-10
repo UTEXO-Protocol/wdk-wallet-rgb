@@ -215,6 +215,9 @@ impl Session {
         if self.journal_mode == Mode::BtcOnly && p.record["kind"].as_str() != Some("btc-send") {
             return Err(input("RGB journal records require RGB wallet mode."));
         }
+        if self.transport_endpoint.is_some() && p.record["kind"].as_str() == Some("rgb-burn") {
+            return Err(super::bridge_unavailable());
+        }
         let dir = self.journal_directory(p.scope, false)?;
         self.check_journal_identity(&dir.join(IDENTITY))?;
         let target = dir.join(format!("{id}.json"));

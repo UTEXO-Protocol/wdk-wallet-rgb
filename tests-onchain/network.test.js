@@ -11,6 +11,7 @@ import devServices from '../src/onchain-dev-services.json' with { type: 'json' }
 
 const SEED = Uint8Array.from({ length: 64 }, (_, index) => index + 1)
 const INDEXER = 'tcp://127.0.0.1:50001'
+const MAINNET_INDEXER = 'ssl://electrum.iriswallet.com:50003'
 const SIGNET_INDEXER = 'ssl://electrum.iriswallet.com:50033'
 const PROXY = 'rpc://127.0.0.1:3003/json-rpc'
 const STAGING_PROXY = 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
@@ -19,6 +20,11 @@ const STAGING = {
   network: 'signet', mode: 'rgb', profile: 'staging', indexerUrl: SIGNET_INDEXER,
   transportEndpoint: STAGING_PROXY, evmRpcUrls: { 42161: ARBITRUM_RPC }
 }
+const PUBLIC_PROXY = 'rpcs://rgb.example.com/json-rpc'
+const ORDINARY_RGB = [
+  { network: 'mainnet', mode: 'rgb', indexerUrl: MAINNET_INDEXER, transportEndpoint: PUBLIC_PROXY },
+  { network: 'signet', mode: 'rgb', profile: 'public', indexerUrl: SIGNET_INDEXER, transportEndpoint: PUBLIC_PROXY }
+]
 const DEV = {
   network: 'signet', mode: 'rgb', profile: 'dev', indexerUrl: devServices.indexerUrl,
   transportEndpoint: devServices.proxyEndpoint, evmRpcUrls: { 42161: devServices.arbitrumRpc }
@@ -41,13 +47,14 @@ const DEFAULTS = {
 }
 
 async function managerFor (t, {
-  nativeVersion = 4, workerIndexerProtocol, receivedMint = null, ...options
+  nativeVersion = 5, workerIndexerProtocol, receivedMint = null, substituteProxy, ...options
 } = {}) {
   const network = options.network ?? DEFAULTS.network
   const mode = options.mode ?? 'rgb'
   const indexer = (options.indexerUrl ?? INDEXER).replace(/\/$/, '')
   const expectedOnline = { indexerUrl: indexer, ...(options.evmRpcUrls && { evmRpcUrls: options.evmRpcUrls }) }
   const proxy = options.transportEndpoint ?? PROXY
+  const openProxy = mode === 'rgb' && (network === 'mainnet' || options.profile === 'public') ? proxy : undefined
   const protocol = workerIndexerProtocol ?? (options.profile === 'dev' ? 'Esplora' : 'Electrum')
   const dir = await realpath(await mkdtemp(join(tmpdir(), 'wdk-network-')))
   const worker = join(dir, 'fixture-worker')
@@ -63,14 +70,16 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1,
     indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
     source: '9ec49c08be2e68f08521281e3efbd760ec989cb9',
-    overlayTree: 'e8fad4eda8ad85f3d6a6b18a29a79f6f76cb6977',
-    integrationTree: '8a012db8c770db8c10be554dcdd34c95b16f81a8'
+    overlayTree: 'abc20a4b45fcf3b8b918a1326660504b1cffdf38',
+    integrationTree: '64e35cf4086cbec8d1adec2e9e29fbdbf2183014'
   })
   if (method === 'open') {
     assert.equal(params.network, '${network}')
     assert.equal(params.mode, '${mode}')
     assert.equal(params.profile, ${JSON.stringify(options.profile)})
-    return reply({ network: params.network, profile: params.profile, watchOnly: true })
+    assert.equal(params.transportEndpoint, ${JSON.stringify(openProxy)})
+    return reply({ network: params.network, profile: params.profile, watchOnly: true,
+      transportEndpoint: ${JSON.stringify(substituteProxy ?? openProxy)} })
   }
   if (method === 'bindJournal') return reply({ written: true })
   if (method === 'goOnline') {
@@ -212,12 +221,11 @@ test('public Signet uses the pinned TLS endpoint and enables only Bitcoin operat
 
 test('public Signet rejects RGB configuration, chain aliases and unapproved Electrum URLs', () => {
   const config = { ...DEFAULTS, network: 'signet', mode: 'btc-only', indexerUrl: SIGNET_INDEXER, transportEndpoint: undefined }
-  for (const network of ['utexo', 'mainnet', 'testnet', 'testnet4']) {
+  for (const network of ['utexo', 'testnet', 'testnet4']) {
     assert.throws(() => new WalletManagerRgb(SEED, { ...config, network }), /Unsupported Bitcoin network/)
   }
-  for (const options of [
-    { mode: 'rgb' }, { transportEndpoint: PROXY }, { evmRpcUrls: {} }, { proxyAuthKeys: {} }, { burnDestinationRoutes: [] }
-  ]) {
+  assert.throws(() => new WalletManagerRgb(SEED, { ...config, mode: 'rgb' }), /explicit RGB profile/)
+  for (const options of [{ transportEndpoint: PROXY }, { evmRpcUrls: {} }, { proxyAuthKeys: {} }, { burnDestinationRoutes: [] }]) {
     assert.throws(() => new WalletManagerRgb(SEED, { ...config, ...options }), /Bitcoin-only/)
   }
   for (const value of [
@@ -226,6 +234,60 @@ test('public Signet rejects RGB configuration, chain aliases and unapproved Elec
   ]) {
     assert.throws(() => new WalletManagerRgb(SEED, { ...config, indexerUrl: value }), /approved TLS/, value)
   }
+})
+
+test('ordinary mainnet and Public Signet RGB bind the requested TLS proxy without bridge capabilities', async t => {
+  for (const options of ORDINARY_RGB) {
+    const manager = await managerFor(t, { ...options, startupMode: 'offline' })
+    const account = await manager.getAccount()
+    assert.equal(account.getInfo().protocol, 'RGB_L1')
+    assert.equal(account.getInfo().network, options.network)
+    assert.ok(account.getInfo().methods.includes('witnessReceive'))
+    assert.ok(!account.getInfo().methods.includes('burnAsset'))
+    assert.equal(account.getInfo().burnDestinationRoutes, undefined)
+    assert.throws(() => account.checkProxyEndpoint(STAGING_PROXY), /configured/)
+    assert.deepEqual(await account.checkProxyEndpoint(), { ok: true })
+    assert.deepEqual(await account.checkIndexerUrl(options.indexerUrl + '/'), { ok: true, indexerProtocol: 'Electrum' })
+    await assert.rejects(account.connect(), { code: 'INVALID_INDEXER' })
+    await account.connect()
+    assert.equal(account.getInfo().ready, true)
+    assert.match(await account.getMessageSigningAddress(), options.network === 'mainnet' ? /^bc1p/ : /^tb1p/)
+  }
+})
+
+test('ordinary RGB rejects mismatched indexers, untrusted proxy syntax and bridge configuration', () => {
+  for (const options of ORDINARY_RGB) {
+    for (const override of [
+      { mode: undefined }, { mode: 'btc-only' }, { profile: 'dev' },
+      { indexerUrl: options.network === 'mainnet' ? SIGNET_INDEXER : MAINNET_INDEXER },
+      { indexerUrl: options.indexerUrl.replace('ssl:', 'tcp:') },
+      { transportEndpoint: undefined }, { transportEndpoint: PROXY },
+      { transportEndpoint: 'rpcs://127.0.0.1:443/json-rpc' },
+      { transportEndpoint: 'rpcs://0x7f000001/json-rpc' },
+      { transportEndpoint: 'rpcs://proxy.internal/json-rpc' },
+      { transportEndpoint: 'rpcs://user@rgb.example.com/json-rpc' },
+      { transportEndpoint: 'rpcs://%72gb.example.com/json-rpc' },
+      { transportEndpoint: 'rpcs://rgb.example-.com/json-rpc' },
+      { transportEndpoint: 'rpcs://rgb.example.com./json-rpc' },
+      { transportEndpoint: PUBLIC_PROXY + ',extra' },
+      { transportEndpoint: PUBLIC_PROXY + '%2Fextra' },
+      { transportEndpoint: PUBLIC_PROXY + '?token=x' },
+      { evmRpcUrls: {} }, { proxyAuthKeys: {} }, { burnDestinationRoutes: [] }
+    ]) {
+      assert.throws(() => new WalletManagerRgb(SEED, { ...DEFAULTS, ...options, ...override }), TypeError)
+    }
+  }
+})
+
+test('mainnet BTC-only opens without any RGB service and requires an updated native runtime', async t => {
+  const config = { network: 'mainnet', mode: 'btc-only', startupMode: 'offline',
+    transportEndpoint: undefined, indexerUrl: MAINNET_INDEXER }
+  const manager = await managerFor(t, config)
+  assert.deepEqual((await manager.getAccount()).getInfo(), { ready: false, network: 'mainnet', protocol: 'BTC_L1', methods: [] })
+  const outdated = await managerFor(t, { ...config, nativeVersion: 4 })
+  await assert.rejects(outdated.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
+  const substituted = await managerFor(t, { ...ORDINARY_RGB[0], substituteProxy: STAGING_PROXY })
+  await assert.rejects(substituted.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
 })
 
 test('explicit staging opens a public Signet RGB account with the exact staged services', async t => {
