@@ -235,6 +235,12 @@ mod tests {
             let mut stream = BufReader::new(stream);
             let mut line = String::new();
             stream.read_line(&mut line).unwrap();
+            let handshake: Value = serde_json::from_str(&line).unwrap();
+            assert_eq!(handshake["method"], "server.version");
+            let response = json!({"jsonrpc":"2.0","id":handshake["id"],"result":["fixture","1.4"]});
+            writeln!(stream.get_mut(), "{response}").unwrap();
+            line.clear();
+            stream.read_line(&mut line).unwrap();
             let request: Value = serde_json::from_str(&line).unwrap();
             assert_eq!(request["method"], "blockchain.block.header");
             assert_eq!(request["params"], json!([0]));
