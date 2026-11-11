@@ -24,8 +24,8 @@ const HEX_32 = /^[a-f0-9]{64}$/
 const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
 const NATIVE_SOURCE = '9ec49c08be2e68f08521281e3efbd760ec989cb9'
-const NATIVE_OVERLAY = 'b37467c8d774acd5153094cbd62165b8acdf6be8'
-const NATIVE_INTEGRATION = 'e6577e6646535d60b575f60494b42997cc50e8e3'
+const NATIVE_OVERLAY = '8a29c6bc64467712b2f8c027e06e8536f43013b6'
+const NATIVE_INTEGRATION = '71e0f349c2e3fb173639c828763918afe2a47087'
 const MAINNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50003'
 const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
 const STAGING_SERVICES = {
@@ -732,6 +732,21 @@ export class WalletAccountRgb {
     if (mode === 'blind') return this.blindReceive(options)
     if (mode === 'witness') return this.witnessReceive(options)
     throw new TypeError('Unknown RGB receive mode')
+  }
+
+  cancelReceiveInvoice ({ batchTransferIdx, recipientId }) {
+    smallInteger(batchTransferIdx, 'receive batch index', 1, 0x7fffffff)
+    if (typeof recipientId !== 'string' || recipientId.length === 0 || recipientId.length > 512) {
+      throw new TypeError('Invalid RGB recipient ID')
+    }
+    return this.#run(async () => {
+      this.#assertRgbMode()
+      this.#assertConnected()
+      const result = await this.#worker.request('cancelReceiveInvoice', { batchTransferIdx, recipientId })
+      if (result?.cancelled !== true) {
+        throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid receive cancellation response')
+      }
+    })
   }
 
   #receiveParams ({ assetId, amount, expirationSeconds = 7200, minConfirmations = 3 } = {}) {

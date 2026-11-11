@@ -47,7 +47,8 @@ const DEFAULTS = {
 }
 
 async function managerFor (t, {
-  nativeVersion = 5, nativeAssetIssuance = 2, workerIndexerProtocol, receivedMint = null, substituteProxy, ...options
+  nativeVersion = 5, nativeAssetIssuance = 2, workerIndexerProtocol, receivedMint = null, substituteProxy,
+  cancellationResponse, ...options
 } = {}) {
   const network = options.network ?? DEFAULTS.network
   const mode = options.mode ?? 'rgb'
@@ -70,8 +71,8 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance},
     indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
     source: '9ec49c08be2e68f08521281e3efbd760ec989cb9',
-    overlayTree: 'b37467c8d774acd5153094cbd62165b8acdf6be8',
-    integrationTree: 'e6577e6646535d60b575f60494b42997cc50e8e3'
+    overlayTree: '8a29c6bc64467712b2f8c027e06e8536f43013b6',
+    integrationTree: '71e0f349c2e3fb173639c828763918afe2a47087'
   })
   if (method === 'open') {
     assert.equal(params.network, '${network}')
@@ -98,6 +99,12 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     return reply({ vanilla: { spendable: '42' } })
   }
   if (method === 'getReceivedMint') return reply(${JSON.stringify(receivedMint)})
+  if (method === 'cancelReceiveInvoice') {
+    assert.equal(connectionAttempts, 2)
+    assert.deepEqual(params, { batchTransferIdx: 42, recipientId: 'fixture-receive' })
+    const response = ${JSON.stringify(cancellationResponse)}
+    return process.stdout.write(JSON.stringify({ id, ...response }) + '\\n')
+  }
   if (method === 'getFeeRate') {
     assert.equal(connectionAttempts, 2)
     return reply({ feeRate: { 2: '3900', 6: '1000', 12: '1.5' }[params.blocks] })
@@ -187,6 +194,30 @@ test('offline open fails closed if the worker does not attest the network API', 
 test('offline open rejects the previous Regtest-only native issuance policy', async t => {
   const manager = await managerFor(t, { startupMode: 'offline', nativeAssetIssuance: 1 })
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
+})
+
+test('receive cancellation forwards the exact target and requires native confirmation', async t => {
+  const request = { batchTransferIdx: 42, recipientId: 'fixture-receive' }
+  for (const response of [
+    { result: { cancelled: true } },
+    { result: { cancelled: false } },
+    { error: { code: 'RECEIVE_CANCELLATION_UNAVAILABLE', message: 'Delivery uncertain' } }
+  ]) {
+    const manager = await managerFor(t, { startupMode: 'offline', cancellationResponse: response })
+    const account = await manager.getAccount()
+    assert.throws(() => account.cancelReceiveInvoice({ ...request, batchTransferIdx: 0 }), TypeError)
+    assert.throws(() => account.cancelReceiveInvoice({ ...request, recipientId: '' }), TypeError)
+    await assert.rejects(account.cancelReceiveInvoice(request), { code: 'WALLET_OFFLINE' })
+    await assert.rejects(account.connect(), { code: 'INVALID_INDEXER' })
+    await account.connect()
+    if (response.result?.cancelled === true) {
+      assert.equal(await account.cancelReceiveInvoice(request), undefined)
+    } else {
+      await assert.rejects(account.cancelReceiveInvoice(request), {
+        code: response.error?.code ?? 'NATIVE_PROTOCOL'
+      })
+    }
+  }
 })
 
 test('received mints carry a distinct EVM lock identifier and reject a missing lock', async t => {

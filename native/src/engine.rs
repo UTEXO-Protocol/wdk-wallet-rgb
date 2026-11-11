@@ -44,7 +44,7 @@ mod issuance;
 mod send;
 
 const SOURCE: &str = "9ec49c08be2e68f08521281e3efbd760ec989cb9";
-const OVERLAY: &str = "b37467c8d774acd5153094cbd62165b8acdf6be8";
+const OVERLAY: &str = "8a29c6bc64467712b2f8c027e06e8536f43013b6";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -249,6 +249,12 @@ struct Contract {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RecipientId {
+    recipient_id: String,
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct CancelReceive {
+    batch_transfer_idx: i32,
     recipient_id: String,
 }
 #[derive(Deserialize)]
@@ -1252,7 +1258,7 @@ impl Session {
                 "checkProxyEndpoint" | "refresh" | "blindReceive" | "witnessReceive" |
                 "createUtxosBegin" | "createUtxosEnd" | "cancelAbandonedOutputs" |
                 "sendRgbBegin" | "sendRgbEnd" | "burnBegin" | "burnEnd" | "importContract" |
-                "getConsignment" | "getReceivedMint" | "issueAsset")
+                "getConsignment" | "getReceivedMint" | "issueAsset" | "cancelReceiveInvoice")
         {
             return Err(btc_only());
         }
@@ -1349,6 +1355,7 @@ impl Session {
                 };
                 let rows = self.wallet.list_transfers(filter, scope).map_err(native)?;
                 Ok(Value::Array(rows.into_iter().map(|r| {
+                    let receive_cancellation_eligible = self.wallet.receive_cancellation_eligible(&r);
                     let change_utxo = match r.change_utxos.as_slice() {
                         [only] => Some(only),
                         _ => None,
@@ -1359,6 +1366,7 @@ impl Session {
                         "recipientId":r.recipient_id,"receiveUtxo":r.receive_utxo,
                         "changeUtxo":change_utxo,"changeUtxos":r.change_utxos,
                         "invoice":r.invoice_string,"expirationTimestamp":r.expiration_timestamp.map(|v| v.to_string()),
+                        "receiveCancellationEligible":receive_cancellation_eligible,
                         "assignments":r.assignments.iter().map(assignment_value).collect::<Vec<_>>(),
                         "requestedAssignment":r.requested_assignment.as_ref().map(assignment_value),
                     })
@@ -1394,6 +1402,27 @@ impl Session {
             "refresh" => self.refresh_transfers(params),
             "blindReceive" => self.receive(decode(params)?, true),
             "witnessReceive" => self.receive(decode(params)?, false),
+            "cancelReceiveInvoice" => {
+                let p: CancelReceive = decode(params)?;
+                if p.batch_transfer_idx <= 0 || p.recipient_id.len() > 512
+                    || RecipientInfo::new(p.recipient_id.clone()).is_err()
+                {
+                    return Err(input("Invalid RGB receive invoice identity."));
+                }
+                self.idle()?;
+                self.wallet.cancel_expired_receive(
+                    self.online()?, p.batch_transfer_idx, &p.recipient_id,
+                ).map_err(|error| match error {
+                    rgb_lib::Error::BatchTransferNotFound { .. } => fault(
+                        "RECEIVE_NOT_FOUND", "The exact receive invoice was not found.",
+                    ),
+                    _ => fault(
+                        "RECEIVE_CANCELLATION_UNAVAILABLE",
+                        "The wallet could not establish that this expired receive invoice is safe to cancel.",
+                    ),
+                })?;
+                Ok(json!({"cancelled": true}))
+            }
             "createUtxosBegin" => {
                 let p: CreateOutputs = decode(params)?;
                 self.idle()?;

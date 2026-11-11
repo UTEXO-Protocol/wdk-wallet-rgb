@@ -1,0 +1,163 @@
+diff --git a/src/wallet/online.rs b/src/wallet/online.rs
+--- a/src/wallet/online.rs
++++ b/src/wallet/online.rs
+@@ -8504,6 +8504,159 @@
+ /// Online operations for a wallet.
+ #[cfg(feature = "_online")]
+ pub trait RgbWalletOpsOnline: RgbWalletOpsOffline + WalletOnline {
++    /// Local eligibility for cancelling a receive. The mutation also verifies delivery state.
++    fn receive_cancellation_eligible(&self, transfer: &Transfer) -> bool {
++        transfer.status == TransferStatus::WaitingCounterparty
++            && matches!(transfer.kind, TransferKind::ReceiveBlind | TransferKind::ReceiveWitness)
++            && transfer.txid.is_none()
++            && transfer.consignment_path.is_none()
++            && transfer.expiration_timestamp.is_some_and(|expiry| {
++                i64::try_from(expiry).is_ok_and(|expiry| {
++                    proxy_deadline::valid_expiration(
++                        expiry,
++                        transfer.created_at,
++                        PROXY_CLOCK_SKEW_MARGIN_SECS,
++                    ) && proxy_deadline::passed(expiry, now().unix_timestamp(), clock_skew_margin())
++                })
++            })
++            && transfer.invoice_string.as_deref().is_some_and(|raw| {
++                Invoice::new(raw.to_owned()).is_ok_and(|invoice| {
++                    invoice.invoice_data().asset_schema.is_some_and(|schema| !schema.supports_mint())
++                })
++            })
++    }
++
++    /// Release an expired ordinary receive after verifying the exact recipient and its delivery.
++    fn cancel_expired_receive(
++        &mut self,
++        online: Online,
++        batch_transfer_idx: i32,
++        recipient_id: &str,
++    ) -> Result<(), Error> {
++        self.check_online(online)?;
++        let txn = self.database().begin_transaction()?;
++        let batch = txn
++            .get_batch_transfer(batch_transfer_idx)?
++            .ok_or(Error::BatchTransferNotFound { idx: batch_transfer_idx })?;
++        if !batch.incoming {
++            return Err(Error::CannotFailBatchTransfer);
++        }
++        let transfers = txn.get_batch_transfer_transfers(batch.idx)?;
++        let [transfer] = transfers.as_slice() else {
++            return Err(Error::CannotFailBatchTransfer);
++        };
++        if transfer.recipient_id.as_deref() != Some(recipient_id) {
++            return Err(Error::BatchTransferNotFound { idx: batch_transfer_idx });
++        }
++        let Some(raw) = &transfer.invoice_string else {
++            return Err(Error::CannotFailBatchTransfer);
++        };
++        let invoice = Invoice::new(raw.clone())?.invoice_data();
++        let (Some(asset_id), Some(schema)) = (invoice.asset_id, invoice.asset_schema) else {
++            return Err(Error::CannotFailBatchTransfer);
++        };
++        // Mint payment and delivery may outlive the invoice. No local expiry can release it.
++        if schema.supports_mint()
++            || txn.check_asset_exists(asset_id.clone())?.schema != schema
++            || invoice.recipient_id != recipient_id
++            || invoice.network != self.bitcoin_network()
++            || invoice.expiration_timestamp != batch.expiration.and_then(|v| u64::try_from(v).ok())
++            || !expired_beyond_skew_margin(&batch)
++        {
++            return Err(Error::CannotFailBatchTransfer);
++        }
++        let (db_data, _) = txn.get_transfers_db_data(Some(&[batch.idx]), &AssetFilter::AnyOrNone)?;
++        let [asset] = db_data.asset_transfers.as_slice() else {
++            return Err(Error::CannotFailBatchTransfer);
++        };
++        if asset.idx != transfer.asset_transfer_idx || asset.asset_id.as_deref() != Some(&asset_id) {
++            return Err(Error::CannotFailBatchTransfer);
++        }
++        if batch.status == TransferStatus::Failed {
++            return Ok(());
++        }
++        if batch.status != TransferStatus::WaitingCounterparty
++            || batch.txid.is_some()
++            || transfer.ack.is_some()
++            || transfer.ack_signature.is_some()
++            || transfer.consignment_hash.is_some()
++            || transfer.proxy_transfer_id.is_some()
++        {
++            return Err(Error::CannotFailBatchTransfer);
++        }
++        let consignment = self.get_receive_consignment_path(recipient_id);
++        for path in [
++            self.get_receive_valid_consignment_path(&consignment),
++            self.get_receive_mint_locks_path(&consignment),
++            consignment,
++            self.get_receive_consignment_meta_path(recipient_id),
++            self.get_received_mint_path(recipient_id),
++            self.get_received_signed_tx_path(recipient_id),
++        ] {
++            if path.try_exists()? {
++                return Err(Error::CannotFailBatchTransfer);
++            }
++        }
++        let (Some(recipient_pubkey), Some(seed)) =
++            (&transfer.recipient_pubkey, &batch.operation_secret_key)
++        else {
++            return Err(Error::CannotFailBatchTransfer);
++        };
++        let recipient_pubkey = hex::encode(recipient_pubkey);
++        if invoice.public_key.as_deref() != Some(&recipient_pubkey) {
++            return Err(Error::CannotFailBatchTransfer);
++        }
++        let invoice_id = invoice_id(recipient_id, &recipient_pubkey);
++
++        self.sync_wallet(
++            &txn,
++            SyncOptions {
++                keychain: SyncKeychain::Colored,
++                strategy: SyncStrategy::FastSync,
++            },
++            false,
++        )?;
++        // A witness payment can already be on chain when its proxy is unavailable.
++        if let Some(script) = script_buf_from_recipient_id(recipient_id.to_owned())?
++            && self.bdk_wallet().tx_graph().all_txouts().any(|(_, txo)| txo.script_pubkey == script)
++        {
++            return Err(Error::CannotFailBatchTransfer);
++        }
++        let endpoints = txn.get_transfer_transport_endpoints_data(transfer.idx)?;
++        let invoice_endpoints = invoice
++            .transport_endpoints
++            .into_iter()
++            .map(|raw| TransportEndpoint::new(raw).map(|endpoint| endpoint.endpoint))
++            .collect::<Result<HashSet<_>, _>>()?;
++        let saved_endpoints = endpoints
++            .iter()
++            .map(|(_, endpoint)| endpoint.endpoint.clone())
++            .collect::<HashSet<_>>();
++        if invoice_endpoints.is_empty() || invoice_endpoints != saved_endpoints {
++            return Err(Error::CannotFailBatchTransfer);
++        }
++        for (link, endpoint) in endpoints {
++            if link.kind != TransportEndpointKind::RecipientProxy {
++                return Err(Error::CannotFailBatchTransfer);
++            }
++            self.internals().check_bound_rgb_proxy(&endpoint.endpoint)?;
++            let reply = list_invoice_transfers(
++                &endpoint.endpoint,
++                &invoice_id,
++                seed,
++                self.bitcoin_network(),
++            )?;
++            // A missing reservation is indistinguishable from a proxy that lost delivery data.
++            // Require an explicit empty result, even after the proxy's retention window.
++            if !matches!((reply.result, reply.error), (Some(transfers), None) if transfers.is_empty()) {
++                return Err(Error::CannotFailBatchTransfer);
++            }
++        }
++        self.fail_batch_transfer(&txn, &batch)?;
++        self.update_backup_info(&txn, false)?;
++        self.persist_and_commit(txn)
++    }
++
+     /// Set the status for eligible transfers to [`TransferStatus::Failed`] and return true if any
+     /// transfer has changed.
+     ///

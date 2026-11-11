@@ -158,6 +158,8 @@ export type Transfer = {
   kind: string
   txid: string | null
   recipientId: string | null
+  /** Local eligibility only. Cancellation separately checks delivery with the indexer and proxy. */
+  receiveCancellationEligible: boolean
   /** The sole change output, when the transfer has exactly one. */
   changeUtxo: { txid: string; vout: number } | null
   changeUtxos: { txid: string; vout: number }[]
@@ -277,6 +279,8 @@ export class WalletAccountRgb {
   blindReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>
   witnessReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>
   createRgbInvoice(options?: ReceiveRequest & { mode?: 'blind' | 'witness' }): Promise<ReceiveInvoice>
+  /** Releases an expired ordinary RGB receive after checking for delivery. */
+  cancelReceiveInvoice(request: { batchTransferIdx: number; recipientId: string }): Promise<void>
   /** Trusted transport entry point. approve() must reject if the user declines. */
   receiveWebRgbInvoice(request: {
     method: 'blindReceive' | 'witnessReceive'; operationId: string; requestKey: string;
