@@ -133,22 +133,24 @@ fn public_signet_checks_its_checkpoint_on_the_indexer_and_resolver() {
         matches!(result, Ok(IndexerProtocol::Electrum)),
         "{result:?}"
     );
+    use Request::*;
     assert_eq!(
-        requests
-            .iter()
-            .filter(|r| **r == Request::ServerVersion)
-            .count(),
-        2
+        requests,
+        [
+            ServerVersion,
+            Genesis,
+            BlockOne,
+            Genesis,
+            BlockOne,
+            ServerVersion,
+            Genesis,
+            BlockOne,
+            Genesis,
+            Transaction,
+            VerboseTransaction,
+            BlockOne,
+        ],
     );
-    assert_eq!(
-        requests.iter().filter(|r| **r == Request::Genesis).count(),
-        2
-    );
-    assert_eq!(
-        requests.iter().filter(|r| **r == Request::BlockOne).count(),
-        2
-    );
-    assert!(requests.contains(&Request::VerboseTransaction));
 }
 
 #[test]
@@ -177,9 +179,19 @@ fn public_signet_rejects_a_dev_resolver_after_indexer_admission() {
         matches!(result, Err(Error::InvalidIndexer { .. })),
         "{result:?}"
     );
+    use Request::*;
     assert_eq!(
-        requests.iter().filter(|r| **r == Request::BlockOne).count(),
-        2
+        requests,
+        [
+            ServerVersion,
+            Genesis,
+            BlockOne,
+            Genesis,
+            BlockOne,
+            ServerVersion,
+            Genesis,
+            BlockOne
+        ],
     );
 }
 
