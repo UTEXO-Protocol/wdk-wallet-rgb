@@ -2,6 +2,32 @@
 
 The candidate is a private on-chain SDK for Node and Bare. Mainnet and Public Signet admit Bitcoin and ordinary RGB under the network policies in the [candidate guide](CANDIDATE.md). Regtest, Dev and staging have separate service and bridge policies. This register contains deployment-specific test evidence and stays in the repository outside the package.
 
+## Alpha.21 Electrum recovery and funded Public Signet
+
+The wallet indexer and RGB witness resolver check Bitcoin genesis and the applicable Signet block-one checkpoint on each new Electrum socket. The checked transport retries an eligible read once after I/O failure. It checks for an already-dead socket before transmitting a broadcast and sends the broadcast RPC once per call. Existing operation IDs and signed transactions continue through the SDK's reconciliation flow.
+
+Native build source `b3df4a4959c5403e15d1fb93cbacb933654fb625` uses the pinned BFA.7 graph and patched Electrum 0.25.2 tree `095a4e8981c400a9dc3625d7617937397d5bce3c`. The private `2.1.0-alpha.21` archive is 204,175,312 bytes with 35 files and SHA-256 `7186c678a235d8d18aa63679197e8e46e3440138b17f4dff4f4f8bba97794af3`. The [Bare manifest](src/onchain-bare-native.json) binds all eleven addons. The five Node workers are supplied separately with their hashes. The funded macOS ARM64 host pack and the full archive share the same SDK source and host addon bytes. The full manifest adds the other ten target pins.
+
+| Runtime | Rebuild and verification |
+| --- | --- |
+| Node | macOS ARM64 and x64, Linux glibc ARM64 and x64, and Alpine Linux musl x64. All five passed offline packed runtime checks with the corresponding pinned worker. |
+| Desktop Bare | macOS ARM64 and x64, and Linux glibc ARM64 and x64. All four passed offline packed runtime checks and eight teardown/reopen cycles. |
+| Android Bare | ARM64, ARMv7, x64 and x86 built with NDK r28c and passed ABI and Bare Kit linkage verification. The producer used the updated lockfile verification at `f846d6e`. |
+| iOS Bare | ARM64 device, ARM64 simulator and Intel simulator built and passed Mach-O ABI checks. |
+
+[Desktop producers](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42971703801) · [Android producers](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42973406697) · [iOS producers](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/42971346322)
+
+The SDK passed 57 JavaScript tests, TypeScript checks, the runtime npm audit, and 38 native tests. Seven deterministic Electrum tests exercised checked replacement, the single-read retry budget, wrong-chain rejection before the retried call, and ambiguous responses to broadcasts and mixed RPC batches without a repeat transmission. Two existing issuer-fixture-dependent Dev tests were skipped. The alpha.20 negative control reproduced the idle failure in both hosts. The alpha.21 live fixture observed both wallet sockets close after 43 seconds idle. History recovered on the first read in the same wallet session. Transfer refresh also restored the separate RGB witness resolver connection.
+
+The funded wallets used Public Signet and `rpcs://proxy.iriswallet.com/1.0/json-rpc`. Node and Bare each created ten RGB outputs, confirmed at block 330355, then issued NIA and CFA with 600 and 400 base-unit allocations. Each asset completed a 450-unit blinded send and a 150-unit witness return. Both wallets reported each transfer settled at the configured one-confirmation threshold. The live fixture checked idle recovery while all four pairs were pending and found zero extra approval calls and identical operation records after recovery. A later host DNS outage interrupted confirmation polling for the final witness pair. The resumed run reconciled the same transaction IDs and completed settlement. The packed Node and Bare runtimes reopened the wallets from the full archive and recovered all eight original send records. Each asset retained 700 base units with its issuer and 300 with the other wallet.
+
+| Issuer and schema | Blinded send | Witness return |
+| --- | --- | --- |
+| Node NIA | [330357](https://mempool.space/signet/tx/7593ba47d042a16db1acb2cc59537721ce4273f5f76f4a6762f3abc5eff345a6) | [330358](https://mempool.space/signet/tx/1097375198db129295abcf5e58ad8568c2f32fddaa0316ec695e2e59272d150b) |
+| Node CFA | [330359](https://mempool.space/signet/tx/96bdae8709acc1ec794f1e064aab60a663f4b375bdffb75afc1ec03cb6f9433b) | [330360](https://mempool.space/signet/tx/e747a926c1f078fc9ba78ed80f58d1868999454836c07ac8acdf1aaac27c0b80) |
+| Bare NIA | [330359](https://mempool.space/signet/tx/3aa1288fa4b688a64e37037d77fa9ccbc2cc504641ced2d4fd34206940cad2a2) | [330360](https://mempool.space/signet/tx/48176e9e0599b4ca9b68b98ac36651536ce442c0e2bd8ac7d34635f4f0328cdb) |
+| Bare CFA | [330357](https://mempool.space/signet/tx/2cc39f709bd69265b3cfc4c68f8940eebbd7ec58fb6cfd74e95ce5d68d5ef26e) | [330358](https://mempool.space/signet/tx/ecc3ef6784f28d1fc96230702c4df7a0e824a276e0c836481e74dc4ca4757717) |
+
 ## Alpha.20 full platform and public issuance qualification
 
 The private full archive was packed from `b326df18ae6ee0e69ca4161029673a581bd023a4`. SHA-256 `1ffcaa8568db0524320aa17efa8f94c6d15b25fa59b1eeb6deeca221ac8cddca`, 204,003,454 bytes and 35 files. The [Bare manifest](src/onchain-bare-native.json) pins all eleven addons. An independent archive scan verified their lengths and digests and excluded both Dev contract representations and deployment asset metadata. All sixteen native binaries were built from `63c32e672907f8a8d5bd40064e0464d0a0a171c7` with the same locked BFA.7 graph. Node workers are supplied separately with their SHA-256.
