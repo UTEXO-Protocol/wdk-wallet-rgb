@@ -71,8 +71,8 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance},
     indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
     source: '9ec49c08be2e68f08521281e3efbd760ec989cb9',
-    overlayTree: 'bc4ea5afdf8e986d9cb06bab307ea8bd3fc3d99f',
-    integrationTree: '1008d14322ca27c943dd5e3daa856d91c05bf85c'
+    overlayTree: '5882cfdd680c6ea32977d8f7a53d0ae1fc9dad40',
+    integrationTree: '887bdd74386eb7b5773411daa31fd07fb813c71a'
   })
   if (method === 'open') {
     assert.equal(params.network, '${network}')

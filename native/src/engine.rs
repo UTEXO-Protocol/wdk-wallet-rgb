@@ -44,7 +44,7 @@ mod issuance;
 mod send;
 
 const SOURCE: &str = "9ec49c08be2e68f08521281e3efbd760ec989cb9";
-const OVERLAY: &str = "bc4ea5afdf8e986d9cb06bab307ea8bd3fc3d99f";
+const OVERLAY: &str = "5882cfdd680c6ea32977d8f7a53d0ae1fc9dad40";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;

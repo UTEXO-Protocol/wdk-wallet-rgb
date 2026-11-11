@@ -40,22 +40,22 @@ diff --git a/src/api/proxy.rs b/src/api/proxy.rs
 +        if check_response {
 +            use std::io::Read;
 +
-+            const MAX_TRANSFER_LIST_BYTES: u64 = 1_048_576;
++            const MAX_CHECKED_REPLY_BYTES: u64 = 1_048_576;
 +            if !response.status().is_success() {
-+                return Err(Self::req_err("proxy transfer list HTTP request failed"));
++                return Err(Self::req_err("proxy HTTP request failed"));
 +            }
 +            let mut bytes = Vec::new();
-+            response.take(MAX_TRANSFER_LIST_BYTES + 1).read_to_end(&mut bytes)
++            response.take(MAX_CHECKED_REPLY_BYTES + 1).read_to_end(&mut bytes)
 +                .map_err(Self::req_err)?;
-+            if bytes.len() as u64 > MAX_TRANSFER_LIST_BYTES {
-+                return Err(Self::req_err("proxy transfer list exceeds the response size limit"));
++            if bytes.len() as u64 > MAX_CHECKED_REPLY_BYTES {
++                return Err(Self::req_err("proxy response exceeds the size limit"));
 +            }
 +            let reply: CheckedJsonRpcResponse<R> =
 +                serde_json::from_slice(&bytes).map_err(Self::req_err)?;
 +            if reply.jsonrpc != "2.0" || !matches!(reply.id, serde_json::Value::Null)
 +                || reply.result.is_some() == reply.error.is_some()
 +            {
-+                return Err(Self::req_err("invalid proxy transfer list response"));
++                return Err(Self::req_err("invalid proxy JSON-RPC response"));
 +            }
 +            return Ok(JsonRpcResponse {
 +                jsonrpc: reply.jsonrpc,
@@ -66,7 +66,18 @@ diff --git a/src/api/proxy.rs b/src/api/proxy.rs
          }
          response
              .json::<JsonRpcResponse<R>>()
-@@ -569,14 +613,16 @@
+@@ -468,6 +512,10 @@
+         self.call("server.info", None::<NullRequest>)
+     }
+ 
++    pub(crate) fn get_checked_info(&self) -> Result<JsonRpcResponse<ServerInfoResponse>, Error> {
++        self.call_with_checks("server.info", None::<NullRequest>, true)
++    }
++
+     pub(crate) fn check_invoices(
+         &self,
+         invoice_ids: &[String],
+@@ -569,14 +617,16 @@
          invoice_id: &str,
          signature: &str,
          timestamp: &str,
@@ -84,7 +95,7 @@ diff --git a/src/api/proxy.rs b/src/api/proxy.rs
          )
      }
  
-@@ -827,7 +873,7 @@
+@@ -827,7 +877,7 @@
  
      #[test]
      fn list_transfers_error() {
@@ -96,41 +107,37 @@ diff --git a/src/api/proxy.rs b/src/api/proxy.rs
 diff --git a/src/wallet/online.rs b/src/wallet/online.rs
 --- a/src/wallet/online.rs
 +++ b/src/wallet/online.rs
-@@ -111,6 +111,7 @@
-     invoice_id: &str,
+@@ -112,6 +112,20 @@
      recipient_seed: &[u8],
      network: BitcoinNetwork,
-+    check_response: bool,
  ) -> Result<JsonRpcResponse<HashMap<String, ProxyTransferState>>, Error> {
++    list_invoice_transfers_on(
++        &ProxyClient::new(proxy_url, network)?,
++        invoice_id,
++        recipient_seed,
++        false,
++    )
++}
++
++fn list_invoice_transfers_on(
++    proxy: &ProxyClient,
++    invoice_id: &str,
++    recipient_seed: &[u8],
++    check_response: bool,
++) -> Result<JsonRpcResponse<HashMap<String, ProxyTransferState>>, Error> {
      let seed: [u8; 32] = recipient_seed.try_into().map_err(|_| Error::Internal {
          details: s!("invalid recipient secret key"),
-@@ -119,7 +120,8 @@
+     })?;
+@@ -119,7 +133,7 @@
      let timestamp = now().unix_timestamp().to_string();
      let digest = sha256_digest(list_transfers_message(invoice_id, &timestamp).as_bytes());
      let signature = hex::encode(sign_ed25519(&sk, &digest));
 -    ProxyClient::new(proxy_url, network)?.list_transfers(invoice_id, &signature, &timestamp)
-+    ProxyClient::new(proxy_url, network)?
-+        .list_transfers(invoice_id, &signature, &timestamp, check_response)
++    proxy.list_transfers(invoice_id, &signature, &timestamp, check_response)
  }
  
  /// Whether the sender proxy knows the operation of `transfer_ids`, registered with the operation
-@@ -2812,6 +2814,7 @@
-             invoice_id,
-             recipient_seed,
-             self.bitcoin_network(),
-+            false,
-         ) {
-             Ok(res) => match (res.result, res.error) {
-                 (Some(transfers), None) => transfers,
-@@ -2902,6 +2905,7 @@
-                 &invoice_id,
-                 recipient_seed,
-                 self.bitcoin_network(),
-+                false,
-             );
-             let nothing_pending = match res {
-                 Ok(res) => match (res.result, res.error) {
-@@ -8504,6 +8508,160 @@
+@@ -8504,6 +8518,164 @@
  /// Online operations for a wallet.
  #[cfg(feature = "_online")]
  pub trait RgbWalletOpsOnline: RgbWalletOpsOffline + WalletOnline {
@@ -146,7 +153,7 @@ diff --git a/src/wallet/online.rs b/src/wallet/online.rs
 +                        expiry,
 +                        transfer.created_at,
 +                        PROXY_CLOCK_SKEW_MARGIN_SECS,
-+                    ) && proxy_deadline::passed(expiry, now().unix_timestamp(), clock_skew_margin())
++                    ) && proxy_deadline::passed(expiry, now().unix_timestamp(), 0)
 +                })
 +            })
 +            && transfer.invoice_string.as_deref().is_some_and(|raw| {
@@ -191,7 +198,7 @@ diff --git a/src/wallet/online.rs b/src/wallet/online.rs
 +            || invoice.recipient_id != recipient_id
 +            || invoice.network != self.bitcoin_network()
 +            || invoice.expiration_timestamp != batch.expiration.and_then(|v| u64::try_from(v).ok())
-+            || !expired_beyond_skew_margin(&batch)
++            || !batch.is_expired(now().unix_timestamp())
 +        {
 +            return Err(Error::CannotFailBatchTransfer);
 +        }
@@ -270,13 +277,17 @@ diff --git a/src/wallet/online.rs b/src/wallet/online.rs
 +                return Err(Error::CannotFailBatchTransfer);
 +            }
 +            self.internals().check_bound_rgb_proxy(&endpoint.endpoint)?;
-+            let reply = list_invoice_transfers(
-+                &endpoint.endpoint,
-+                &invoice_id,
-+                seed,
-+                self.bitcoin_network(),
-+                true,
-+            )?;
++            let proxy = ProxyClient::new(&endpoint.endpoint, self.bitcoin_network())?;
++            let clock = proxy.get_checked_info()?.result
++                .filter(|info| info.protocol_version == "1.0")
++                .and_then(|info| info.current_time)
++                .and_then(|value| value.parse::<i64>().ok().filter(|time| time.to_string() == value))
++                .filter(|time| time.abs_diff(now().unix_timestamp()) <= u64::from(clock_skew_margin()))
++                .filter(|time| batch.is_expired(*time));
++            if clock.is_none() {
++                return Err(Error::CannotFailBatchTransfer);
++            }
++            let reply = list_invoice_transfers_on(&proxy, &invoice_id, seed, true)?;
 +            // A missing reservation is indistinguishable from a proxy that lost delivery data.
 +            // Require an explicit empty result, even after the proxy's retention window.
 +            if !matches!((reply.result, reply.error), (Some(transfers), None) if transfers.is_empty()) {
