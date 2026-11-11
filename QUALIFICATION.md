@@ -2,6 +2,16 @@
 
 The candidate is a private on-chain SDK for Node and Bare. Mainnet and Public Signet admit Bitcoin and ordinary RGB under the network policies in the [candidate guide](CANDIDATE.md). Regtest, Dev and staging have separate service and bridge policies. This register contains deployment-specific test evidence and stays in the repository outside the package.
 
+## Alpha.22 manual receive and cancellation
+
+An expired ordinary RGB receive may be cancelled by exact batch index and recipient ID. Native admission checks the stored invoice and asset schema, the local transfer state, the colored wallet indexer, the clock on each configured recipient proxy and a fresh authenticated list response. A verified empty response can release the reservation. Unavailable, ambiguous or nonempty responses keep it reserved. If the proxy has already pruned the invoice, the wallet cannot verify the empty result required to cancel it. BFA and invoices without an identified asset remain protected because an accepted mint can outlive invoice expiry. This operation produces no signature, transaction or fee. A retry against the same cancelled receive is idempotent.
+
+The packed macOS ARM64 Node and Bare runtimes created and decoded both 24-hour, amountless invoice types and settled funded NIA and CFA transfers at six confirmations. The cancellation matrix covered all eight combinations of runtime, schema and recipient type. The test advanced the expiry of an exact disposable invoice with the wallet closed, then exercised the production cancellation operation with real local Bitcoin and proxy services. A successful empty proxy response released the reservation, another invoice was unaffected, and reopen preserved the cancellation. Active, mismatched, locally attached, pending, retrieved, malformed, ambiguous and unavailable cases retained the reservation. Fixed and amountless BFA and assetless invoices stayed protected after expiry.
+
+The SDK passed 58 JavaScript tests, public types and 38 native tests. Two issuer-fixture-dependent tests remain opt-in. The candidate keeps the BFA.7 source and checked Electrum reconnect overlay.
+
+The private archive was built from native source `6442dd61c8794f9278aca4170fd6b2ac191f7944`. It contains 35 files and all eleven Bare addons, with SHA-256 `ec3e00266d0d5b4bb7f6c85345dea44a648d3a93650554aa67580786d037cb51` and 204,167,789 bytes. The funded host pack and full archive share the exact Apple Silicon addon and SDK source. Node workers are verified and supplied separately. [Android builds](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/43010214350) · [iOS builds](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/43010220168) · [Desktop builds](https://github.com/UTEXO-Protocol/utexo-mobile/actions/runs/43010209873)
+
 ## Alpha.21 Electrum recovery and funded Public Signet
 
 The wallet indexer and RGB witness resolver check Bitcoin genesis and the applicable Signet block-one checkpoint on each new Electrum socket. The checked transport retries an eligible read once after I/O failure. It checks for an already-dead socket before transmitting a broadcast and sends the broadcast RPC once per call. Existing operation IDs and signed transactions continue through the SDK's reconciliation flow.
