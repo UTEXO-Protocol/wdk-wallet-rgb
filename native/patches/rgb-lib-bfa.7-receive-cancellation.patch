@@ -1,7 +1,136 @@
+diff --git a/src/api/proxy.rs b/src/api/proxy.rs
+--- a/src/api/proxy.rs
++++ b/src/api/proxy.rs
+@@ -78,6 +78,14 @@
+     id: Option<String>,
+     pub(crate) result: Option<R>,
+     pub(crate) error: Option<JsonRpcError>,
++}
++
++#[derive(Deserialize)]
++struct CheckedJsonRpcResponse<R> {
++    jsonrpc: String,
++    id: serde_json::Value,
++    result: Option<R>,
++    error: Option<JsonRpcError>,
+ }
+ 
+ #[derive(Debug, Deserialize, Serialize)]
+@@ -417,6 +425,15 @@
+         method: &str,
+         params: Option<P>,
+     ) -> Result<JsonRpcResponse<R>, Error> {
++        self.call_with_checks(method, params, false)
++    }
++
++    fn call_with_checks<P: Serialize, R: serde::de::DeserializeOwned>(
++        &self,
++        method: &str,
++        params: Option<P>,
++        check_response: bool,
++    ) -> Result<JsonRpcResponse<R>, Error> {
+         let body = JsonRpcRequest {
+             method: method.to_string(),
+             jsonrpc: s!("2.0"),
+@@ -432,6 +449,33 @@
+             .map_err(|err| Self::req_err(err.without_url()))?;
+         if response.status().is_redirection() {
+             return Err(Self::req_err("proxy redirects are not allowed"));
++        }
++        if check_response {
++            use std::io::Read;
++
++            const MAX_TRANSFER_LIST_BYTES: u64 = 1_048_576;
++            if !response.status().is_success() {
++                return Err(Self::req_err("proxy transfer list HTTP request failed"));
++            }
++            let mut bytes = Vec::new();
++            response.take(MAX_TRANSFER_LIST_BYTES + 1).read_to_end(&mut bytes)
++                .map_err(Self::req_err)?;
++            if bytes.len() as u64 > MAX_TRANSFER_LIST_BYTES {
++                return Err(Self::req_err("proxy transfer list exceeds the response size limit"));
++            }
++            let reply: CheckedJsonRpcResponse<R> =
++                serde_json::from_slice(&bytes).map_err(Self::req_err)?;
++            if reply.jsonrpc != "2.0" || !matches!(reply.id, serde_json::Value::Null)
++                || reply.result.is_some() == reply.error.is_some()
++            {
++                return Err(Self::req_err("invalid proxy transfer list response"));
++            }
++            return Ok(JsonRpcResponse {
++                jsonrpc: reply.jsonrpc,
++                id: None,
++                result: reply.result,
++                error: reply.error,
++            });
+         }
+         response
+             .json::<JsonRpcResponse<R>>()
+@@ -569,14 +613,16 @@
+         invoice_id: &str,
+         signature: &str,
+         timestamp: &str,
++        check_response: bool,
+     ) -> Result<JsonRpcResponse<HashMap<String, ProxyTransferState>>, Error> {
+-        self.call(
++        self.call_with_checks(
+             "transfer.list",
+             Some(ListTransfersParams {
+                 invoice_id: invoice_id.to_string(),
+                 signature: signature.to_string(),
+                 timestamp: timestamp.to_string(),
+             }),
++            check_response,
+         )
+     }
+ 
+@@ -827,7 +873,7 @@
+ 
+     #[test]
+     fn list_transfers_error() {
+-        assert_proxy_errors(|c| c.list_transfers("123", "00", "999"));
++        assert_proxy_errors(|c| c.list_transfers("123", "00", "999", false));
+     }
+ 
+     #[test]
 diff --git a/src/wallet/online.rs b/src/wallet/online.rs
 --- a/src/wallet/online.rs
 +++ b/src/wallet/online.rs
-@@ -8504,6 +8504,159 @@
+@@ -111,6 +111,7 @@
+     invoice_id: &str,
+     recipient_seed: &[u8],
+     network: BitcoinNetwork,
++    check_response: bool,
+ ) -> Result<JsonRpcResponse<HashMap<String, ProxyTransferState>>, Error> {
+     let seed: [u8; 32] = recipient_seed.try_into().map_err(|_| Error::Internal {
+         details: s!("invalid recipient secret key"),
+@@ -119,7 +120,8 @@
+     let timestamp = now().unix_timestamp().to_string();
+     let digest = sha256_digest(list_transfers_message(invoice_id, &timestamp).as_bytes());
+     let signature = hex::encode(sign_ed25519(&sk, &digest));
+-    ProxyClient::new(proxy_url, network)?.list_transfers(invoice_id, &signature, &timestamp)
++    ProxyClient::new(proxy_url, network)?
++        .list_transfers(invoice_id, &signature, &timestamp, check_response)
+ }
+ 
+ /// Whether the sender proxy knows the operation of `transfer_ids`, registered with the operation
+@@ -2812,6 +2814,7 @@
+             invoice_id,
+             recipient_seed,
+             self.bitcoin_network(),
++            false,
+         ) {
+             Ok(res) => match (res.result, res.error) {
+                 (Some(transfers), None) => transfers,
+@@ -2902,6 +2905,7 @@
+                 &invoice_id,
+                 recipient_seed,
+                 self.bitcoin_network(),
++                false,
+             );
+             let nothing_pending = match res {
+                 Ok(res) => match (res.result, res.error) {
+@@ -8504,6 +8508,160 @@
  /// Online operations for a wallet.
  #[cfg(feature = "_online")]
  pub trait RgbWalletOpsOnline: RgbWalletOpsOffline + WalletOnline {
@@ -146,6 +275,7 @@ diff --git a/src/wallet/online.rs b/src/wallet/online.rs
 +                &invoice_id,
 +                seed,
 +                self.bitcoin_network(),
++                true,
 +            )?;
 +            // A missing reservation is indistinguishable from a proxy that lost delivery data.
 +            // Require an explicit empty result, even after the proxy's retention window.
