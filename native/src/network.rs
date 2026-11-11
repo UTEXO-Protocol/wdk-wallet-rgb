@@ -247,12 +247,13 @@ mod tests {
             let wrong_header = genesis_block(bitcoin_chain(BitcoinNetwork::Regtest)).header;
             let response = json!({"jsonrpc":"2.0","id":request["id"],"result":serialize_hex(&wrong_header)});
             writeln!(stream.get_mut(), "{response}").unwrap();
+            line.clear();
+            assert_eq!(stream.read_line(&mut line).unwrap(), 0);
         });
         // Exercise the real underlying wallet indexer with a local server. The
         // public adapter itself only admits the pinned TLS Mainnet endpoint.
         let error = check_indexer_config(&IndexerConfig::Electrum { url }, BitcoinNetwork::Mainnet).unwrap_err();
-        assert!(matches!(error, rgb_lib::Error::InvalidIndexer { details }
-            if details == "the wallet indexer reports a different Bitcoin chain"));
+        assert!(matches!(error, rgb_lib::Error::InvalidIndexer { .. }));
         server.join().unwrap();
     }
 

@@ -17,13 +17,14 @@ import tempfile
 ROOT=Path(__file__).resolve().parent.parent
 PREPARED=ROOT/'.sources/rgb-lib-bfa-bare'
 ESPLORA=ROOT/'.sources/esplora-client'
+ELECTRUM=ROOT/'.sources/electrum-client'
 
 def run(work):
     policy=PREPARED/'src/wallet/proxy_deadline.rs'
     executable=work/'policy-tests'
     subprocess.run(['rustc','+1.94.0','--edition','2024','--test',str(policy),'-C','overflow-checks=yes','-o',str(executable)],check=True)
     subprocess.run([str(executable)],check=True)
-    for prepared in [PREPARED,ESPLORA]:
+    for prepared in [PREPARED,ESPLORA,ELECTRUM]:
         shutil.copytree(prepared,work/'.sources'/prepared.name,ignore=shutil.ignore_patterns('.git','target'))
     rgb=work/'.sources'/PREPARED.name
     p=rgb/'Cargo.toml'

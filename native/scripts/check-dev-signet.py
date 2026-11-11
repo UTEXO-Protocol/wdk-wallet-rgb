@@ -10,6 +10,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parent.parent
 PREPARED = ROOT / ".sources" / "rgb-lib-bfa-bare"
 ESPLORA = ROOT / ".sources" / "esplora-client"
+ELECTRUM = ROOT / ".sources" / "electrum-client"
 
 
 def expose_egress_fixtures(egress):
@@ -35,7 +36,7 @@ def expose_egress_fixtures(egress):
 
 def run_loopback_test(work):
     fixture_rgb = work / ".sources" / PREPARED.name
-    for prepared in (PREPARED, ESPLORA):
+    for prepared in (PREPARED, ESPLORA, ELECTRUM):
         shutil.copytree(prepared, work / ".sources" / prepared.name,
                         ignore=shutil.ignore_patterns(".git", "target"))
     # Give both test packages their own Cargo identity. A shared target cache
@@ -120,8 +121,8 @@ def run_loopback_test(work):
 
 
 if __name__ == "__main__":
-    if not PREPARED.is_dir() or not ESPLORA.is_dir():
-        raise SystemExit("Prepare the pinned Bare RGB and Esplora sources before running this offline check.")
+    if not all(source.is_dir() for source in (PREPARED, ESPLORA, ELECTRUM)):
+        raise SystemExit("Prepare the pinned Bare RGB and indexer client sources before running this offline check.")
     subprocess.run([sys.executable, str(ROOT / "scripts/prepare-source.py"), "--bare"], check=True)
     with tempfile.TemporaryDirectory(prefix="iris-rgb-checkpoint-test.") as scratch:
         run_loopback_test(Path(scratch))
