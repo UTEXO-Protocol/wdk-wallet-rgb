@@ -70,8 +70,8 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance},
     indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
     source: '9ec49c08be2e68f08521281e3efbd760ec989cb9',
-    overlayTree: 'abc20a4b45fcf3b8b918a1326660504b1cffdf38',
-    integrationTree: '64e35cf4086cbec8d1adec2e9e29fbdbf2183014'
+    overlayTree: 'b37467c8d774acd5153094cbd62165b8acdf6be8',
+    integrationTree: 'e6577e6646535d60b575f60494b42997cc50e8e3'
   })
   if (method === 'open') {
     assert.equal(params.network, '${network}')

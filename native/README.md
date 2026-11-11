@@ -8,6 +8,10 @@ Proxy expiry values must fit the receiver's locally recorded invoice window and 
 
 Run `python3 scripts/check-proxy-deadline.py` from this directory to test the exact admitted policy and the real proxy/SQLite paths. The fixture uses disposable source copies with distinct Cargo package identities and loopback HTTP. Its test-only module is excluded from production native binaries.
 
+The patched Electrum client checks genesis and the relevant Signet checkpoint on each actual socket, including the two separate sockets used for wallet sync and RGB validation. A transport error allows one checked replacement and retry for read-only RPCs. A broadcast is transmitted once per call. The wallet keeps the existing operation identity and signed bytes for reconciliation.
+
+Run `cargo +1.94.0 test --release --offline --locked --test electrum_checked_reconnect` after source preparation to exercise socket loss, chain mismatch and ambiguous broadcast responses.
+
 ## Dev checkpoint candidate
 
 The Dev profile selects `https://dev.esplora-01.mint.utexo.com`. The wallet
@@ -29,7 +33,7 @@ UTEXO_DEV_BFA6_GENESIS_CONTRACT=/absolute/path/to/dev-busdt-a6-bfa7-genesis-con1
 
 ## Build
 
-Run these commands from this `native/` directory with Rust 1.94.0. The first build needs authorized GitHub read access to the UTEXO BFA source and the pinned dependency revisions. The preparation script uses the local `gh` credential helper. The same commit and tree checks admit a local Git directory via an optional path argument. It also verifies the Esplora client crate SHA-256 and patched tree. Build credentials stay with the authorized builder. Consumer installs use the packed artifact.
+Run these commands from this `native/` directory with Rust 1.94.0. The first build needs authorized GitHub read access to the UTEXO BFA source and the pinned dependency revisions. The preparation script uses the local `gh` credential helper. The same commit and tree checks admit a local Git directory via an optional path argument. It also verifies the Electrum and Esplora client crate SHA-256 digests and patched trees. Build credentials stay with the authorized builder. Consumer installs use the packed artifact.
 
 ```sh
 python3 scripts/prepare-source.py --bare

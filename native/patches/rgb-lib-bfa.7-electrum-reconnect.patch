@@ -1,0 +1,127 @@
+diff --git a/src/no_wallet/validation.rs b/src/no_wallet/validation.rs
+index 5321fb1..48222a9 100644
+--- a/src/no_wallet/validation.rs
++++ b/src/no_wallet/validation.rs
+@@ -545,8 +545,11 @@ impl IndexerClient {
+             IndexerConfig::Electrum { url } | IndexerConfig::DevSignetElectrum { url } => {
+                 let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+                 Self::Electrum(Box::new(
+-                    ElectrumClient::from_config(url, electrum_config(indexer_config))
+-                        .map_err(|e| unreachable(&e))?,
++                    ElectrumClient::from_config(
++                        url,
++                        electrum_config(indexer_config, Some(bitcoin_network)),
++                    )
++                    .map_err(|e| unreachable(&e))?,
+                 ))
+             }
+             #[cfg(feature = "esplora_validation")]
+@@ -776,14 +779,20 @@ pub(crate) fn get_resolver(
+         }
+         #[cfg(feature = "electrum_validation")]
+         IndexerConfig::Electrum { url } => Box::new(
+-            AnyResolver::electrum_blocking(url, Some(electrum_config(indexer_config)))
+-                .map_err(invalid)?,
++            AnyResolver::electrum_blocking(
++                url,
++                Some(electrum_config(indexer_config, Some(bitcoin_network))),
++            )
++            .map_err(invalid)?,
+         ),
+         #[cfg(feature = "electrum_validation")]
+         IndexerConfig::DevSignetElectrum { url } => {
+             let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+-            let inner = ElectrumClient::from_config(url, electrum_config(indexer_config))
+-                .map_err(|err| invalid(err.to_string()))?;
++            let inner = ElectrumClient::from_config(
++                url,
++                electrum_config(indexer_config, Some(bitcoin_network)),
++            )
++            .map_err(|err| invalid(err.to_string()))?;
+             Box::new(DevSignetResolver(
+                 rgbstd::indexers::electrum_blocking::ElectrumClient { inner },
+             ))
+@@ -872,20 +881,33 @@ impl From<&BitcoindAuth> for BitcoindRpcAuth {
+ }
+ 
+ #[cfg(feature = "electrum_validation")]
+-pub(crate) fn electrum_config(indexer_config: &IndexerConfig) -> ElectrumConfig {
+-    // A replacement connection must repeat chain admission before it can supply data.
+-    let pinned_public_tls = matches!(indexer_config, IndexerConfig::Electrum { url }
+-        if matches!(url.as_str(), "ssl://electrum.iriswallet.com:50003" | "ssl://electrum.iriswallet.com:50033"));
+-    let retries = if pinned_public_tls || matches!(indexer_config, IndexerConfig::DevSignetElectrum { .. }) {
+-        0
+-    } else {
+-        INDEXER_RETRIES
+-    };
+-    ConfigBuilder::new()
+-        .retry(retries)
++pub(crate) fn electrum_config(
++    indexer_config: &IndexerConfig,
++    network: Option<BitcoinNetwork>,
++) -> ElectrumConfig {
++    let mut builder = ConfigBuilder::new()
+         .validate_domain(true)
+-        .timeout(Some(Duration::from_secs(INDEXER_TIMEOUT)))
+-        .build()
++        .timeout(Some(Duration::from_secs(INDEXER_TIMEOUT)));
++    if let Some(network) = network {
++        let genesis = bitcoin::constants::genesis_block(bitcoin::Network::from(network));
++        let mut checkpoints = vec![(0, genesis.block_hash())];
++        if network == BitcoinNetwork::Signet {
++            let checkpoint = match indexer_config {
++                IndexerConfig::DevSignetElectrum { .. } => SignetCheckpoint::Dev,
++                _ => SignetCheckpoint::Public,
++            };
++            checkpoints.push((
++                1,
++                checkpoint.block_one().parse().expect("compiled Signet checkpoint"),
++            ));
++        }
++        // The Electrum client checks these on the actual replacement connection.
++        builder = builder.retry(0).chain_checkpoints(checkpoints);
++    } else {
++        // Indexer discovery does not supply wallet or resolver data.
++        builder = builder.retry(INDEXER_RETRIES);
++    }
++    builder.build()
+ }
+ 
+ #[cfg(feature = "esplora_validation")]
+diff --git a/src/utils.rs b/src/utils.rs
+index 1d4ed6d..0e4c05d 100644
+--- a/src/utils.rs
++++ b/src/utils.rs
+@@ -501,7 +501,7 @@ pub(crate) fn get_indexer_and_resolver(
+ 
+     let checkpoint = indexer_config.signet_checkpoint(bitcoin_network)?;
+     #[cfg_attr(not(feature = "bitcoind"), allow(unused_mut))]
+-    let mut indexer = build_indexer(indexer_config)?;
++    let mut indexer = build_indexer_for_network(indexer_config, Some(bitcoin_network))?;
+     // This also checks connectivity (and credentials for bitcoind).
+     let header_hash = |height| {
+         indexer
+@@ -536,6 +536,14 @@ pub(crate) fn get_indexer_and_resolver(
+ /// contacted the service yet, except for electrum, whose client connects on creation.
+ #[cfg(feature = "_online")]
+ pub(crate) fn build_indexer(indexer_config: &IndexerConfig) -> Result<Indexer, Error> {
++    build_indexer_for_network(indexer_config, None)
++}
++
++#[cfg(feature = "_online")]
++fn build_indexer_for_network(
++    indexer_config: &IndexerConfig,
++    #[cfg_attr(not(feature = "electrum"), allow(unused_variables))] network: Option<BitcoinNetwork>,
++) -> Result<Indexer, Error> {
+     match indexer_config {
+         #[cfg(feature = "bitcoind")]
+         IndexerConfig::Bitcoind { url, auth } => {
+@@ -551,7 +559,7 @@ pub(crate) fn build_indexer(indexer_config: &IndexerConfig) -> Result<Indexer, E
+         #[cfg(feature = "electrum")]
+         IndexerConfig::Electrum { url } | IndexerConfig::DevSignetElectrum { url } => {
+             let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+-            let client = ElectrumClient::from_config(url, electrum_config(indexer_config))
++            let client = ElectrumClient::from_config(url, electrum_config(indexer_config, network))
+                 .map_err(|e| Error::InvalidIndexer {
+                     details: unreachable_indexer_details(indexer_config, &e),
+                 })?;

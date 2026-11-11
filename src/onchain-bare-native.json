@@ -1,59 +1,7 @@
 {
-  "integrationTree": "64e35cf4086cbec8d1adec2e9e29fbdbf2183014",
+  "integrationTree": "e6577e6646535d60b575f60494b42997cc50e8e3",
   "source": "9ec49c08be2e68f08521281e3efbd760ec989cb9",
-  "overlayTree": "abc20a4b45fcf3b8b918a1326660504b1cffdf38",
+  "overlayTree": "b37467c8d774acd5153094cbd62165b8acdf6be8",
   "protocol": 2,
-  "targets": {
-    "android-arm": {
-      "byteLength": 47062572,
-      "sha256": "852b0f0531ceade35848facfd341a6c9c644d9ab0aa5df3cee3a7bd7c7b359d3",
-      "linkedName": "libutexo__wdk-wallet-rgb.2.1.0-alpha.20.so"
-    },
-    "android-arm64": {
-      "byteLength": 66223600,
-      "sha256": "20048767d5981cabe35a9736add264d7b8978e5a5e5d2e4ac50a91339d3ec952",
-      "linkedName": "libutexo__wdk-wallet-rgb.2.1.0-alpha.20.so"
-    },
-    "android-ia32": {
-      "byteLength": 66719784,
-      "sha256": "59eb9c0552f935426493d92597efda52f758e307eb5bef444912888f692a9968",
-      "linkedName": "libutexo__wdk-wallet-rgb.2.1.0-alpha.20.so"
-    },
-    "android-x64": {
-      "byteLength": 68166152,
-      "sha256": "2b4f90e06a47e3ca16189f42caad839312f063465ec46c97ede944e65f6723ae",
-      "linkedName": "libutexo__wdk-wallet-rgb.2.1.0-alpha.20.so"
-    },
-    "darwin-arm64": {
-      "byteLength": 45143792,
-      "sha256": "07126a42721ecede36515d0077b5d06c6fddd21441df84e3fcbf21e92580e709"
-    },
-    "darwin-x64": {
-      "byteLength": 48673848,
-      "sha256": "7c043a928e05c1f5953ce5a2a851c3a7aa9a04fd421e8564d44eb77c2aeb801d"
-    },
-    "ios-arm64": {
-      "byteLength": 45700440,
-      "sha256": "e01a90d4e74245aec5cbb518f43aa29906c655d28859194e563e34e018f11aee",
-      "linkedName": "utexo__wdk-wallet-rgb.2.1.0-alpha.20.framework/utexo__wdk-wallet-rgb.2.1.0-alpha.20"
-    },
-    "ios-arm64-simulator": {
-      "byteLength": 45914912,
-      "sha256": "98b0eaf7a39516b7c94c9c407ee56b850de491034993c07cc45e3338ed86bc0d",
-      "linkedName": "utexo__wdk-wallet-rgb.2.1.0-alpha.20.framework/utexo__wdk-wallet-rgb.2.1.0-alpha.20"
-    },
-    "ios-x64-simulator": {
-      "byteLength": 49503736,
-      "sha256": "4bcce90bc1271c6509a62c30760c54c11bcec2c4900af4145a85060f656f94b9",
-      "linkedName": "utexo__wdk-wallet-rgb.2.1.0-alpha.20.framework/utexo__wdk-wallet-rgb.2.1.0-alpha.20"
-    },
-    "linux-arm64": {
-      "byteLength": 53778912,
-      "sha256": "cce0b6779815071f504aee247b096d288e5a32ac164d643e30b31a4c5975e4dc"
-    },
-    "linux-x64": {
-      "byteLength": 56640456,
-      "sha256": "7e92ba850430e57f61b58d762d76c13a05250f868ea51225a6eae361c5503bfc"
-    }
-  }
+  "targets": {}
 }

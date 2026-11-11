@@ -38,7 +38,7 @@ The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Des
 
 Set `startupMode: 'offline'` to open without waiting on services. Local reads are cached until `connect()` completes. Address allocation, invoice creation and transaction preparation require a connected session. `getConnectionStatus()` describes session state. `getNetworkInfo()` reads the current tip from the configured indexer and checks the selected Signet block-one checkpoint. The indexer is a trusted service for the chain data it reports. The endpoint checks accept only the configured services. A proxy check verifies the advertised protocol independently of credential and mint readiness.
 
-After a pinned Electrum connection drops, await `shutdown()` and reopen the same wallet directory. The replacement connection repeats chain admission before serving wallet operations. Preserve the original operation ID when reconciling an interrupted spend.
+After an Electrum disconnect, the wallet reconnects on demand. Both the wallet indexer and the RGB witness resolver check Bitcoin genesis and, on Signet, block one on their replacement connection. An interrupted read gets one retry. If a broadcast response is lost, use the original operation ID to reconcile the spend.
 
 For a seed-only restore into a new directory, explicitly set `mode: 'btc-only'` and supply the same-engine seed and Electrum endpoint. Online discovery searches Bitcoin history within the pinned library's HD scan gap. The directory stays in BTC-only mode across reopen. RGB wallet and bridge capabilities require matching, validated RGB state. Keep the original RGB wallet directory or its complete authenticated backup.
 

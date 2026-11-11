@@ -1,0 +1,409 @@
+diff --git a/src/client.rs b/src/client.rs
+index d86880f..4924c8a 100644
+--- a/src/client.rs
++++ b/src/client.rs
+@@ -34,24 +34,38 @@ pub enum ClientType {
+ /// Generalized Electrum client that supports multiple backends. Can re-instantiate client_type if connections
+ /// drops
+ pub struct Client {
+-    client_type: RwLock<ClientType>,
++    client_type: RwLock<Option<ClientType>>,
+     config: Config,
+     url: String,
+ }
+ 
++macro_rules! dispatch_client {
++    ($client:expr, $name:ident $(, $args:expr)* $(,)?) => {
++        match $client {
++            ClientType::TCP(inner) => inner.$name($($args),*),
++            #[cfg(any(feature = "openssl", feature = "rustls", feature = "rustls-ring"))]
++            ClientType::SSL(inner) => inner.$name($($args),*),
++            #[cfg(feature = "proxy")]
++            ClientType::Socks5(inner) => inner.$name($($args),*),
++        }
++    };
++}
++
+ macro_rules! impl_inner_call {
+-    ( $self:expr, $name:ident $(, $args:expr)* ) => {
+-    {
++    ($self:expr, $name:ident $(, $args:expr)* $(,)?) => {
++        impl_inner_call!(@checked $self, false, $name $(, $args)*)
++    };
++    (@checked $self:expr, $read:expr, $name:ident $(, $args:expr)* $(,)?) => {{
++        if !$self.config.chain_checkpoints.is_empty() {
++            return $self.call_chain_checked($read, |client| {
++                dispatch_client!(client, $name $(, $args)*)
++            });
++        }
+         let mut errors = vec![];
+         loop {
+             let read_client = $self.client_type.read().unwrap();
+-            let res = match &*read_client {
+-                ClientType::TCP(inner) => inner.$name( $($args, )* ),
+-                #[cfg(any(feature = "openssl", feature = "rustls", feature = "rustls-ring"))]
+-                ClientType::SSL(inner) => inner.$name( $($args, )* ),
+-                #[cfg(feature = "proxy")]
+-                ClientType::Socks5(inner) => inner.$name( $($args, )* ),
+-            };
++            let client = read_client.as_ref().expect("unchecked client retains a connection");
++            let res = dispatch_client!(client, $name $(, $args)*);
+             drop(read_client);
+             match res {
+                 Ok(val) => return Ok(val),
+@@ -79,7 +93,7 @@ macro_rules! impl_inner_call {
+                             match ClientType::from_config(&$self.url, &$self.config) {
+                                 Ok(new_client) => {
+                                     info!("Succesfully created new client");
+-                                    *write_client = new_client;
++                                    *write_client = Some(new_client);
+                                     break;
+                                 },
+                                 Err(e) => {
+@@ -100,7 +114,7 @@ macro_rules! impl_inner_call {
+                 },
+             }
+         }}
+-    }
++    };
+ }
+ 
+ fn retries_exhausted(failed_attempts: usize, configured_retries: u8) -> bool {
+@@ -114,6 +128,17 @@ impl ClientType {
+     /// Constructor that supports multiple backends and allows configuration through
+     /// the [Config]
+     pub fn from_config(url: &str, config: &Config) -> Result<Self, Error> {
++        let client = Self::connect(url, config)?;
++        for &(height, expected) in &config.chain_checkpoints {
++            let actual = dispatch_client!(&client, block_header, height)?.block_hash();
++            if actual != expected {
++                return Err(Error::Message("Electrum chain checkpoint mismatch".into()));
++            }
++        }
++        Ok(client)
++    }
++
++    fn connect(url: &str, config: &Config) -> Result<Self, Error> {
+         let auth_provider = config.authorization_provider().cloned();
+ 
+         #[cfg(any(feature = "openssl", feature = "rustls", feature = "rustls-ring"))]
+@@ -200,7 +225,7 @@ impl Client {
+     /// Generic constructor that supports multiple backends and allows configuration through
+     /// the [Config]
+     pub fn from_config(url: &str, config: Config) -> Result<Self, Error> {
+-        let client_type = RwLock::new(ClientType::from_config(url, &config)?);
++        let client_type = RwLock::new(Some(ClientType::from_config(url, &config)?));
+ 
+         Ok(Client {
+             client_type,
+@@ -208,6 +233,69 @@ impl Client {
+             url: url.to_string(),
+         })
+     }
++
++    fn call_chain_checked<T>(
++        &self,
++        read_only: bool,
++        request: impl Fn(&ClientType) -> Result<T, Error>,
++    ) -> Result<T, Error> {
++        // Keep replacement and the following request on the same admitted connection.
++        let mut socket = self.client_type.write().unwrap();
++        let connect = || ClientType::from_config(&self.url, &self.config);
++        let is_transport_error =
++            |error: &Error| matches!(error, Error::IOError(_) | Error::SharedIOError(_));
++        if socket.is_none() {
++            *socket = Some(connect()?);
++        }
++        if !read_only {
++            // Detect an already dead connection before sending a request we cannot repeat.
++            if let Err(error) = dispatch_client!(socket.as_ref().unwrap(), ping) {
++                if !is_transport_error(&error) {
++                    return Err(error);
++                }
++                *socket = None;
++                *socket = Some(connect()?);
++            }
++        }
++
++        let result = request(socket.as_ref().unwrap());
++        if !result.as_ref().is_err_and(is_transport_error) {
++            return result;
++        }
++        *socket = None;
++        if !read_only {
++            return result;
++        }
++
++        let fresh = connect()?;
++        let result = request(&fresh);
++        if !result.as_ref().is_err_and(is_transport_error) {
++            *socket = Some(fresh);
++        }
++        result
++    }
++}
++
++// Raw and heterogeneous batch calls retry only RPCs known to be read-only.
++fn read_rpc(method: &str) -> bool {
++    matches!(
++        method,
++        "blockchain.block.header"
++            | "blockchain.block.headers"
++            | "blockchain.estimatefee"
++            | "blockchain.headers.subscribe"
++            | "blockchain.relayfee"
++            | "blockchain.scripthash.get_balance"
++            | "blockchain.scripthash.get_history"
++            | "blockchain.scripthash.listunspent"
++            | "blockchain.transaction.get"
++            | "blockchain.transaction.get_merkle"
++            | "blockchain.transaction.id_from_pos"
++            | "mempool.get_info"
++            | "server.features"
++            | "server.ping"
++            | "server.version"
++    )
+ }
+ 
+ impl ElectrumApi for Client {
+@@ -223,42 +311,42 @@ impl ElectrumApi for Client {
+         // `RawClient::internal_raw_call_with_vec` method.
+ 
+         let vec = params.into_iter().collect::<Vec<Param>>();
+-        impl_inner_call!(self, internal_raw_call_with_vec, method_name, vec.clone());
++        impl_inner_call!(@checked self, read_rpc(method_name), internal_raw_call_with_vec, method_name, vec.clone());
+     }
+ 
+     #[inline]
+     fn batch_call(&self, batch: &Batch) -> Result<Vec<serde_json::Value>, Error> {
+-        impl_inner_call!(self, batch_call, batch)
++        impl_inner_call!(@checked self, batch.iter().all(|(method, _)| read_rpc(method)), batch_call, batch)
+     }
+ 
+     #[inline]
+     fn block_headers_subscribe_raw(&self) -> Result<RawHeaderNotification, Error> {
+-        impl_inner_call!(self, block_headers_subscribe_raw)
++        impl_inner_call!(@checked self, true, block_headers_subscribe_raw)
+     }
+ 
+     #[inline]
+     fn block_headers_pop_raw(&self) -> Result<Option<RawHeaderNotification>, Error> {
+-        impl_inner_call!(self, block_headers_pop_raw)
++        impl_inner_call!(@checked self, true, block_headers_pop_raw)
+     }
+ 
+     #[inline]
+     fn block_header_raw(&self, height: usize) -> Result<Vec<u8>, Error> {
+-        impl_inner_call!(self, block_header_raw, height)
++        impl_inner_call!(@checked self, true, block_header_raw, height)
+     }
+ 
+     #[inline]
+     fn block_headers(&self, start_height: usize, count: usize) -> Result<GetHeadersRes, Error> {
+-        impl_inner_call!(self, block_headers, start_height, count)
++        impl_inner_call!(@checked self, true, block_headers, start_height, count)
+     }
+ 
+     #[inline]
+     fn estimate_fee(&self, number: usize, mode: Option<EstimationMode>) -> Result<f64, Error> {
+-        impl_inner_call!(self, estimate_fee, number, mode)
++        impl_inner_call!(@checked self, true, estimate_fee, number, mode)
+     }
+ 
+     #[inline]
+     fn relay_fee(&self) -> Result<f64, Error> {
+-        impl_inner_call!(self, relay_fee)
++        impl_inner_call!(@checked self, true, relay_fee)
+     }
+ 
+     #[inline]
+@@ -287,7 +375,7 @@ impl ElectrumApi for Client {
+ 
+     #[inline]
+     fn script_get_balance(&self, script: &Script) -> Result<GetBalanceRes, Error> {
+-        impl_inner_call!(self, script_get_balance, script)
++        impl_inner_call!(@checked self, true, script_get_balance, script)
+     }
+ 
+     #[inline]
+@@ -296,12 +384,12 @@ impl ElectrumApi for Client {
+         I: IntoIterator + Clone,
+         I::Item: Borrow<&'s Script>,
+     {
+-        impl_inner_call!(self, batch_script_get_balance, scripts.clone())
++        impl_inner_call!(@checked self, true, batch_script_get_balance, scripts.clone())
+     }
+ 
+     #[inline]
+     fn script_get_history(&self, script: &Script) -> Result<Vec<GetHistoryRes>, Error> {
+-        impl_inner_call!(self, script_get_history, script)
++        impl_inner_call!(@checked self, true, script_get_history, script)
+     }
+ 
+     #[inline]
+@@ -310,12 +398,12 @@ impl ElectrumApi for Client {
+         I: IntoIterator + Clone,
+         I::Item: Borrow<&'s Script>,
+     {
+-        impl_inner_call!(self, batch_script_get_history, scripts.clone())
++        impl_inner_call!(@checked self, true, batch_script_get_history, scripts.clone())
+     }
+ 
+     #[inline]
+     fn script_list_unspent(&self, script: &Script) -> Result<Vec<ListUnspentRes>, Error> {
+-        impl_inner_call!(self, script_list_unspent, script)
++        impl_inner_call!(@checked self, true, script_list_unspent, script)
+     }
+ 
+     #[inline]
+@@ -327,12 +415,12 @@ impl ElectrumApi for Client {
+         I: IntoIterator + Clone,
+         I::Item: Borrow<&'s Script>,
+     {
+-        impl_inner_call!(self, batch_script_list_unspent, scripts.clone())
++        impl_inner_call!(@checked self, true, batch_script_list_unspent, scripts.clone())
+     }
+ 
+     #[inline]
+     fn transaction_get_raw(&self, txid: &Txid) -> Result<Vec<u8>, Error> {
+-        impl_inner_call!(self, transaction_get_raw, txid)
++        impl_inner_call!(@checked self, true, transaction_get_raw, txid)
+     }
+ 
+     #[inline]
+@@ -341,7 +429,7 @@ impl ElectrumApi for Client {
+         I: IntoIterator + Clone,
+         I::Item: Borrow<&'t Txid>,
+     {
+-        impl_inner_call!(self, batch_transaction_get_raw, txids.clone())
++        impl_inner_call!(@checked self, true, batch_transaction_get_raw, txids.clone())
+     }
+ 
+     #[inline]
+@@ -350,7 +438,7 @@ impl ElectrumApi for Client {
+         I: IntoIterator + Clone,
+         I::Item: Borrow<u32>,
+     {
+-        impl_inner_call!(self, batch_block_header_raw, heights.clone())
++        impl_inner_call!(@checked self, true, batch_block_header_raw, heights.clone())
+     }
+ 
+     #[inline]
+@@ -359,7 +447,7 @@ impl ElectrumApi for Client {
+         I: IntoIterator + Clone,
+         I::Item: Borrow<usize>,
+     {
+-        impl_inner_call!(self, batch_estimate_fee, numbers.clone())
++        impl_inner_call!(@checked self, true, batch_estimate_fee, numbers.clone())
+     }
+ 
+     #[inline]
+@@ -377,7 +465,7 @@ impl ElectrumApi for Client {
+ 
+     #[inline]
+     fn transaction_get_merkle(&self, txid: &Txid, height: usize) -> Result<GetMerkleRes, Error> {
+-        impl_inner_call!(self, transaction_get_merkle, txid, height)
++        impl_inner_call!(@checked self, true, transaction_get_merkle, txid, height)
+     }
+ 
+     #[inline]
+@@ -389,16 +477,14 @@ impl ElectrumApi for Client {
+         I: IntoIterator + Clone,
+         I::Item: Borrow<(Txid, usize)>,
+     {
+-        impl_inner_call!(
+-            self,
+-            batch_transaction_get_merkle,
++        impl_inner_call!(@checked self, true, batch_transaction_get_merkle,
+             txids_and_heights.clone()
+         )
+     }
+ 
+     #[inline]
+     fn txid_from_pos(&self, height: usize, tx_pos: usize) -> Result<Txid, Error> {
+-        impl_inner_call!(self, txid_from_pos, height, tx_pos)
++        impl_inner_call!(@checked self, true, txid_from_pos, height, tx_pos)
+     }
+ 
+     #[inline]
+@@ -407,32 +493,32 @@ impl ElectrumApi for Client {
+         height: usize,
+         tx_pos: usize,
+     ) -> Result<TxidFromPosRes, Error> {
+-        impl_inner_call!(self, txid_from_pos_with_merkle, height, tx_pos)
++        impl_inner_call!(@checked self, true, txid_from_pos_with_merkle, height, tx_pos)
+     }
+ 
+     #[inline]
+     fn server_features(&self) -> Result<ServerFeaturesRes, Error> {
+-        impl_inner_call!(self, server_features)
++        impl_inner_call!(@checked self, true, server_features)
+     }
+ 
+     #[inline]
+     fn protocol_version(&self) -> Result<String, Error> {
+-        impl_inner_call!(self, protocol_version)
++        impl_inner_call!(@checked self, true, protocol_version)
+     }
+ 
+     #[inline]
+     fn mempool_get_info(&self) -> Result<MempoolInfoRes, Error> {
+-        impl_inner_call!(self, mempool_get_info)
++        impl_inner_call!(@checked self, true, mempool_get_info)
+     }
+ 
+     #[inline]
+     fn ping(&self) -> Result<(), Error> {
+-        impl_inner_call!(self, ping)
++        impl_inner_call!(@checked self, true, ping)
+     }
+ 
+     #[inline]
+     fn calls_made(&self) -> Result<usize, Error> {
+-        impl_inner_call!(self, calls_made)
++        impl_inner_call!(@checked self, true, calls_made)
+     }
+ }
+ 
+diff --git a/src/config.rs b/src/config.rs
+index 226ae22..390b805 100644
+--- a/src/config.rs
++++ b/src/config.rs
+@@ -24,6 +24,7 @@ pub struct Config {
+     validate_domain: bool,
+     /// Optional authorization provider for dynamic token injection
+     authorization_provider: Option<AuthProvider>,
++    pub(crate) chain_checkpoints: Vec<(usize, bitcoin::BlockHash)>,
+ }
+ 
+ // Custom Debug impl because AuthProvider doesn't implement Debug
+@@ -34,6 +35,7 @@ impl std::fmt::Debug for Config {
+             .field("timeout", &self.timeout)
+             .field("retry", &self.retry)
+             .field("validate_domain", &self.validate_domain)
++            .field("chain_checkpoints", &self.chain_checkpoints)
+             .field(
+                 "authorization_provider",
+                 &self.authorization_provider.as_ref().map(|_| "<provider>"),
+@@ -102,6 +104,13 @@ impl ConfigBuilder {
+         self
+     }
+ 
++    /// Check these block hashes on each new connection. With checkpoints, a transport failure
++    /// may reconnect and retry a read once. Requests that can mutate state are sent at most once.
++    pub fn chain_checkpoints(mut self, checkpoints: Vec<(usize, bitcoin::BlockHash)>) -> Self {
++        self.config.chain_checkpoints = checkpoints;
++        self
++    }
++
+     /// Return the config and consume the builder
+     pub fn build(self) -> Config {
+         self.config
+@@ -182,6 +191,7 @@ impl Default for Config {
+             retry: 1,
+             validate_domain: true,
+             authorization_provider: None,
++            chain_checkpoints: Vec::new(),
+         }
+     }
+ }
