@@ -3,6 +3,7 @@
 from pathlib import Path
 import hashlib
 import io
+import json
 import os
 import subprocess
 import sys
@@ -11,12 +12,11 @@ import tempfile
 import urllib.request
 
 ROOT = Path(__file__).resolve().parent.parent
-DEST = ROOT / ".sources" / "rgb-lib-bfa"
+DEST = ROOT / ".sources" / "rgb-lib-bfa-clean"
 SOURCE_URL = "https://github.com/UTEXO-Protocol/rgb-lib-bfa.git"
 PATCHES = ROOT / "patches"
 SHA = "2f7b21d8637baad548504ea870deb2c0d4d0a37d"
 BASE_TREE = "5492824f3cf47b4c821dfca8b7a63fed27858486"
-EXPECTED_TREE = "83f4612d41cb79df2b78c6bfdb50441be908e4dd"
 ESPLORA_PACKAGE = "esplora-client-0.12.3"
 ESPLORA_SHA256 = "f19e3ea99dbfbef0c1ec26d83e69de0c579f6aa6aaac4f44597805fcc27e97af"
 ESPLORA_EXPECTED_TREE = "0b02f9ababbb4f276dcea5168fc8cf59914c6744"
@@ -29,13 +29,13 @@ ELECTRUM_PATCH = PATCHES / "electrum-client-0.25.2-checked-reconnect.patch"
 def git(repo, *args):
     return subprocess.check_output(["git", "-c", "core.hooksPath=/dev/null", "-C", str(repo), *args], text=True).strip()
 
-def verify(repo, expected_tree):
+def verify(repo):
     if (git(repo, "rev-parse", "HEAD") != SHA
         or git(repo, "rev-parse", "HEAD^{tree}") != BASE_TREE
-        or git(repo, "write-tree") != expected_tree
+        or git(repo, "write-tree") != BASE_TREE
         or git(repo, "diff", "--name-only")
-        or git(repo, "ls-files", "--others", "--exclude-standard")):
-        raise SystemExit("RGB BFA build source does not match the exact admitted overlay")
+        or git(repo, "ls-files", "--others")):
+        raise SystemExit("RGB BFA build source does not match the exact unmodified upstream tree")
 
 def prepare_crate(name, package_name, sha256, patch, tree):
     dest = DEST.with_name(name)
@@ -78,30 +78,26 @@ def verify_crate(repo, tree):
 def main():
     os.umask(0o077)
     args = sys.argv[1:]
-    bare = bool(args and args[0] == "--bare")
-    if bare:
+    source_only = bool(args and args[0] == "--rgb-source-only")
+    if args and args[0] in ("--bare", "--rgb-source-only"):
         args.pop(0)
     if len(args) > 1:
-        raise SystemExit("usage: prepare-source.py [--bare] [source]")
-    prepare_crate("esplora-client", ESPLORA_PACKAGE, ESPLORA_SHA256, ESPLORA_PATCH,
-                  ESPLORA_EXPECTED_TREE)
-    prepare_crate("electrum-client", ELECTRUM_PACKAGE, ELECTRUM_SHA256, ELECTRUM_PATCH,
-                  ELECTRUM_EXPECTED_TREE)
-    dest = DEST.with_name("rgb-lib-bfa-bare") if bare else DEST
-    patches = [
-        PATCHES / "rgb-lib-bfa.8-native-egress.patch",
-        PATCHES / "rgb-lib-bfa.8-indexer-checkpoints.patch",
-        PATCHES / "rgb-lib-bfa.8-bound-proxy.patch",
-        PATCHES / "rgb-lib-bfa.8-registration.patch",
-        PATCHES / "rgb-lib-bfa.8-verified-colored-outputs.patch",
-        PATCHES / "rgb-lib-bfa.8-proxy-deadline.patch",
-        PATCHES / "rgb-lib-bfa.8-receive-cancellation.patch",
-    ]
-    if bare:
-        patches.append(PATCHES / "rgb-lib-bfa.8-embedded-lifecycle.patch")
-    expected_tree = "02b77a312380ae067342913d638d20b45fe6e37a" if bare else EXPECTED_TREE
+        raise SystemExit("usage: prepare-source.py [--bare | --rgb-source-only] [source]")
+    manifest = json.loads((ROOT.parent / "src/onchain-bare-native.json").read_text())
+    if not source_only and manifest.get("releaseHold") is not False:
+        raise SystemExit("Native build blocked pending upstream RGB safeguards. See QUALIFICATION.md.")
+    if (manifest["source"], manifest["overlayTree"], manifest["integrationTree"]) != (
+        SHA, BASE_TREE, BASE_TREE
+    ):
+        raise SystemExit("Native manifest does not pin the unmodified upstream RGB source")
+    if not source_only:
+        prepare_crate("esplora-client", ESPLORA_PACKAGE, ESPLORA_SHA256, ESPLORA_PATCH,
+                      ESPLORA_EXPECTED_TREE)
+        prepare_crate("electrum-client", ELECTRUM_PACKAGE, ELECTRUM_SHA256, ELECTRUM_PATCH,
+                      ELECTRUM_EXPECTED_TREE)
+    dest = DEST
     if dest.exists():
-        verify(dest, expected_tree)
+        verify(dest)
         return
     dest.parent.mkdir(exist_ok=True)
     source = SOURCE_URL
@@ -120,13 +116,10 @@ def main():
         git(staged, "init", "--quiet")
         git(staged, *credentials, "fetch", "--quiet", "--depth=1", "--no-tags", source, SHA)
         git(staged, "checkout", "--quiet", "--detach", "FETCH_HEAD")
-        for patch in patches:
-            git(staged, "apply", "--check", "--index", str(patch))
-            git(staged, "apply", "--index", str(patch))
-        verify(staged, expected_tree)
+        verify(staged)
         # A concurrently promoted directory is nonempty; rename then fails closed.
         staged.rename(dest)
-    verify(dest, expected_tree)
+    verify(dest)
 
 if __name__ == "__main__":
     main()

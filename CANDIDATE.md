@@ -1,5 +1,7 @@
 # On-chain WDK candidate
 
+**Native builds are on hold.** This source review revision uses unmodified RGB BFA.8 and ships no admitted native worker or addon. The network and operation details below describe the intended SDK contract. See the [upstream blockers](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/QUALIFICATION.md#upstream-requirements-for-an-unpatched-build).
+
 `@utexo/wdk-wallet-rgb` is a private candidate for platform qualification. The native protocol is version 2 and requires network checks, unsigned-operation recovery, journal writes and ordinary RGB asset issuance. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
 
 | Component | Pinned version or source |
@@ -8,18 +10,14 @@
 | Android embedded runtime | Bare Kit `3.0.1`, Bare `1.36.2` |
 | Bare C headers | `1.35.0` |
 | RGB library | `v0.3.0-beta.7-upstream-dev-bfa.8`, `2f7b21d8637baad548504ea870deb2c0d4d0a37d` |
-| Native overlay | [Packed native manifest](src/onchain-bare-native.json) |
+| Native status | [No approved binaries](src/onchain-bare-native.json) |
 | Signing | `@scure/btc-signer@2.4.1`, `@scure/bip32@2.4.0`, `@scure/base@2.4.0`, `@noble/curves@2.4.0`, `@noble/hashes@2.4.0` |
-
-The RGB overlay retains standalone genesis registration, native HTTP egress restrictions and Signet checkpoints. It also bounds proxy-provided timing and prevents deadline arithmetic overflow. Invalid or ambiguous acknowledgement replies keep the affected transfer pending and its outputs reserved; recovery retries the same signed acknowledgement or saved transaction. Valid deadlines retain their original grace periods. The embedded build also disables the process-wide wallet panic hook. BFA.7 enforces full mint conservation upstream. Native preparation verifies the upstream commit and patched tree before building from the locked graph.
-
-This acknowledgement handling uses the existing SQLite transaction. It does not introduce a pre-dispatch crash journal or establish atomic recovery from process death between remote acknowledgement acceptance and local commit.
 
 The BFA.8 candidate uses a new wallet directory identity. BFA.8 removed a database migration recorded by BFA.7 wallets, so an earlier directory is refused before the database is opened. Keep the earlier directory with its original SDK and use a fresh directory for BFA.8 qualification.
 
 ## Build and use
 
-Public JavaScript checks run from the lock with `npm ci --ignore-scripts`, `npm test`, and `npm run check:types`. The [native manifest](src/onchain-bare-native.json) lists the reviewed Bare binaries admitted to this candidate. The [SDK repository](https://github.com/UTEXO-Protocol/wdk-wallet-rgb) contains the native build runbook and qualification evidence.
+Public JavaScript checks run from the lock with `npm ci --ignore-scripts`, `npm test`, and `npm run check:types`. The [native manifest](src/onchain-bare-native.json) admits no Bare binaries until upstream support is integrated and qualified. The [SDK repository](https://github.com/UTEXO-Protocol/wdk-wallet-rgb) contains the native build runbook and qualification evidence.
 
 Supply a canonical private data directory and a disposable seed for qualification. Use a separate directory for each network and profile.
 

@@ -15,7 +15,7 @@ import sys
 import tempfile
 
 ROOT=Path(__file__).resolve().parent.parent
-PREPARED=ROOT/'.sources/rgb-lib-bfa-bare'
+PREPARED=ROOT/'.sources/rgb-lib-bfa-clean'
 ESPLORA=ROOT/'.sources/esplora-client'
 ELECTRUM=ROOT/'.sources/electrum-client'
 

@@ -6,7 +6,9 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { p2tr, TEST_NETWORK } from '@scure/btc-signer'
 import { OnchainJournal } from '../src/onchain-journal.js'
-import { WalletAccountRgb, WalletManagerRgb } from '../src/onchain-wallet.js'
+import { importWalletFixture } from './fixtures/native-manifest.js'
+
+const { WalletAccountRgb, WalletManagerRgb } = await importWalletFixture('recovery')
 
 const operationId = 'btc-recovery-test-01'
 const checkpoint = [{ txid: '11'.repeat(32) }]
@@ -200,8 +202,8 @@ require('node:readline').createInterface({ input: process.stdin }).on('line', li
   if (method === 'version') return reply({
     protocol: 2, unsignedRecovery: 1, journalWrites: 1, assetIssuance: 2, networkChecks: 5, runtime: 'node-host-process',
     indexer: 'electrum-and-dev-esplora', source: '2f7b21d8637baad548504ea870deb2c0d4d0a37d',
-    overlayTree: '83f4612d41cb79df2b78c6bfdb50441be908e4dd',
-    integrationTree: '02b77a312380ae067342913d638d20b45fe6e37a'
+    overlayTree: '5492824f3cf47b4c821dfca8b7a63fed27858486',
+    integrationTree: '5492824f3cf47b4c821dfca8b7a63fed27858486'
   })
   if (method === 'open') return reply({ network: params.network, watchOnly: true })
   if (method === 'bindJournal') return reply({ written: true })

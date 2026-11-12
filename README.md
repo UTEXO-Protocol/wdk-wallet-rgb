@@ -2,6 +2,8 @@
 
 Private review candidate for the on-chain RGB wallet SDK for Node and Bare. The native wallet uses public keys and signed PSBTs. The application owns the signer and approves transactions.
 
+**Native builds are blocked pending [upstream RGB changes](QUALIFICATION.md#upstream-requirements-for-an-unpatched-build).** This branch contains source for review. The scope below describes the intended SDK behavior.
+
 The candidate admits Bitcoin and ordinary RGB (NIA and CFA) on mainnet and Public Signet. For ordinary RGB, configure a TLS proxy that supports protocol 1.0. Applications supply their own assets through contract registration or an admitted transfer. Regtest and the explicit Dev and staging profiles have separate service and bridge policies. Mainnet RGB service and funded public-network qualification are separate release gates.
 
 The host account can issue assets on Mainnet RGB, Public Signet RGB and Regtest RGB with `issueAssetNia()` and `issueAssetCfa()`. See the [issuance example and prerequisites](CANDIDATE.md#issue-rgb-assets).

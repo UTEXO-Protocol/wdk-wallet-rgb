@@ -12,6 +12,7 @@ import { WalletRuntimeError } from './onchain-runtime-error.js'
 import { BIP322_CAPABILITIES, bip322MessageBytes, verifyMessageBip322 } from './onchain-message.js'
 import { admitFeeEstimate, admitSendStatus, checkFeeBlocks, checkRgbInvoice, prepareBtcSend, prepareRgbSend, sendRecoveryParams } from './onchain-send.js'
 import devServices from './onchain-dev-services.json' with { type: 'json' }
+import nativeManifest from './onchain-bare-native.json' with { type: 'json' }
 
 const ROUTES = new Map([
   ['eip155:42161', 0],
@@ -23,9 +24,6 @@ const ROUTES = new Map([
 const HEX_32 = /^[a-f0-9]{64}$/
 const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
-const NATIVE_SOURCE = '2f7b21d8637baad548504ea870deb2c0d4d0a37d'
-const NATIVE_OVERLAY = '83f4612d41cb79df2b78c6bfdb50441be908e4dd'
-const NATIVE_INTEGRATION = '02b77a312380ae067342913d638d20b45fe6e37a'
 const MAINNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50003'
 const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
 const STAGING_SERVICES = {
@@ -320,6 +318,9 @@ export class WalletAccountRgb {
   #prepared
 
   static async open (config, signer, isDisposed) {
+    if (nativeManifest.releaseHold !== false) {
+      throw new WalletRuntimeError('NATIVE_BUILD_BLOCKED', 'No native wallet build is approved for this SDK revision')
+    }
     const dataDir = await privateWalletDir(config.dataDir)
     if (isDisposed()) throw new WalletRuntimeError('WALLET_CLOSED', 'Wallet manager is closed')
     if (OPEN_WALLET_DIRECTORIES.has(dataDir)) throw new WalletRuntimeError('WALLET_IN_USE', 'Another wallet account already owns this directory')
@@ -331,8 +332,8 @@ export class WalletAccountRgb {
         config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir, config.iosNativeFrameworkDir
       )
       const version = await worker.request('version')
-      if (version?.protocol !== 2 || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 5 || version.source !== NATIVE_SOURCE || version.overlayTree !== NATIVE_OVERLAY ||
-        version.runtime !== nativeRuntime || version.integrationTree !== NATIVE_INTEGRATION || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 2) {
+      if (version?.protocol !== nativeManifest.protocol || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 5 || version.source !== nativeManifest.source || version.overlayTree !== nativeManifest.overlayTree ||
+        version.runtime !== nativeRuntime || version.integrationTree !== nativeManifest.integrationTree || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 2) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
       const identity = signer.identity

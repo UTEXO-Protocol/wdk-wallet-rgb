@@ -1,13 +1,16 @@
 // Copyright 2026 UTEXO. Licensed under the Apache License, Version 2.0.
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { lstat, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { registerHooks } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { WalletManagerRgb, burnDestinationFor } from '../onchain.js'
+import { WalletManagerRgb as BlockedWalletManagerRgb, burnDestinationFor } from '../onchain.js'
+import { importWalletFixture } from './fixtures/native-manifest.js'
 import devServices from '../src/onchain-dev-services.json' with { type: 'json' }
+
+const { WalletManagerRgb } = await importWalletFixture('network')
 
 const SEED = Uint8Array.from({ length: 64 }, (_, index) => index + 1)
 const INDEXER = 'tcp://127.0.0.1:50001'
@@ -48,7 +51,10 @@ const DEFAULTS = {
 
 async function managerFor (t, {
   nativeVersion = 5, nativeAssetIssuance = 2, workerIndexerProtocol, receivedMint = null, substituteProxy,
-  cancellationResponse, ...options
+  cancellationResponse, nativeTrees = {
+    overlayTree: '5492824f3cf47b4c821dfca8b7a63fed27858486',
+    integrationTree: '5492824f3cf47b4c821dfca8b7a63fed27858486'
+  }, ...options
 } = {}) {
   const network = options.network ?? DEFAULTS.network
   const mode = options.mode ?? 'rgb'
@@ -71,8 +77,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance},
     indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
     source: '2f7b21d8637baad548504ea870deb2c0d4d0a37d',
-    overlayTree: '83f4612d41cb79df2b78c6bfdb50441be908e4dd',
-    integrationTree: '02b77a312380ae067342913d638d20b45fe6e37a'
+    ...${JSON.stringify(nativeTrees)}
   })
   if (method === 'open') {
     assert.equal(params.network, '${network}')
@@ -139,7 +144,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
 }
 
 async function disabledDevFixtureManager () {
-  const fixtureModule = new URL('../src/onchain-wallet.js?dev-disabled-fixture', import.meta.url).href
+  const fixtureModule = new URL('../src/onchain-wallet.js?native-fixture=dev-disabled', import.meta.url).href
   const servicesModule = new URL('../src/onchain-dev-services.json', import.meta.url).href
   const servicesFixture = 'data:application/json,' + encodeURIComponent(JSON.stringify({ ...devServices, enabled: false }))
   const hooks = registerHooks({
@@ -151,7 +156,7 @@ async function disabledDevFixtureManager () {
       return resolved
     }
   })
-  try { return (await import(fixtureModule)).WalletManagerRgb } finally { hooks.deregister() }
+  try { return (await importWalletFixture('dev-disabled')).WalletManagerRgb } finally { hooks.deregister() }
 }
 
 test('offline open supports cached reads and gates address allocation on retryable indexer admission', async t => {
@@ -186,6 +191,18 @@ test('offline open supports cached reads and gates address allocation on retryab
   assert.throws(() => account.getConnectionStatus(), { code: 'WALLET_CLOSED' })
 })
 
+test('native release hold rejects wallet opening before touching storage or launching a worker', async t => {
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'wdk-native-hold-')))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const manager = new BlockedWalletManagerRgb(SEED, {
+    ...DEFAULTS, startupMode: 'offline',
+    dataDir: join(root, 'must-not-open'), nativeExecutable: join(root, 'must-not-run'), nativeSha256: '00'.repeat(32)
+  })
+  t.after(() => manager.shutdown())
+  await assert.rejects(manager.getAccount(), { code: 'NATIVE_BUILD_BLOCKED' })
+  await assert.rejects(lstat(join(root, 'must-not-open')), { code: 'ENOENT' })
+})
+
 test('offline open fails closed if the worker does not attest the network API', async t => {
   const manager = await managerFor(t, { startupMode: 'offline', nativeVersion: 1 })
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
@@ -193,6 +210,17 @@ test('offline open fails closed if the worker does not attest the network API', 
 
 test('offline open rejects the previous Regtest-only native issuance policy', async t => {
   const manager = await managerFor(t, { startupMode: 'offline', nativeAssetIssuance: 1 })
+  await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
+})
+
+test('offline open rejects the patched alpha.23 native binary identity', async t => {
+  const manager = await managerFor(t, {
+    startupMode: 'offline',
+    nativeTrees: {
+      overlayTree: '83f4612d41cb79df2b78c6bfdb50441be908e4dd',
+      integrationTree: '02b77a312380ae067342913d638d20b45fe6e37a'
+    }
+  })
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
 })
 

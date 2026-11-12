@@ -2,7 +2,7 @@
 
 This directory contains the watch-only RGB engine and its host adapters. Node launches the worker over private pipes. Bare loads an in-process addon on a dedicated JS worker thread. The host owns transaction authorization, the signer and the durable operation journal. See [Bare build and qualification](bare/README.md) for that profile.
 
-The build uses [rgb-lib-bfa BFA.8](https://github.com/UTEXO-Protocol/rgb-lib-bfa/releases/tag/v0.3.0-beta.7-upstream-dev-bfa.8), commit `2f7b21d8637baad548504ea870deb2c0d4d0a37d`, base tree `5492824f3cf47b4c821dfca8b7a63fed27858486`. The [source preparation script](scripts/prepare-source.py) pins the functional and embedded trees. The build retains transactional genesis registration, native HTTP egress safeguards, mainnet chain admission, Signet checkpoints, proxy deadline hardening and embedded lifecycle integration. The upstream mint validator enforces conservation, which replaces the BFA.5 mint backport. The shared HTTP connector requires HTTPS on public networks, rejects non-public literals and DNS answers, disables redirects, environment proxies and transport retries, and restricts Regtest to loopback.
+Native builds are on hold pending [upstream RGB safeguards](../QUALIFICATION.md#upstream-requirements-for-an-unpatched-build). The [source preparation script](scripts/prepare-source.py) can verify the unmodified [BFA.8](https://github.com/UTEXO-Protocol/rgb-lib-bfa/releases/tag/v0.3.0-beta.7-upstream-dev-bfa.8) source with `--rgb-source-only`. It checks commit `2f7b21d8637baad548504ea870deb2c0d4d0a37d` and tree `5492824f3cf47b4c821dfca8b7a63fed27858486`. Normal source preparation and native packaging stop at the hold. The adapter calls and test fixtures below are retained for requalification when upstream provides the required APIs. The former patched build is recorded in the [alpha.23 qualification](../QUALIFICATION.md#alpha23-bfa8-historical-patched-candidate).
 
 Proxy expiry values must fit the receiver's locally recorded invoice window and checked retention arithmetic. Invalid values, malformed acknowledgement replies and ambiguous released-transaction results retain pending state and output reservations. Old poisoned or missing broadcast deadlines cannot overflow or free an output early. Recovery can repeat the same signed acknowledgement or rebroadcast the exact saved transaction; it does not prepare a new payment. Valid deadlines keep their original skew, grace and expiry boundaries. This uses the existing database transaction, so it does not close the inherited process-death window between remote acknowledgement acceptance and local commit.
 
@@ -46,7 +46,7 @@ shasum -a 256 Cargo.lock target/release/utexo-rgb-native
 cargo +1.94.0 test --release --offline --locked
 ```
 
-Format only the owned adapter source with `rustfmt +1.94.0 --edition 2024 src/main.rs`. Cargo formatting with `--all` would also format the prepared upstream path dependency, invalidating its exact tree.
+Format only the owned adapter source with `rustfmt +1.94.0 --edition 2024 src/main.rs`. Cargo formatting with `--all` would also format the prepared upstream path dependency, invalidating its exact upstream tree.
 
 ## IPC and safety model
 

@@ -59,6 +59,10 @@ assert.match(native.overlayTree, /^[a-f0-9]{40}$/)
 assert.match(native.integrationTree, /^[a-f0-9]{40}$/)
 assert.equal(native.protocol, 2)
 const targets = Object.keys(native.targets)
+if (native.releaseHold !== false) {
+  assert.deepEqual(targets, [], 'Native targets must be empty while the release is blocked')
+  assert.ok(!requireNative, 'Native pack blocked pending upstream RGB safeguards')
+}
 for (const target of targets) assertTargetPin(target, native.targets[target], manifest.version)
 if (!requireNative) {
   assert.deepEqual(artifacts, [], 'Public source-only CI must not contain staged native binaries')
