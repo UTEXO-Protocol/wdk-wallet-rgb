@@ -90,6 +90,12 @@ def run_loopback_test(work):
     if source.count(test_cfg) != 1:
         raise SystemExit("The prepared overlay lacks the expected Esplora fixture module.")
     source = source.replace(test_cfg, '#[cfg(feature = "esplora")]' + module_signature)
+    # The carried fixture predates BFA.8's explicit mainnet schema policy.
+    old_fields = ('                max_allocations_per_utxo: 5,\n'
+                  '                supported_schemas: vec![AssetSchema::Nia],\n')
+    if source.count(old_fields) != 1:
+        raise SystemExit("The prepared Esplora fixture wallet data changed.")
+    source = source.replace(old_fields, old_fields + '                allow_reckless_schemas: false,\n')
     validation.write_text(
         source + '\n#[cfg(feature = "electrum")]\npub(crate) mod dev_signet_fixture {\n'
         + "    use super::*;\n" + constants + "\n" + fixture + "\n}\n"
