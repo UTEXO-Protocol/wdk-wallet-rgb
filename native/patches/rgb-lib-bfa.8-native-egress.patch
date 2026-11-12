@@ -1,5 +1,5 @@
 diff --git a/Cargo.toml b/Cargo.toml
-index 646074c..f767634 100644
+index fbffcfaad9a90428acdff680e4f593cb2739bd9a..263e8a63580b07f039d1c9f4a2e45d9dc2c72005 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -176,7 +176,7 @@ _online = ["wallet"]
@@ -13,7 +13,7 @@ index 646074c..f767634 100644
      "_online",
 diff --git a/src/api/egress.rs b/src/api/egress.rs
 new file mode 100644
-index 0000000..1d1eeb0
+index 0000000000000000000000000000000000000000..1d1eeb0287ec0bdefa77fb57b9c516b9f7b7e6fa
 --- /dev/null
 +++ b/src/api/egress.rs
 @@ -0,0 +1,258 @@
@@ -276,12 +276,12 @@ index 0000000..1d1eeb0
 +    }
 +}
 diff --git a/src/api/evm.rs b/src/api/evm.rs
-index 40b1d3a..bfd9faf 100644
+index f143d2301099ce99cfdf12fe76b673cb6fb3dba3..9994ec85ffb1a17b4ec28f30585190b24f1ce508 100644
 --- a/src/api/evm.rs
 +++ b/src/api/evm.rs
-@@ -243,14 +243,22 @@ struct BlockHeader {
+@@ -272,14 +272,24 @@ struct BlockHeader {
  }
-
+ 
  impl EvmClient {
 +    #[cfg(test)]
      pub(crate) fn new(rpc_url: &str) -> Result<Self, Error> {
@@ -299,16 +299,18 @@ index 40b1d3a..bfd9faf 100644
 +            Duration::from_secs(CONNECT_TIMEOUT),
 +            Duration::from_secs(READ_WRITE_TIMEOUT),
 +        )
-+        .map_err(|_| Self::req_err("endpoint is outside the network policy"))?;
++        .map_err(|_| Error::Network {
++            details: s!("EVM RPC endpoint is outside the network policy"),
++        })?;
          Ok(Self {
              client,
 -            rpc_url: rpc_url.to_string(),
 +            rpc_url: rpc_url.into(),
          })
      }
-
+ 
 diff --git a/src/api/mod.rs b/src/api/mod.rs
-index f82a4d3..8140c24 100644
+index f82a4d3f2369224fe5ac818804d52a9a3d978725..8140c249342ee13d131f96b38bf9a0883ad082e5 100644
 --- a/src/api/mod.rs
 +++ b/src/api/mod.rs
 @@ -1,3 +1,4 @@
@@ -317,21 +319,21 @@ index f82a4d3..8140c24 100644
  #[cfg(feature = "_online")]
  pub(crate) mod multisig_hub;
 diff --git a/src/api/proxy.rs b/src/api/proxy.rs
-index 857d1c9..bbe77f6 100644
+index 857d1c9de3d1daf196843e76cc3038a7146a0780..bbe77f6f9c30fc801487e6788bd3a45e361c42af 100644
 --- a/src/api/proxy.rs
 +++ b/src/api/proxy.rs
 @@ -14,7 +14,7 @@ pub(crate) const INVOICE_QUOTA: u32 = 1;
-
+ 
  pub struct ProxyClient {
      client: RestClient,
 -    base_url: String,
 +    base_url: reqwest::Url,
  }
-
+ 
  #[derive(Debug, Deserialize, Serialize)]
 @@ -391,15 +391,15 @@ pub(crate) fn map_proxy_error(err: JsonRpcError) -> Error {
  }
-
+ 
  impl ProxyClient {
 -    pub(crate) fn new(base_url: &str) -> Result<Self, Error> {
 -        let client = RestClient::builder()
@@ -352,7 +354,7 @@ index 857d1c9..bbe77f6 100644
 +        .map_err(Self::req_err)?;
 +        Ok(Self { client, base_url })
      }
-
+ 
      fn req_err(e: impl std::fmt::Display) -> Error {
 @@ -423,14 +423,19 @@ impl ProxyClient {
              id: None,
@@ -376,7 +378,7 @@ index 857d1c9..bbe77f6 100644
 -            .map_err(Self::req_err)
 +            .map_err(|err| Self::req_err(err.without_url()))
      }
-
+ 
      fn call_multipart<R: serde::de::DeserializeOwned>(
 @@ -445,13 +450,18 @@ impl ProxyClient {
              .text("id", "null")
@@ -399,16 +401,16 @@ index 857d1c9..bbe77f6 100644
 -            .map_err(Self::req_err)
 +            .map_err(|err| Self::req_err(err.without_url()))
      }
-
+ 
      pub(crate) fn get_info(&self) -> Result<JsonRpcResponse<ServerInfoResponse>, Error> {
 @@ -678,7 +688,7 @@ mod tests {
-
+ 
      fn assert_proxy_errors<T: std::fmt::Debug, F: Fn(&ProxyClient) -> Result<T, Error>>(f: F) {
          // network error
 -        let client = ProxyClient::new("http://127.0.0.1:1").unwrap();
 +        let client = ProxyClient::new("http://127.0.0.1:1", BitcoinNetwork::Regtest).unwrap();
          assert_matches!(f(&client).unwrap_err(), Error::Proxy { .. });
-
+ 
          // malformed JSON response
 @@ -689,7 +699,7 @@ mod tests {
              .with_header("content-type", JSON)
@@ -418,7 +420,7 @@ index 857d1c9..bbe77f6 100644
 +        let client = ProxyClient::new(&server.url(), BitcoinNetwork::Regtest).unwrap();
          assert_matches!(f(&client).unwrap_err(), Error::Proxy { .. });
          mock.assert();
-
+ 
 @@ -701,11 +711,31 @@ mod tests {
              .with_header("content-type", JSON)
              .with_body(r#"{"unexpected": "json"}"#)
@@ -428,7 +430,7 @@ index 857d1c9..bbe77f6 100644
          assert_matches!(f(&client).unwrap_err(), Error::Proxy { .. });
          mock.assert();
      }
-
+ 
 +    #[test]
 +    fn proxy_redirect_does_not_forward_request() {
 +        let mut server = mockito::Server::new();
@@ -453,17 +455,17 @@ index 857d1c9..bbe77f6 100644
      fn map_proxy_error_expiration() {
          let map = |code: i64, data: Option<serde_json::Value>| {
 diff --git a/src/api/reject_list.rs b/src/api/reject_list.rs
-index d057968..2cffc19 100644
+index d057968f2db49bc260fd983ea918e6c073e74ca6..2cffc19e2adf6a1688d78545b59befb51f350666 100644
 --- a/src/api/reject_list.rs
 +++ b/src/api/reject_list.rs
 @@ -8,32 +8,22 @@ const MAX_REJECT_LIST_SIZE: u64 = MAX_REJECT_LIST_ENTRIES * MAX_REJECT_LIST_LINE
-
+ 
  pub struct RejectListClient {
      client: RestClient,
 -    base_url: String,
 +    base_url: reqwest::Url,
  }
-
+ 
  impl RejectListClient {
      /// A client for the reject list served at `base_url`.
      ///
@@ -498,7 +500,7 @@ index d057968..2cffc19 100644
 +        .map_err(Self::req_err)?;
 +        Ok(Self { client, base_url })
      }
-
+ 
      fn req_err(e: impl std::fmt::Display) -> Error {
 @@ -45,9 +35,9 @@ impl RejectListClient {
      pub(crate) fn get_reject_list(&self) -> Result<String, Error> {
@@ -520,7 +522,7 @@ index d057968..2cffc19 100644
 +        let client = RejectListClient::new("http://127.0.0.1:1", BitcoinNetwork::Regtest).unwrap();
          let result = client.get_reject_list().unwrap_err();
          assert_matches!(result, Error::RejectListService { .. });
-
+ 
 @@ -94,7 +84,7 @@ mod tests {
              .with_header("content-length", "100")
              .with_body(&[0xFFu8, 0xFEu8][..])
@@ -565,7 +567,7 @@ index d057968..2cffc19 100644
 +        let client = RejectListClient::new(&server.url(), BitcoinNetwork::Regtest).unwrap();
          assert_eq!(client.get_reject_list().unwrap(), body);
          mock.assert();
-
+ 
 @@ -166,7 +156,7 @@ mod tests {
                  server.mock("GET", "/").with_body(&body)
              }
@@ -576,24 +578,23 @@ index d057968..2cffc19 100644
              assert_matches!(result, Error::RejectListService { ref details } if details.contains("reject list too large"));
              mock.assert();
 diff --git a/src/no_wallet/validation.rs b/src/no_wallet/validation.rs
-index 1e4b9dd..f017780 100644
+index c01921d275b5e670cdc0662ddc0d9948f3c5cc73..ec136cb8537aef6f66e56dcaa37e1a9510fcd5a2 100644
 --- a/src/no_wallet/validation.rs
 +++ b/src/no_wallet/validation.rs
-@@ -656,8 +656,11 @@ pub fn validate_consignment(
+@@ -656,10 +656,10 @@ pub fn validate_consignment(
      validate_consignment_file(
          consignment_path,
          &ChainResolver { inner: &resolver },
 -        ClaimResolution::Evm(evm_rpc_urls),
--        Some(&RemoteRejectListResolver { evm_rpc_urls }),
 +        ClaimResolution::Evm(evm_rpc_urls, options.bitcoin_network),
-+        Some(&RemoteRejectListResolver {
-+            evm_rpc_urls,
+         Some(&RemoteRejectListResolver {
+             evm_rpc_urls,
+-            evm_chains_checked: false,
 +            bitcoin_network: options.bitcoin_network,
-+        }),
+         }),
          safe_height,
          options,
-     )
-@@ -817,8 +820,8 @@ pub trait ResolveRejectList {
+@@ -815,8 +815,8 @@ pub trait ResolveRejectList {
      /// to a list that never ends, or to a URL on the local network. It's up to the implementor to
      /// bound the size of the list and the time taken to read it, and to choose which URLs to
      /// request. The resolver `validate_consignment` uses refuses lists longer than 100000
@@ -603,46 +604,61 @@ index 1e4b9dd..f017780 100644
 +    /// HTTPS on public addresses. Regtest admits only loopback. The client never follows redirects.
      fn get_reject_list(&self, source: &RejectListSource) -> Result<RejectList, Error>;
  }
-
-@@ -827,6 +830,7 @@ pub trait ResolveRejectList {
+ 
+@@ -825,10 +825,7 @@ pub trait ResolveRejectList {
  #[cfg(feature = "_validation")]
  pub(crate) struct RemoteRejectListResolver<'a> {
      pub(crate) evm_rpc_urls: &'a HashMap<u64, String>,
+-    /// Whether the EVM RPC endpoints are known to be on the chain they're configured for (a
+-    /// wallet checks that when going online), so they're not asked which chain they are on
+-    /// before reading a list
+-    pub(crate) evm_chains_checked: bool,
 +    pub(crate) bitcoin_network: BitcoinNetwork,
  }
-
+ 
  #[cfg(feature = "_validation")]
-@@ -838,12 +842,16 @@ impl RemoteRejectListResolver<'_> {
+@@ -840,17 +837,20 @@ impl RemoteRejectListResolver<'_> {
          source: &RejectListSource,
      ) -> Result<(RejectList, usize), Error> {
          Ok(match source {
 -            RejectListSource::Url(url) => {
 -                RejectList::parse(&RejectListClient::new(url)?.get_reject_list()?)
 -            }
+-            RejectListSource::Evm(contract) => {
+-                let evm_client = if self.evm_chains_checked {
+-                    evm_client(self.evm_rpc_urls, contract.chain_id)?
+-                } else {
+-                    checked_evm_client(self.evm_rpc_urls, contract.chain_id)?
+-                };
+-                (RejectList::from_evm(&evm_client, &contract.address)?, 0)
+-            }
 +            RejectListSource::Url(url) => RejectList::parse(
 +                &RejectListClient::new(url, self.bitcoin_network)?.get_reject_list()?,
 +            ),
-             RejectListSource::Evm(contract) => (
-                 RejectList::from_evm(
--                    &checked_evm_client(self.evm_rpc_urls, contract.chain_id)?,
++            RejectListSource::Evm(contract) => (
++                RejectList::from_evm(
 +                    &checked_evm_client(
 +                        self.evm_rpc_urls,
 +                        contract.chain_id,
 +                        self.bitcoin_network,
 +                    )?,
-                     &contract.address,
-                 )?,
-                 0,
-@@ -933,7 +941,7 @@ pub(crate) enum ClaimResolution<'a> {
++                    &contract.address,
++                )?,
++                0,
++            ),
+         })
+     }
+ }
+@@ -936,7 +936,7 @@ pub(crate) enum ClaimResolution<'a> {
      /// Through the EVM RPC URL configured for the chain the asset's bridge lives on, among the
      /// given ones
      #[cfg(feature = "_validation")]
 -    Evm(&'a HashMap<u64, String>),
 +    Evm(&'a HashMap<u64, String>, BitcoinNetwork),
  }
-
+ 
  /// A claim resolver provided as a trait object, as rgb-ops only implements [`ResolveClaim`]
-@@ -983,12 +991,12 @@ pub(crate) fn validate_consignment_internal<const TRANSFER: bool>(
+@@ -1007,12 +1007,12 @@ pub(crate) fn validate_with_claims<const TRANSFER: bool>(
                  resolve_claims(&mut pending, &claim_resolver, &claims, |_| false)?
              }
              #[cfg(feature = "_validation")]
@@ -657,8 +673,15 @@ index 1e4b9dd..f017780 100644
                  let mint_resolver = MintClaimResolver::new(&evm_client);
                  let claim_resolver = CheckedClaimResolver::with(&mint_resolver, bridge_location)?;
                  resolve_claims(&mut pending, &claim_resolver, &claims, |opid| {
-@@ -1164,11 +1172,12 @@ pub(crate) fn rejected_by_reject_list(
- pub(crate) fn checked_evm_client(
+@@ -1183,26 +1183,17 @@ pub(crate) fn check_reject_list(
+     Err(Error::ConsignmentRejected { opouts })
+ }
+ 
+-/// The EVM RPC client for the chain with the given `chain_id`, among the given `evm_rpc_urls`.
++/// The EVM RPC client for the chain with the given `chain_id`, checked to be connected to it.
+ #[cfg(feature = "_validation")]
+-pub(crate) fn evm_client(
++pub(crate) fn checked_evm_client(
      evm_rpc_urls: &HashMap<u64, String>,
      chain_id: u64,
 +    network: BitcoinNetwork,
@@ -666,17 +689,27 @@ index 1e4b9dd..f017780 100644
      let evm_rpc_url = evm_rpc_urls
          .get(&chain_id)
          .ok_or(Error::NoEvmRpcUrl { chain_id })?;
--    let evm_client = EvmClient::new(evm_rpc_url)?;
+-    EvmClient::new(evm_rpc_url)
+-}
+-
+-/// The EVM RPC client for the chain with the given `chain_id`, among the given `evm_rpc_urls`,
+-/// checked to be connected to it.
+-#[cfg(feature = "_validation")]
+-pub(crate) fn checked_evm_client(
+-    evm_rpc_urls: &HashMap<u64, String>,
+-    chain_id: u64,
+-) -> Result<EvmClient, Error> {
+-    let evm_client = evm_client(evm_rpc_urls, chain_id)?;
 +    let evm_client = EvmClient::for_network(evm_rpc_url, network)?;
      let actual = evm_client.chain_id()?;
      if actual != chain_id {
          return Err(Error::EvmChainIdMismatch {
 diff --git a/src/utils.rs b/src/utils.rs
-index 58a1efa..15d547f 100644
+index e8ebfd52e2b5bd3847e03df185b03dcfe9457286..bb1f6da1db204358afaeab41c91f93edd0505a55 100644
 --- a/src/utils.rs
 +++ b/src/utils.rs
-@@ -470,8 +470,11 @@ pub(crate) fn proxy_max_media(info: &ServerInfoResponse) -> Option<usize> {
-
+@@ -465,8 +465,11 @@ pub(crate) fn proxy_max_media(info: &ServerInfoResponse) -> Option<usize> {
+ 
  /// Check that the proxy at `proxy_url` runs the supported protocol version, returning its info.
  #[cfg(feature = "_online")]
 -pub(crate) fn check_proxy(proxy_url: &str) -> Result<ServerInfoResponse, Error> {
@@ -689,7 +722,7 @@ index 58a1efa..15d547f 100644
      let server_info = proxy_client.get_info()?;
      if let Some(info) = server_info.result {
          if info.protocol_version == *PROXY_PROTOCOL_VERSION {
-@@ -1165,7 +1168,7 @@ mod tests {
+@@ -1160,7 +1163,7 @@ mod tests {
                  r#"{"jsonrpc":"2.0","id":null,"result":null,"error":{"code":-32601,"message":"method not found"}}"#,
              )
              .create();
@@ -698,7 +731,7 @@ index 58a1efa..15d547f 100644
          assert_matches!(result, Err(Error::Proxy { details }) if details == "method not found");
          mock.assert();
      }
-@@ -1182,9 +1185,8 @@ mod tests {
+@@ -1177,9 +1180,8 @@ mod tests {
              .with_header("content-type", "application/json")
              .with_body("not json")
              .create();
@@ -709,8 +742,8 @@ index 58a1efa..15d547f 100644
 +        assert_matches!(result, Err(Error::Proxy { details }) if details == "error decoding response body");
          mock.assert();
      }
-
-@@ -1197,9 +1199,8 @@ mod tests {
+ 
+@@ -1192,9 +1194,8 @@ mod tests {
              let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
              listener.local_addr().unwrap().port()
          };
@@ -720,13 +753,13 @@ index 58a1efa..15d547f 100644
 +        let result = check_proxy(&format!("http://127.0.0.1:{port}"), BitcoinNetwork::Regtest);
 +        assert_matches!(result, Err(Error::Proxy { details }) if details == "error sending request");
      }
-
+ 
      #[test]
 diff --git a/src/wallet/offline.rs b/src/wallet/offline.rs
-index bf2381c..f02f806 100644
+index 38beb006a46d6b3d8a7a58324cc157dcd6e9cbb2..18fc60bf8bee7434e2f6d96c18192a36f18bda8f 100644
 --- a/src/wallet/offline.rs
 +++ b/src/wallet/offline.rs
-@@ -1439,10 +1439,10 @@ pub trait WalletOffline: WalletBackup {
+@@ -1472,10 +1472,10 @@ pub trait WalletOffline: WalletBackup {
              let mut draining = false;
              for endpoint in &endpoints {
                  // skip endpoints that are unreachable or run an unsupported protocol version
@@ -740,10 +773,18 @@ index bf2381c..f02f806 100644
                  let signature = self.online_data().as_ref().and_then(|online_data| {
                      online_data.proxy_auth_signature(
 diff --git a/src/wallet/online.rs b/src/wallet/online.rs
-index 69f94e5..d527bb0 100644
+index b3d49b90e011881a146819f215b34f1a4cb11881..f724483a510892a65f1721fc4fe82d505c77785a 100644
 --- a/src/wallet/online.rs
 +++ b/src/wallet/online.rs
-@@ -103,6 +103,7 @@ fn list_invoice_transfers(
+@@ -3,6 +3,7 @@
+ //! This module defines the online wallet methods.
+ 
+ use super::*;
++use crate::no_wallet::validation::checked_evm_client;
+ 
+ /// Signed TX of an outgoing transfer, saved to broadcast it once the transfer is accepted
+ const SIGNED_TX_FILE: &str = "signed.tx";
+@@ -103,6 +104,7 @@ fn list_invoice_transfers(
      proxy_url: &str,
      invoice_id: &str,
      recipient_seed: &[u8],
@@ -751,16 +792,16 @@ index 69f94e5..d527bb0 100644
  ) -> Result<JsonRpcResponse<HashMap<String, ProxyTransferState>>, Error> {
      let seed: [u8; 32] = recipient_seed.try_into().map_err(|_| Error::Internal {
          details: s!("invalid recipient secret key"),
-@@ -111,7 +112,7 @@ fn list_invoice_transfers(
+@@ -111,7 +113,7 @@ fn list_invoice_transfers(
      let timestamp = now().unix_timestamp().to_string();
      let digest = sha256_digest(list_transfers_message(invoice_id, &timestamp).as_bytes());
      let signature = hex::encode(sign_ed25519(&sk, &digest));
 -    ProxyClient::new(proxy_url)?.list_transfers(invoice_id, &signature, &timestamp)
 +    ProxyClient::new(proxy_url, network)?.list_transfers(invoice_id, &signature, &timestamp)
  }
-
+ 
  /// Whether the sender proxy knows the operation of `transfer_ids`, registered with the operation
-@@ -209,12 +210,12 @@ fn incoming_expired(batch_transfer: &DbBatchTransfer, now: i64) -> bool {
+@@ -211,12 +213,12 @@ fn incoming_expired(batch_transfer: &DbBatchTransfer, now: i64) -> bool {
  /// The retention grace advertised by a sender proxy (`retention_grace_secs`), i.e. how long
  /// after an operation expiration it keeps a released signed TX available to the recipients. A
  /// proxy not advertising it is considered to grant none.
@@ -775,7 +816,7 @@ index 69f94e5..d527bb0 100644
      if let Some(err) = res.error {
          return Err(map_proxy_error(err));
      }
-@@ -1029,7 +1030,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -1030,7 +1032,7 @@ pub trait WalletOnline: WalletOffline {
          let sk = ed25519_from_seed(&seed);
          let digest = sha256_digest(transfer_ids.concat().as_bytes());
          let sig = hex::encode(sign_ed25519(&sk, &digest));
@@ -784,7 +825,7 @@ index 69f94e5..d527bb0 100644
          let res = proxy_client.clean_ack(&transfer_ids, &sig)?;
          clean_ack_outcome(res.error)
      }
-@@ -1397,7 +1398,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -1393,7 +1395,7 @@ pub trait WalletOnline: WalletOffline {
                  });
              }
              let evm_rpc_url = &evm_chain.rpc_url;
@@ -793,7 +834,7 @@ index 69f94e5..d527bb0 100644
              let actual = evm_client.chain_id().map_err(|e| Error::InvalidEvmRpcUrl {
                  details: e.to_string(),
              })?;
-@@ -1690,7 +1691,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -1687,7 +1689,7 @@ pub trait WalletOnline: WalletOffline {
          let sk = ed25519_from_seed(&seed);
          let digest = Self::ack_digest(transfer_id, ack, consignment_hash);
          let sig = hex::encode(sign_ed25519(&sk, &digest));
@@ -802,7 +843,7 @@ index 69f94e5..d527bb0 100644
          let res = proxy_client.post_ack(transfer_id, ack, &sig)?;
          if let Some(err) = res.error {
              return Err(map_proxy_error(err));
-@@ -1849,7 +1850,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -1851,7 +1853,7 @@ pub trait WalletOnline: WalletOffline {
              }
              match mode {
                  ReceiveMode::Proxy(data) => {
@@ -811,7 +852,7 @@ index 69f94e5..d527bb0 100644
                      let media_id = proxy_derived
                          .as_ref()
                          .expect("proxy mode always derives the shared secret")
-@@ -1912,7 +1913,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -1914,7 +1916,7 @@ pub trait WalletOnline: WalletOffline {
          proxy_url: &str,
          transfer_id: String,
      ) -> Result<GetConsignmentResponse, Error> {
@@ -820,15 +861,19 @@ index 69f94e5..d527bb0 100644
          let consignment_res = proxy_client.get_consignment(&transfer_id);
          if consignment_res.is_err() || consignment_res.as_ref().unwrap().result.as_ref().is_none() {
              debug!(
-@@ -2146,6 +2147,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -2133,10 +2135,9 @@ pub trait WalletOnline: WalletOffline {
+ 
+     fn reject_list_resolver(&self) -> WalletRejectListResolver<'_> {
          WalletRejectListResolver {
+-            // going online checks the chain of every configured EVM RPC endpoint
              inner: RemoteRejectListResolver {
                  evm_rpc_urls: self.evm_rpc_urls(),
+-                evm_chains_checked: true,
 +                bitcoin_network: self.bitcoin_network(),
              },
              logger: self.logger(),
          }
-@@ -2254,7 +2256,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -2245,7 +2246,7 @@ pub trait WalletOnline: WalletOffline {
              &consignment,
              Some(witness_id),
              &self.blockchain_resolver(),
@@ -837,7 +882,7 @@ index 69f94e5..d527bb0 100644
              &validation_config,
          )
          .map_err(|e| match e {
-@@ -2353,7 +2355,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -2338,7 +2339,7 @@ pub trait WalletOnline: WalletOffline {
              && donation_tx.is_none()
              && !mint_consignment
          {
@@ -846,7 +891,7 @@ index 69f94e5..d527bb0 100644
              if grace < min_sender_retention_grace() {
                  warn!(
                      self.logger(),
-@@ -2714,7 +2716,12 @@ pub trait WalletOnline: WalletOffline {
+@@ -2708,7 +2709,12 @@ pub trait WalletOnline: WalletOffline {
          invoice_id: &str,
          recipient_seed: &[u8],
      ) -> Result<Option<(String, GetConsignmentResponse)>, Error> {
@@ -860,7 +905,7 @@ index 69f94e5..d527bb0 100644
              Ok(res) => match (res.result, res.error) {
                  (Some(transfers), None) => transfers,
                  (_, err) => {
-@@ -2795,7 +2802,12 @@ pub trait WalletOnline: WalletOffline {
+@@ -2789,7 +2795,12 @@ pub trait WalletOnline: WalletOffline {
              if tte.kind != TransportEndpointKind::RecipientProxy {
                  continue;
              }
@@ -874,7 +919,7 @@ index 69f94e5..d527bb0 100644
              let nothing_pending = match res {
                  Ok(res) => match (res.result, res.error) {
                      (Some(transfers), None) => transfers
-@@ -2826,7 +2838,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -2820,7 +2831,7 @@ pub trait WalletOnline: WalletOffline {
          let sk = ed25519_from_seed(&seed);
          let digest = sha256_digest(transfer_retrieved_message(transfer_id).as_bytes());
          let signature = hex::encode(sign_ed25519(&sk, &digest));
@@ -883,7 +928,7 @@ index 69f94e5..d527bb0 100644
              .and_then(|client| client.transfer_retrieved(transfer_id, &signature));
          match res {
              Ok(r) if r.error.is_none() => {}
-@@ -2971,7 +2983,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -3000,7 +3011,7 @@ pub trait WalletOnline: WalletOffline {
          let Some(evm_rpc_url) = self.evm_rpc_url(chain_id) else {
              return Ok(false);
          };
@@ -892,7 +937,7 @@ index 69f94e5..d527bb0 100644
          let mint_resolver = MintClaimResolver::new(&evm_client);
          let bridge_location = BridgeLocation::Evm(EvmContract {
              chain_id,
-@@ -3358,7 +3370,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -3385,7 +3396,7 @@ pub trait WalletOnline: WalletOffline {
                  );
                  return Ok(None);
              };
@@ -901,7 +946,7 @@ index 69f94e5..d527bb0 100644
              let mint_resolver = MintClaimResolver::new(&evm_client);
              let claim_resolver = match CheckedClaimResolver::with(&mint_resolver, bridge_location) {
                  Ok(claim_resolver) => claim_resolver,
-@@ -3971,7 +3983,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -3983,7 +3994,7 @@ pub trait WalletOnline: WalletOffline {
                  details: s!("invalid operation secret key"),
              })?;
          let sk = ed25519_from_seed(&seed);
@@ -910,25 +955,25 @@ index 69f94e5..d527bb0 100644
          let ack_res = get_ack_signed(&proxy_client, &transfer_ids, &sk)?;
          debug!(self.logger(), "ACK get response: {:?}", ack_res);
          if let Some(err) = ack_res.error {
-@@ -4722,7 +4734,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -4716,7 +4727,7 @@ pub trait WalletOnline: WalletOffline {
          if batch_transfer.broadcast_deadline.is_none()
              && let Some(deadline) = broadcast_deadline(
                  res.expires_at.as_deref(),
 -                sender_proxy_retention_grace(&sender_proxy)?,
 +                sender_proxy_retention_grace(&sender_proxy, self.bitcoin_network())?,
+                 batch_transfer.expiration,
              )
          {
-             updated_batch_transfer.broadcast_deadline = ActiveValue::Set(Some(deadline));
-@@ -5897,7 +5909,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -5892,7 +5903,7 @@ pub trait WalletOnline: WalletOffline {
                      self.logger(),
                      "Posting consignment for recipient ID: {recipient_id}"
                  );
 -                let proxy_client = ProxyClient::new(&proxy_url)?;
 +                let proxy_client = ProxyClient::new(&proxy_url, self.bitcoin_network())?;
-
+ 
                  // skip a proxy that would refuse some of the media after the consignment is posted,
                  // or that doesn't tell how many it accepts (unreachable or invalid max_media)
-@@ -6674,6 +6686,7 @@ pub trait WalletOnline: WalletOffline {
+@@ -6697,6 +6708,7 @@ pub trait WalletOnline: WalletOffline {
      /// usable, contacting each distinct endpoint once, however many recipients share it, and refuse
      /// a proxy recipient with none.
      fn check_recipients_transport_endpoints<'a>(
@@ -936,7 +981,7 @@ index 69f94e5..d527bb0 100644
          recipients: impl IntoIterator<Item = &'a mut LocalRecipient>,
      ) -> Result<(), Error> {
          let mut usable_endpoints: HashMap<String, bool> = HashMap::new();
-@@ -6684,7 +6697,9 @@ pub trait WalletOnline: WalletOffline {
+@@ -6707,7 +6719,9 @@ pub trait WalletOnline: WalletOffline {
              for transport_endpoint in &mut local_recipient.transport_endpoints {
                  transport_endpoint.usable = *usable_endpoints
                      .entry(transport_endpoint.endpoint.clone())
@@ -947,16 +992,16 @@ index 69f94e5..d527bb0 100644
              }
              if !local_recipient.transport_endpoints.iter().any(|t| t.usable) {
                  return Err(Error::InvalidTransportEndpoints {
-@@ -7023,7 +7038,7 @@ pub trait WalletOnline: WalletOffline {
-
+@@ -7046,7 +7060,7 @@ pub trait WalletOnline: WalletOffline {
+ 
          // whether the transport endpoints are usable is checked once all the recipients have
          // passed the checks that need no network
 -        Self::check_recipients_transport_endpoints(local_recipients.values_mut().flatten())?;
 +        self.check_recipients_transport_endpoints(local_recipients.values_mut().flatten())?;
-
+ 
          let receive_ids: Vec<String> = recipient_map
              .values()
-@@ -7096,15 +7111,17 @@ pub trait WalletOnline: WalletOffline {
+@@ -7119,15 +7133,17 @@ pub trait WalletOnline: WalletOffline {
                          for lte in lr.transport_endpoints.iter().filter(|e| e.usable) {
                              // a proxy that cannot be asked is skipped, as another one may still
                              // have the invoice available
@@ -983,42 +1028,82 @@ index 69f94e5..d527bb0 100644
                              match result.and_then(|r| r.get(&invoice_id).map(|r| r.status)) {
                                  Some(InvoiceStatus::Available) => {
                                      available = true;
-@@ -7279,9 +7296,10 @@ pub trait WalletOnline: WalletOffline {
+@@ -7301,9 +7317,10 @@ pub trait WalletOnline: WalletOffline {
                      })?;
              let sender_proxy_url =
                  self.convert_transport_endpoint_url(sender_transport_endpoint)?;
 -            let retention_grace = sender_proxy_retention_grace(&sender_proxy_url)?;
 +            let retention_grace =
 +                sender_proxy_retention_grace(&sender_proxy_url, self.bitcoin_network())?;
-             broadcast_deadline = Some(expiration + i64::from(retention_grace));
+             broadcast_deadline = Some(expiration.saturating_add(i64::from(retention_grace)));
 -            let proxy_client = ProxyClient::new(&sender_proxy_url)?;
 +            let proxy_client = ProxyClient::new(&sender_proxy_url, self.bitcoin_network())?;
              let transfer_ids: Vec<String> = transfer_data.keys().cloned().collect();
              let expiration = expiration.to_string();
              // only needed by proxies with proxy-level authentication enabled
-@@ -7943,7 +7961,7 @@ pub trait WalletOnline: WalletOffline {
-     /// The EVM RPC client configured for the chain with the given `chain_id`, checked to be
-     /// connected to it.
-     fn checked_evm_client_for_chain(&self, chain_id: u64) -> Result<EvmClient, Error> {
--        checked_evm_client(self.evm_rpc_urls(), chain_id).inspect_err(|e| {
+@@ -7935,27 +7952,21 @@ pub trait WalletOnline: WalletOffline {
+             .contract_wrapper::<BridgedFungibleAsset>(contract_id)?
+             .bridge_location();
+         let BridgeLocation::Evm(EvmContract { chain_id, .. }) = &bridge_location;
+-        let evm_client = self.evm_client_for_chain(*chain_id)?;
++        let evm_client = self.checked_evm_client_for_chain(*chain_id)?;
+         Ok((evm_client, bridge_location))
+     }
+ 
+-    /// The EVM RPC client configured for the chain with the given `chain_id`.
+-    ///
+-    /// The endpoint is not asked which chain it is on here: going online checks that for every
+-    /// configured endpoint (see `check_evm_chains`), and the configuration can only be changed by
+-    /// going online again, so a client is only built for an endpoint that answered with this
+-    /// chain ID. An endpoint that starts serving another chain while the wallet is online needs
+-    /// the wallet to go online again, as a check before each call wouldn't catch it either: the
+-    /// check and the call it guards are separate requests.
+-    fn evm_client_for_chain(&self, chain_id: u64) -> Result<EvmClient, Error> {
+-        let Some(evm_rpc_url) = self.evm_rpc_url(chain_id) else {
+-            error!(
+-                self.logger(),
+-                "No EVM RPC URL configured for chain ID {chain_id}"
+-            );
+-            return Err(Error::NoEvmRpcUrl { chain_id });
+-        };
+-        EvmClient::new(evm_rpc_url)
++    /// The EVM RPC client configured for the chain with the given `chain_id`, checked to be
++    /// connected to it.
++    fn checked_evm_client_for_chain(&self, chain_id: u64) -> Result<EvmClient, Error> {
 +        checked_evm_client(self.evm_rpc_urls(), chain_id, self.bitcoin_network()).inspect_err(|e| {
-             if let Error::NoEvmRpcUrl { .. } = e {
-                 error!(
-                     self.logger(),
-@@ -8024,7 +8042,7 @@ pub trait WalletOnline: WalletOffline {
++            if let Error::NoEvmRpcUrl { .. } = e {
++                error!(
++                    self.logger(),
++                    "No EVM RPC URL configured for chain ID {chain_id}"
++                );
++            }
++        })
+     }
+ 
+     fn mint_begin_impl(
+@@ -8029,7 +8040,7 @@ pub trait WalletOnline: WalletOffline {
              self.parse_recipient(&recipient, schema, chainnet, 1, &operation_sk, now_ts, true)?;
          witness_recipients.extend(witness_output);
          local_recipients.push(local_recipient);
 -        Self::check_recipients_transport_endpoints(&mut local_recipients)?;
 +        self.check_recipients_transport_endpoints(&mut local_recipients)?;
-
+ 
          // the lock commits to this operation's ID, so it can only be included after the latest
          // external chain block: refuse a block to commit to (see RGB_METADATA_BEFORE_BLOCK)
+@@ -8269,7 +8280,7 @@ pub trait WalletOnline: WalletOffline {
+     ) -> Result<(EvmClient, SentMint), Error> {
+         let mint = self.sent_mint(&self.rgb_stock(txn)?, info_contents, fascia)?;
+         let BridgeLocation::Evm(EvmContract { chain_id, address }) = &mint.bridge_location;
+-        let evm_client = self.evm_client_for_chain(*chain_id)?;
++        let evm_client = self.checked_evm_client_for_chain(*chain_id)?;
+         debug!(
+             self.logger(),
+             "Checking for the lock {} of the mint operation {} at bridge location {:?}",
 diff --git a/src/wallet/rust_only.rs b/src/wallet/rust_only.rs
-index afb94f6..b39dd74 100644
+index f5605aa4ae30e071c0a2fe89a0010d0b5b606fba..70f0d8c25e107988cf81b7d1b9ba937fefa69c90 100644
 --- a/src/wallet/rust_only.rs
 +++ b/src/wallet/rust_only.rs
-@@ -38,9 +38,19 @@ pub type AssetBeneficiariesMap = BTreeMap<ContractId, Vec<BuilderSeal<GraphSeal>
+@@ -35,9 +35,19 @@ pub type AssetBeneficiariesMap = BTreeMap<ContractId, Vec<BuilderSeal<GraphSeal>
  /// it only if you know what you're doing</div>
  #[cfg(feature = "_online")]
  pub fn check_proxy_url(proxy_url: &str) -> Result<(), Error> {
@@ -1032,23 +1117,23 @@ index afb94f6..b39dd74 100644
 +    };
 +    check_proxy(proxy_url, network).map(|_| ())
  }
-
+ 
 +#[cfg(feature = "_validation")]
 +pub use crate::api::egress::wallet_http_client_for_network;
 +
  /// Load an RGB fascia from the file at the provided path.
  ///
  /// <div class="warning">This method is meant for special usage and is normally not needed, use
-@@ -428,7 +438,7 @@ impl Wallet {
+@@ -350,7 +360,7 @@ impl Wallet {
+         let validation_config = self.received_validation_config(asset_schema, None);
+         let pending = validate_with_claims(
              &consignment,
-             Some(witness_id),
-             &self.blockchain_resolver(),
 -            ClaimResolution::Evm(self.evm_rpc_urls()),
 +            ClaimResolution::Evm(self.evm_rpc_urls(), self.bitcoin_network()),
              &validation_config,
-         ) {
-             Ok(consignment) => consignment,
-@@ -578,7 +588,7 @@ impl Wallet {
+         )
+         .map_err(|e| self.received_validation_error(e))?;
+@@ -493,7 +503,7 @@ impl Wallet {
              &consignment,
              Some(witness_id),
              &self.blockchain_resolver(),
@@ -1058,26 +1143,27 @@ index afb94f6..b39dd74 100644
          )?;
          let valid_contract = valid_transfer.clone().into_valid_contract();
 diff --git a/src/wallet/test/utils/helpers.rs b/src/wallet/test/utils/helpers.rs
-index 4fd357e..ccd73b0 100644
+index 3296a1f156adae1905919a58a591938912ae8879..c5a1df3a382fd50f9b6c9eb46421f7a03fbd7846 100644
 --- a/src/wallet/test/utils/helpers.rs
 +++ b/src/wallet/test/utils/helpers.rs
-@@ -635,7 +635,7 @@ pub(crate) fn check_receive_schema_assignment_combinations(
-
+@@ -732,7 +732,7 @@ pub(crate) fn check_receive_schema_assignment_combinations(
+ 
  #[cfg(feature = "electrum")]
  pub(crate) fn get_proxy_client(proxy_url: Option<&str>) -> ProxyClient {
 -    ProxyClient::new(proxy_url.unwrap_or(PROXY_URL)).unwrap()
 +    ProxyClient::new(proxy_url.unwrap_or(PROXY_URL), BitcoinNetwork::Regtest).unwrap()
  }
-
+ 
  /// Post a consignment file to the invoice of `recipient_id` (with pubkey `recipient_pk`) acting as
 diff --git a/src/wallet/test/validate_consignment.rs b/src/wallet/test/validate_consignment.rs
-index b8b1c06..5454ea1 100644
+index de34e23d056e2c3b20730fb881aa41a3f139a3fb..65da89ba5cfa1c1e70c49cf0a2cb47111af0ec3d 100644
 --- a/src/wallet/test/validate_consignment.rs
 +++ b/src/wallet/test/validate_consignment.rs
-@@ -487,6 +487,7 @@ fn mint() {
+@@ -487,7 +487,7 @@ fn mint() {
      .unwrap();
      let reject_list_resolver = RemoteRejectListResolver {
          evm_rpc_urls: &evm_rpc_urls,
+-        evm_chains_checked: false,
 +        bitcoin_network: BitcoinNetwork::Regtest,
      };
      let validate_with_resolvers =

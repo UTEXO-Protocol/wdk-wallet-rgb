@@ -1,11 +1,11 @@
 diff --git a/src/error.rs b/src/error.rs
-index 905c120..60e090b 100644
+index 6fd549aa4a64f95c0cdc9d9fbb0fb1a13bf50bfb..bed1bf43b29cfc86b7bf4720a5c971bf53ae535d 100644
 --- a/src/error.rs
 +++ b/src/error.rs
-@@ -105,6 +105,15 @@ pub enum Error {
+@@ -107,6 +107,15 @@ pub enum Error {
          details: String,
      },
-
+ 
 +    /// A valid standalone contract differs from the asset requested by the caller.
 +    #[error("Contract asset ID mismatch: expected {expected}, got {actual}")]
 +    ContractIdMismatch {
@@ -19,13 +19,13 @@ index 905c120..60e090b 100644
      #[error("Database error: {details}")]
      Database {
 diff --git a/src/wallet/offline.rs b/src/wallet/offline.rs
-index 586bd5a..bf2381c 100644
+index 959c2c22920be29f5a696386ec3f5417ee161da4..40c32ce6165991e87c739c14ab6a6dba3229b65d 100644
 --- a/src/wallet/offline.rs
 +++ b/src/wallet/offline.rs
 @@ -13,6 +13,23 @@ pub(crate) const CONSIGNMENT_RCV_FILE: &str = "rcv_compose.rgbc";
-
+ 
  const ASSET_ID_PREFIX: &str = "rgb:";
-
+ 
 +/// Contract registration must never ask a network resolver or panic on untrusted history.
 +struct ContractRegistrationResolver(ChainNet);
 +
@@ -44,10 +44,10 @@ index 586bd5a..bf2381c 100644
 +}
 +
  pub(crate) const UDA_FIXED_INDEX: u32 = 0;
-
+ 
  pub(crate) const MAX_ATTACHMENTS: usize = 20;
-@@ -3083,6 +3100,80 @@ pub trait WalletOffline: WalletBackup {
-
+@@ -3144,6 +3161,80 @@ pub trait WalletOffline: WalletBackup {
+ 
  /// Offline operations for a wallet.
  pub trait RgbWalletOpsOffline: WalletOffline + WalletBackup {
 +    /// Validate and register a standalone RGB contract without accepting a transfer.

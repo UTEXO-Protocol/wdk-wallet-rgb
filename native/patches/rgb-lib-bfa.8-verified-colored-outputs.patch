@@ -1,16 +1,16 @@
 diff --git a/src/wallet/core.rs b/src/wallet/core.rs
-index 9f245ef..2eddf27 100644
+index 4aa6fdf44a1de483d1828842db62c5e3359389f1..ed8c264e3d1d8c6bb762693e97e52d02d9063a8c 100644
 --- a/src/wallet/core.rs
 +++ b/src/wallet/core.rs
-@@ -214,6 +214,7 @@ pub struct WalletInternals {
-     pub(crate) wallet_dir: PathBuf,
+@@ -221,6 +221,7 @@ pub struct WalletInternals {
      pub(crate) bdk_wallet: BdkWallet,
      pub(crate) bdk_pending: Arc<Mutex<ChangeSet>>,
+     pub(crate) bound_rgb_proxy: Option<String>,
 +    pub(crate) require_verified_colored_outputs: bool,
      #[cfg(feature = "_online")]
      pub(crate) online_data: Option<OnlineData>,
  }
-@@ -897,6 +898,24 @@ pub trait WalletCore {
+@@ -929,6 +930,24 @@ pub trait WalletCore {
          pending_witness_scripts: &HashMap<String, bool>,
      ) -> Result<(), Error> {
          let db_txos = txn.iter_txos()?;
@@ -35,7 +35,7 @@ index 9f245ef..2eddf27 100644
  
          let db_outpoints: HashSet<String> = db_txos
              .into_iter()
-@@ -914,6 +933,15 @@ pub trait WalletCore {
+@@ -946,6 +965,15 @@ pub trait WalletCore {
              .filter(|u| u.keychain == KeychainKind::External)
              .filter(|u| !db_outpoints.contains(&u.outpoint.to_string()))
          {
@@ -52,22 +52,22 @@ index 9f245ef..2eddf27 100644
              let script = new_utxo.txout.script_pubkey.to_hex_string();
              if let Some(receive_pending) = pending_witness_scripts.get(&script) {
 diff --git a/src/wallet/multisig.rs b/src/wallet/multisig.rs
-index 4f69b72..8bea7de 100644
+index 2224bf8ab2311cbd233cddd134308a2035821b9a..f71148d729f9c1096b62381a0b9127d24bd1aacd 100644
 --- a/src/wallet/multisig.rs
 +++ b/src/wallet/multisig.rs
-@@ -1108,6 +1108,7 @@ impl MultisigWallet {
-                 wallet_dir,
+@@ -1115,6 +1115,7 @@ impl MultisigWallet {
                  bdk_wallet,
                  bdk_pending: Arc::new(Mutex::new(ChangeSet::default())),
+                 bound_rgb_proxy: None,
 +                require_verified_colored_outputs: false,
                  #[cfg(feature = "_online")]
                  online_data: None,
              },
 diff --git a/src/wallet/offline.rs b/src/wallet/offline.rs
-index ce93f44..935a3cf 100644
+index 40c32ce6165991e87c739c14ab6a6dba3229b65d..06552bbfcb898e008945a3f8644344b206206b73 100644
 --- a/src/wallet/offline.rs
 +++ b/src/wallet/offline.rs
-@@ -1917,10 +1917,17 @@ pub trait WalletOffline: WalletBackup {
+@@ -1962,10 +1962,17 @@ pub trait WalletOffline: WalletBackup {
          Ok(asset_medias)
      }
  
@@ -87,7 +87,7 @@ index ce93f44..935a3cf 100644
          let balance = self.bdk_wallet().as_ref().balance(
              chain,
              chain_tip,
-@@ -1948,8 +1955,20 @@ pub trait WalletOffline: WalletBackup {
+@@ -1993,8 +2000,20 @@ pub trait WalletOffline: WalletBackup {
      ) -> Result<BtcBalance, Error> {
          self.sync_if_requested(txn, online, skip_sync, KeychainKind::External)?;
          self.sync_if_requested(txn, online, skip_sync, KeychainKind::Internal)?;
@@ -108,12 +108,12 @@ index ce93f44..935a3cf 100644
 +        let colored =
 +            self.get_btc_balance_for_keychain(KeychainKind::External, admitted_colored.as_ref())?;
  
-         let reserved: HashSet<BdkOutPoint> =
-             self.get_reserved_bdk_outpoints(txn)?.into_iter().collect();
-@@ -2185,6 +2204,14 @@ pub trait WalletOffline: WalletBackup {
+         let reserved: HashSet<BdkOutPoint> = self
+             .get_reserved_vanilla_outpoints(txn)?
+@@ -2233,6 +2252,14 @@ pub trait WalletOffline: WalletBackup {
              .map(BdkOutPoint::from)
              .collect();
-         outpoints.extend(self.get_reserved_bdk_outpoints(txn)?);
+         outpoints.extend(self.get_reserved_vanilla_outpoints(txn)?);
 +        if self.internals().require_verified_colored_outputs {
 +            // BDK still tracks unproven colored outputs. Exclude those as well
 +            // as the DB TXOs so they can never fund a vanilla Bitcoin send.
@@ -126,19 +126,19 @@ index ce93f44..935a3cf 100644
      }
  
 diff --git a/src/wallet/singlesig.rs b/src/wallet/singlesig.rs
-index 9374659..5e96ad5 100644
+index d26e7135cb7def13448cb1d695f17f8a09b627f4..76ccc38be850f18c571c72d5a4a2f814b1fbc8ce 100644
 --- a/src/wallet/singlesig.rs
 +++ b/src/wallet/singlesig.rs
-@@ -265,6 +265,7 @@ impl Wallet {
-                 wallet_dir,
+@@ -272,6 +272,7 @@ impl Wallet {
                  bdk_wallet,
                  bdk_pending: Arc::new(Mutex::new(ChangeSet::default())),
+                 bound_rgb_proxy: None,
 +                require_verified_colored_outputs: false,
                  #[cfg(feature = "_online")]
                  online_data: None,
              },
-@@ -273,6 +274,13 @@ impl Wallet {
-         })
+@@ -288,6 +289,13 @@ impl Wallet {
+         Ok(())
      }
  
 +    /// Keep chain-discovered colored outputs outside the RGB wallet unless

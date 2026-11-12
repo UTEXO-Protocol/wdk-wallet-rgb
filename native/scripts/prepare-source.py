@@ -14,9 +14,9 @@ ROOT = Path(__file__).resolve().parent.parent
 DEST = ROOT / ".sources" / "rgb-lib-bfa"
 SOURCE_URL = "https://github.com/UTEXO-Protocol/rgb-lib-bfa.git"
 PATCHES = ROOT / "patches"
-SHA = "9ec49c08be2e68f08521281e3efbd760ec989cb9"
-BASE_TREE = "a4f8ad11dd975d357f9d2c6baab0d45205416986"
-EXPECTED_TREE = "5882cfdd680c6ea32977d8f7a53d0ae1fc9dad40"
+SHA = "2f7b21d8637baad548504ea870deb2c0d4d0a37d"
+BASE_TREE = "5492824f3cf47b4c821dfca8b7a63fed27858486"
+EXPECTED_TREE = "83f4612d41cb79df2b78c6bfdb50441be908e4dd"
 ESPLORA_PACKAGE = "esplora-client-0.12.3"
 ESPLORA_SHA256 = "f19e3ea99dbfbef0c1ec26d83e69de0c579f6aa6aaac4f44597805fcc27e97af"
 ESPLORA_EXPECTED_TREE = "0b02f9ababbb4f276dcea5168fc8cf59914c6744"
@@ -89,19 +89,17 @@ def main():
                   ELECTRUM_EXPECTED_TREE)
     dest = DEST.with_name("rgb-lib-bfa-bare") if bare else DEST
     patches = [
-        PATCHES / "rgb-lib-bfa.7-registration.patch",
-        PATCHES / "rgb-lib-bfa.7-native-egress.patch",
-        PATCHES / "rgb-lib-bfa.7-signet-checkpoint.patch",
-        PATCHES / "rgb-lib-bfa.7-proxy-deadline.patch",
-        PATCHES / "rgb-lib-bfa.7-verified-colored-outputs.patch",
-        PATCHES / "rgb-lib-bfa.7-public-chain-admission.patch",
-        PATCHES / "rgb-lib-bfa.7-bound-proxy.patch",
-        PATCHES / "rgb-lib-bfa.7-electrum-reconnect.patch",
-        PATCHES / "rgb-lib-bfa.7-receive-cancellation.patch",
+        PATCHES / "rgb-lib-bfa.8-native-egress.patch",
+        PATCHES / "rgb-lib-bfa.8-indexer-checkpoints.patch",
+        PATCHES / "rgb-lib-bfa.8-bound-proxy.patch",
+        PATCHES / "rgb-lib-bfa.8-registration.patch",
+        PATCHES / "rgb-lib-bfa.8-verified-colored-outputs.patch",
+        PATCHES / "rgb-lib-bfa.8-proxy-deadline.patch",
+        PATCHES / "rgb-lib-bfa.8-receive-cancellation.patch",
     ]
     if bare:
-        patches.append(PATCHES / "rgb-lib-bfa.7-embedded-lifecycle.patch")
-    expected_tree = "887bdd74386eb7b5773411daa31fd07fb813c71a" if bare else EXPECTED_TREE
+        patches.append(PATCHES / "rgb-lib-bfa.8-embedded-lifecycle.patch")
+    expected_tree = "02b77a312380ae067342913d638d20b45fe6e37a" if bare else EXPECTED_TREE
     if dest.exists():
         verify(dest, expected_tree)
         return

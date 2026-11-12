@@ -7,13 +7,15 @@
 | Tether WDK Wallet | `1.0.0-beta.25` |
 | Android embedded runtime | Bare Kit `3.0.1`, Bare `1.36.2` |
 | Bare C headers | `1.35.0` |
-| RGB library | `v0.3.0-beta.7-upstream-dev-bfa.7`, `9ec49c08be2e68f08521281e3efbd760ec989cb9` |
+| RGB library | `v0.3.0-beta.7-upstream-dev-bfa.8`, `2f7b21d8637baad548504ea870deb2c0d4d0a37d` |
 | Native overlay | [Packed native manifest](src/onchain-bare-native.json) |
 | Signing | `@scure/btc-signer@2.4.1`, `@scure/bip32@2.4.0`, `@scure/base@2.4.0`, `@noble/curves@2.4.0`, `@noble/hashes@2.4.0` |
 
 The RGB overlay retains standalone genesis registration, native HTTP egress restrictions and Signet checkpoints. It also bounds proxy-provided timing and prevents deadline arithmetic overflow. Invalid or ambiguous acknowledgement replies keep the affected transfer pending and its outputs reserved; recovery retries the same signed acknowledgement or saved transaction. Valid deadlines retain their original grace periods. The embedded build also disables the process-wide wallet panic hook. BFA.7 enforces full mint conservation upstream. Native preparation verifies the upstream commit and patched tree before building from the locked graph.
 
 This acknowledgement handling uses the existing SQLite transaction. It does not introduce a pre-dispatch crash journal or establish atomic recovery from process death between remote acknowledgement acceptance and local commit.
+
+The BFA.8 candidate uses a new wallet directory identity. BFA.8 removed a database migration recorded by BFA.7 wallets, so an earlier directory is refused before the database is opened. Keep the earlier directory with its original SDK and use a fresh directory for BFA.8 qualification.
 
 ## Build and use
 

@@ -1,25 +1,27 @@
 diff --git a/src/api/proxy.rs b/src/api/proxy.rs
+index bbe77f6f9c30fc801487e6788bd3a45e361c42af..2b279d4358ebd5d06e24eb42a015206aabbb8b4d 100644
 --- a/src/api/proxy.rs
 +++ b/src/api/proxy.rs
-@@ -78,6 +78,14 @@
-     id: Option<String>,
-     pub(crate) result: Option<R>,
+@@ -80,6 +80,14 @@ pub(crate) struct JsonRpcResponse<R> {
      pub(crate) error: Option<JsonRpcError>,
-+}
-+
+ }
+ 
 +#[derive(Deserialize)]
 +struct CheckedJsonRpcResponse<R> {
 +    jsonrpc: String,
 +    id: serde_json::Value,
 +    result: Option<R>,
 +    error: Option<JsonRpcError>,
- }
- 
++}
++
  #[derive(Debug, Deserialize, Serialize)]
-@@ -417,6 +425,15 @@
+ pub(crate) struct NullRequest;
+ 
+@@ -416,6 +424,15 @@ impl ProxyClient {
+         &self,
          method: &str,
          params: Option<P>,
-     ) -> Result<JsonRpcResponse<R>, Error> {
++    ) -> Result<JsonRpcResponse<R>, Error> {
 +        self.call_with_checks(method, params, false)
 +    }
 +
@@ -28,15 +30,13 @@ diff --git a/src/api/proxy.rs b/src/api/proxy.rs
 +        method: &str,
 +        params: Option<P>,
 +        check_response: bool,
-+    ) -> Result<JsonRpcResponse<R>, Error> {
+     ) -> Result<JsonRpcResponse<R>, Error> {
          let body = JsonRpcRequest {
              method: method.to_string(),
-             jsonrpc: s!("2.0"),
-@@ -432,6 +449,33 @@
-             .map_err(|err| Self::req_err(err.without_url()))?;
+@@ -433,6 +450,33 @@ impl ProxyClient {
          if response.status().is_redirection() {
              return Err(Self::req_err("proxy redirects are not allowed"));
-+        }
+         }
 +        if check_response {
 +            use std::io::Read;
 +
@@ -63,10 +63,11 @@ diff --git a/src/api/proxy.rs b/src/api/proxy.rs
 +                result: reply.result,
 +                error: reply.error,
 +            });
-         }
++        }
          response
              .json::<JsonRpcResponse<R>>()
-@@ -468,6 +512,10 @@
+             .map_err(|err| Self::req_err(err.without_url()))
+@@ -468,6 +512,10 @@ impl ProxyClient {
          self.call("server.info", None::<NullRequest>)
      }
  
@@ -77,7 +78,7 @@ diff --git a/src/api/proxy.rs b/src/api/proxy.rs
      pub(crate) fn check_invoices(
          &self,
          invoice_ids: &[String],
-@@ -569,14 +617,16 @@
+@@ -569,14 +617,16 @@ impl ProxyClient {
          invoice_id: &str,
          signature: &str,
          timestamp: &str,
@@ -95,7 +96,7 @@ diff --git a/src/api/proxy.rs b/src/api/proxy.rs
          )
      }
  
-@@ -827,7 +877,7 @@
+@@ -827,7 +877,7 @@ mod tests {
  
      #[test]
      fn list_transfers_error() {
@@ -105,12 +106,14 @@ diff --git a/src/api/proxy.rs b/src/api/proxy.rs
  
      #[test]
 diff --git a/src/wallet/online.rs b/src/wallet/online.rs
+index eda83d557d1120ece7d1b48f2be8221a2061e1a7..ccb8921c3059b615758efdec75759e089880234a 100644
 --- a/src/wallet/online.rs
 +++ b/src/wallet/online.rs
-@@ -112,6 +112,20 @@
+@@ -112,6 +112,20 @@ fn list_invoice_transfers(
+     invoice_id: &str,
      recipient_seed: &[u8],
      network: BitcoinNetwork,
- ) -> Result<JsonRpcResponse<HashMap<String, ProxyTransferState>>, Error> {
++) -> Result<JsonRpcResponse<HashMap<String, ProxyTransferState>>, Error> {
 +    list_invoice_transfers_on(
 +        &ProxyClient::new(proxy_url, network)?,
 +        invoice_id,
@@ -124,11 +127,10 @@ diff --git a/src/wallet/online.rs b/src/wallet/online.rs
 +    invoice_id: &str,
 +    recipient_seed: &[u8],
 +    check_response: bool,
-+) -> Result<JsonRpcResponse<HashMap<String, ProxyTransferState>>, Error> {
+ ) -> Result<JsonRpcResponse<HashMap<String, ProxyTransferState>>, Error> {
      let seed: [u8; 32] = recipient_seed.try_into().map_err(|_| Error::Internal {
          details: s!("invalid recipient secret key"),
-     })?;
-@@ -119,7 +133,7 @@
+@@ -120,7 +134,7 @@ fn list_invoice_transfers(
      let timestamp = now().unix_timestamp().to_string();
      let digest = sha256_digest(list_transfers_message(invoice_id, &timestamp).as_bytes());
      let signature = hex::encode(sign_ed25519(&sk, &digest));
@@ -137,7 +139,7 @@ diff --git a/src/wallet/online.rs b/src/wallet/online.rs
  }
  
  /// Whether the sender proxy knows the operation of `transfer_ids`, registered with the operation
-@@ -8504,6 +8518,164 @@
+@@ -8489,6 +8503,164 @@ pub trait WalletOnline: WalletOffline {
  /// Online operations for a wallet.
  #[cfg(feature = "_online")]
  pub trait RgbWalletOpsOnline: RgbWalletOpsOffline + WalletOnline {

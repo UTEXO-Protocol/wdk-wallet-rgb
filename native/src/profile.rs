@@ -90,7 +90,7 @@ pub(crate) fn version(source: &str, overlay: &str) -> Value {
         "protocol": 2,
         "source": source,
         "overlayTree": overlay,
-        "integrationTree": "887bdd74386eb7b5773411daa31fd07fb813c71a",
+        "integrationTree": "02b77a312380ae067342913d638d20b45fe6e37a",
         "runtime": crate::RUNTIME,
         "indexer": "electrum-and-dev-esplora",
         "networkChecks": 5,

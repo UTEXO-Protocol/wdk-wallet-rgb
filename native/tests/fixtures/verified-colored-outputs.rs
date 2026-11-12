@@ -35,6 +35,7 @@ pub(crate) fn run_verified_colored_outputs_fixture() {
         database_type: DatabaseType::Sqlite,
         max_allocations_per_utxo: 1,
         supported_schemas: vec![AssetSchema::Nia],
+        allow_reckless_schemas: false,
     };
     let keys = crate::keys::generate_keys(data.bitcoin_network, WitnessVersion::Taproot);
     let keys = SinglesigKeys::from_keys(&keys, None);

@@ -43,8 +43,8 @@ mod issuance;
 #[path = "send.rs"]
 mod send;
 
-const SOURCE: &str = "9ec49c08be2e68f08521281e3efbd760ec989cb9";
-const OVERLAY: &str = "5882cfdd680c6ea32977d8f7a53d0ae1fc9dad40";
+const SOURCE: &str = "2f7b21d8637baad548504ea870deb2c0d4d0a37d";
+const OVERLAY: &str = "83f4612d41cb79df2b78c6bfdb50441be908e4dd";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -53,7 +53,7 @@ const MAX_FEE_RATE: u64 = 100_000;
 const MAX_MONEY: u64 = 2_100_000_000_000_000;
 const LOCK_FILE: &str = ".utexo-rgb-native.lock";
 const IDENTITY_FILE: &str = ".utexo-rgb-native.identity";
-const BACKEND: &str = "rgb-l1-bfa7-v1";
+const BACKEND: &str = "rgb-l1-bfa8-v1";
 const REGTEST_MAX_MINT_LOCK_BLOCKS: u64 = 512;
 const SIGNET_MAX_MINT_LOCK_BLOCKS: u64 = 7_200;
 const DEV_ARBITRUM_MAX_MINT_LOCK_BLOCKS: u64 = 16_000;
@@ -705,6 +705,7 @@ impl Worker {
                         bitcoin_network: network,
                         database_type: DatabaseType::Sqlite,
                         max_allocations_per_utxo: 1,
+                        allow_reckless_schemas: false,
                         supported_schemas: if mode == journal::Mode::BtcOnly {
                             vec![AssetSchema::Nia]
                         } else if ordinary_rgb {
@@ -1580,7 +1581,7 @@ mod tests {
 
     #[test]
     fn earlier_identity_blocks_wallet_open_before_database_migration() {
-        for backend in ["rgb-l1-v1", "rgb-l1-bfa6-v1"] {
+        for backend in ["rgb-l1-v1", "rgb-l1-bfa6-v1", "rgb-l1-bfa7-v1"] {
             let dir = tempfile::tempdir().unwrap();
             std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
             let params = open_params(dir.path(), "regtest");

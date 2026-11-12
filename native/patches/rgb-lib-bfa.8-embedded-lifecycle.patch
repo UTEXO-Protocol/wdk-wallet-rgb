@@ -1,8 +1,8 @@
 diff --git a/src/lib.rs b/src/lib.rs
-index 324f99a..4f2e8b9 100644
+index dc2a9acf0ce5251c96440076850c7d2ebc0b753e..7822e169ff0c43c2dbe835d3aae6c54101b19d71 100644
 --- a/src/lib.rs
 +++ b/src/lib.rs
-@@ -245,7 +245,6 @@ use std::{
+@@ -251,7 +251,6 @@ use std::{
      fs,
      hash::Hash,
      io::{self, Write},
@@ -11,10 +11,10 @@ index 324f99a..4f2e8b9 100644
  };
  use std::{
 diff --git a/src/wallet/core.rs b/src/wallet/core.rs
-index 0ec6dd5..9f245ef 100644
+index ed8c264e3d1d8c6bb762693e97e52d02d9063a8c..328a4980f6e9653fbdac77a247a321f3701557f4 100644
 --- a/src/wallet/core.rs
 +++ b/src/wallet/core.rs
-@@ -431,12 +431,6 @@ pub(crate) fn setup_new_wallet(
+@@ -458,12 +458,6 @@ pub(crate) fn setup_new_wallet(
      }
      let (logger, logger_guard) = setup_logger(&wallet_dir, None)?;
      info!(logger.clone(), "New wallet in '{:?}'", wallet_dir);
@@ -26,4 +26,4 @@ index 0ec6dd5..9f245ef 100644
 -    }));
      Ok((wallet_dir, logger, logger_guard))
  }
-
+ 

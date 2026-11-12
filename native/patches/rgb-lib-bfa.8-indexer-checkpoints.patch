@@ -1,8 +1,8 @@
 diff --git a/src/lib.rs b/src/lib.rs
-index 7f08d98..324f99a 100644
+index 80f7f77141ac8c022ac4f8dc95280bf8ae7a40c9..dc2a9acf0ce5251c96440076850c7d2ebc0b753e 100644
 --- a/src/lib.rs
 +++ b/src/lib.rs
-@@ -499,7 +499,7 @@ use crate::no_wallet::validation::checked_bitcoind_indexes;
+@@ -515,7 +515,7 @@ use crate::no_wallet::validation::checked_bitcoind_indexes;
  #[cfg(feature = "electrum")]
  use crate::no_wallet::validation::electrum_config;
  #[cfg(feature = "esplora")]
@@ -12,7 +12,7 @@ index 7f08d98..324f99a 100644
  use crate::no_wallet::validation::{
      ChainResolver, ClaimResolution, OffchainResolver, PendingClaims, RejectList, RejectListSource,
 diff --git a/src/no_wallet/mod.rs b/src/no_wallet/mod.rs
-index b1ed6fa..c4b00e8 100644
+index b1ed6fa714f864a04c252ac4bb31862521dbe68e..c4b00e8448241702344db84cfe99f0094d1671c7 100644
 --- a/src/no_wallet/mod.rs
 +++ b/src/no_wallet/mod.rs
 @@ -19,7 +19,9 @@ pub use inspection::{
@@ -27,13 +27,13 @@ index b1ed6fa..c4b00e8 100644
      ConsignmentValidation, RejectList, RejectListSource, ResolveRejectList, ValidatedWitness,
      ValidationOptions, ValidationWarning, WitnessValidationStatus,
 diff --git a/src/no_wallet/validation.rs b/src/no_wallet/validation.rs
-index f017780..0a46a2d 100644
+index ec136cb8537aef6f66e56dcaa37e1a9510fcd5a2..6de730886f61f0f24c6b3b048f29a8da2b3e6e92 100644
 --- a/src/no_wallet/validation.rs
 +++ b/src/no_wallet/validation.rs
 @@ -12,6 +12,27 @@ pub(crate) const INDEXER_TIMEOUT: u64 = 10;
  #[cfg(any(feature = "electrum_validation", feature = "esplora_validation"))]
  pub(crate) const INDEXER_RETRIES: u8 = 3;
-
+ 
 +/// The block-one checkpoint that distinguishes Signet chains with the same genesis.
 +#[cfg(feature = "_validation")]
 +#[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -87,8 +87,8 @@ index f017780..0a46a2d 100644
 +            | Self::Esplora { url } => url,
          }
      }
-
-@@ -61,12 +96,104 @@ impl IndexerConfig {
+ 
+@@ -61,10 +96,102 @@ impl IndexerConfig {
      pub fn protocol(&self) -> IndexerProtocol {
          match self {
              Self::Bitcoind { .. } => IndexerProtocol::Bitcoind,
@@ -118,11 +118,11 @@ index f017780..0a46a2d 100644
 +            }
 +            dev_esplora_endpoint(url)?;
 +            return Ok(Some(SignetCheckpoint::Dev));
-         }
++        }
 +        Ok((network == BitcoinNetwork::Signet).then_some(SignetCheckpoint::Public))
-     }
- }
-
++    }
++}
++
 +#[cfg(feature = "_validation")]
 +fn dev_signet_transport(url: &str) -> bool {
 +    let Ok(endpoint) = reqwest::Url::parse(url) else {
@@ -187,14 +187,12 @@ index f017780..0a46a2d 100644
 +            return Err(Error::InvalidIndexer {
 +                details: s!("the indexer reports a different Signet chain"),
 +            });
-+        }
-+    }
+         }
+     }
 +    Ok(())
-+}
-+
+ }
+ 
  /// Authentication for a Bitcoin Core node RPC connection, see [`IndexerConfig::Bitcoind`].
- #[cfg(feature = "_validation")]
- #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 @@ -401,7 +528,11 @@ impl IndexerClient {
      /// and, for a Bitcoin Core node, it has a synced transaction index.
      ///
@@ -208,7 +206,7 @@ index f017780..0a46a2d 100644
          let unreachable = |e: &dyn fmt::Display| Error::InvalidIndexer {
              details: unreachable_indexer_details(indexer_config, e),
          };
-@@ -411,10 +542,10 @@ impl IndexerClient {
+@@ -411,17 +542,24 @@ impl IndexerClient {
                  BitcoindRpcClient::new(url, auth.into()).map_err(|e| unreachable(&e))?,
              )),
              #[cfg(feature = "electrum_validation")]
@@ -217,11 +215,15 @@ index f017780..0a46a2d 100644
                  let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
                  Self::Electrum(Box::new(
 -                    ElectrumClient::from_config(url, electrum_config())
-+                    ElectrumClient::from_config(url, electrum_config(indexer_config))
-                         .map_err(|e| unreachable(&e))?,
+-                        .map_err(|e| unreachable(&e))?,
++                    ElectrumClient::from_config(
++                        url,
++                        electrum_config(indexer_config, Some(bitcoin_network)),
++                    )
++                    .map_err(|e| unreachable(&e))?,
                  ))
              }
-@@ -422,6 +553,10 @@ impl IndexerClient {
+             #[cfg(feature = "esplora_validation")]
              IndexerConfig::Esplora { url } => {
                  Self::Esplora(Box::new(EsploraClient::from_builder(esplora_config(url))))
              }
@@ -232,9 +234,9 @@ index f017780..0a46a2d 100644
              #[cfg(not(all(
                  feature = "bitcoind_validation",
                  feature = "electrum_validation",
-@@ -431,7 +566,10 @@ impl IndexerClient {
+@@ -431,7 +569,10 @@ impl IndexerClient {
          };
-
+ 
          // this also checks connectivity (and credentials for bitcoind)
 -        client.block_hash(0).map_err(|e| unreachable(&e))?;
 +        let genesis = client.block_hash(0).map_err(|e| unreachable(&e))?;
@@ -244,10 +246,10 @@ index f017780..0a46a2d 100644
          #[allow(irrefutable_let_patterns)]
          #[cfg(feature = "bitcoind_validation")]
          if let Self::Bitcoind(client) = &client {
-@@ -501,26 +639,166 @@ pub(crate) fn checked_bitcoind_indexes(
+@@ -501,26 +642,172 @@ pub(crate) fn checked_bitcoind_indexes(
      })
  }
-
+ 
 +#[cfg(feature = "_validation")]
 +pub(crate) type IndexerResolver = Box<dyn rgbstd::indexers::Indexer + Send>;
 +
@@ -390,14 +392,20 @@ index f017780..0a46a2d 100644
 -        IndexerConfig::Electrum { url } => {
 -            AnyResolver::electrum_blocking(url, Some(electrum_config())).map_err(invalid)?
 +        IndexerConfig::Electrum { url } => Box::new(
-+            AnyResolver::electrum_blocking(url, Some(electrum_config(indexer_config)))
-+                .map_err(invalid)?,
++            AnyResolver::electrum_blocking(
++                url,
++                Some(electrum_config(indexer_config, Some(bitcoin_network))),
++            )
++            .map_err(invalid)?,
 +        ),
 +        #[cfg(feature = "electrum_validation")]
 +        IndexerConfig::DevSignetElectrum { url } => {
 +            let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
-+            let inner = ElectrumClient::from_config(url, electrum_config(indexer_config))
-+                .map_err(|err| invalid(err.to_string()))?;
++            let inner = ElectrumClient::from_config(
++                url,
++                electrum_config(indexer_config, Some(bitcoin_network)),
++            )
++            .map_err(|err| invalid(err.to_string()))?;
 +            Box::new(DevSignetResolver(
 +                rgbstd::indexers::electrum_blocking::ElectrumClient { inner },
 +            ))
@@ -418,7 +426,7 @@ index f017780..0a46a2d 100644
          #[cfg(not(all(
              feature = "bitcoind_validation",
              feature = "electrum_validation",
-@@ -531,6 +809,14 @@ pub(crate) fn get_resolver(
+@@ -531,6 +818,14 @@ pub(crate) fn get_resolver(
      resolver
          .check_chain_net(bitcoin_network.into())
          .map_err(|e| invalid(e.to_string()))?;
@@ -432,8 +440,8 @@ index f017780..0a46a2d 100644
 +    }
      Ok(resolver)
  }
-
-@@ -543,8 +829,12 @@ pub(crate) fn unreachable_indexer_details(
+ 
+@@ -543,8 +838,12 @@ pub(crate) fn unreachable_indexer_details(
  ) -> String {
      match indexer_config {
          IndexerConfig::Bitcoind { .. } => format!("cannot connect to bitcoind: {err}"),
@@ -447,8 +455,8 @@ index f017780..0a46a2d 100644
 +        }
      }
  }
-
-@@ -559,8 +849,8 @@ pub(crate) fn unreachable_indexer_details(
+ 
+@@ -559,8 +858,8 @@ pub(crate) fn unreachable_indexer_details(
  fn unsupported_indexer(indexer_config: &IndexerConfig) -> Error {
      let feature = match indexer_config {
          IndexerConfig::Bitcoind { .. } => "bitcoind",
@@ -459,28 +467,49 @@ index f017780..0a46a2d 100644
      };
      Error::InvalidIndexer {
          details: format!(
-@@ -582,9 +872,15 @@ impl From<&BitcoindAuth> for BitcoindRpcAuth {
+@@ -582,11 +881,33 @@ impl From<&BitcoindAuth> for BitcoindRpcAuth {
  }
-
+ 
  #[cfg(feature = "electrum_validation")]
 -pub(crate) fn electrum_config() -> ElectrumConfig {
-+pub(crate) fn electrum_config(indexer_config: &IndexerConfig) -> ElectrumConfig {
-+    // A replacement connection must repeat chain admission before it can supply data.
-+    let retries = if matches!(indexer_config, IndexerConfig::DevSignetElectrum { .. }) {
-+        0
-+    } else {
-+        INDEXER_RETRIES
-+    };
-     ConfigBuilder::new()
+-    ConfigBuilder::new()
 -        .retry(INDEXER_RETRIES)
-+        .retry(retries)
-         .timeout(Some(Duration::from_secs(INDEXER_TIMEOUT)))
-         .build()
+-        .timeout(Some(Duration::from_secs(INDEXER_TIMEOUT)))
+-        .build()
++pub(crate) fn electrum_config(
++    indexer_config: &IndexerConfig,
++    network: Option<BitcoinNetwork>,
++) -> ElectrumConfig {
++    let mut builder = ConfigBuilder::new()
++        .validate_domain(true)
++        .timeout(Some(Duration::from_secs(INDEXER_TIMEOUT)));
++    if let Some(network) = network {
++        let genesis = bitcoin::constants::genesis_block(bitcoin::Network::from(network));
++        let mut checkpoints = vec![(0, genesis.block_hash())];
++        if network == BitcoinNetwork::Signet {
++            let checkpoint = match indexer_config {
++                IndexerConfig::DevSignetElectrum { .. } => SignetCheckpoint::Dev,
++                _ => SignetCheckpoint::Public,
++            };
++            checkpoints.push((
++                1,
++                checkpoint.block_one().parse().expect("compiled Signet checkpoint"),
++            ));
++        }
++        // The Electrum client checks these on the actual replacement connection.
++        builder = builder.retry(0).chain_checkpoints(checkpoints);
++    } else {
++        // Indexer discovery does not supply wallet or resolver data.
++        builder = builder.retry(INDEXER_RETRIES);
++    }
++    builder.build()
  }
-@@ -596,6 +892,40 @@ pub(crate) fn esplora_config(indexer_url: &str) -> EsploraBuilder {
+ 
+ #[cfg(feature = "esplora_validation")]
+@@ -596,6 +917,40 @@ pub(crate) fn esplora_config(indexer_url: &str) -> EsploraBuilder {
          .timeout(INDEXER_TIMEOUT)
  }
-
+ 
 +#[cfg(feature = "esplora_validation")]
 +pub(crate) fn dev_esplora_client(indexer_url: &str) -> Result<EsploraClient, Error> {
 +    use crate::api::egress::wallet_http_client_for_network;
@@ -518,7 +547,7 @@ index f017780..0a46a2d 100644
  /// Validate the RGB consignment (transfer or contract) at the given path, without a wallet.
  ///
  /// The witness transactions are resolved with the indexer described by `indexer_config`, which
-@@ -642,7 +972,7 @@ pub fn validate_consignment(
+@@ -642,7 +997,7 @@ pub fn validate_consignment(
      min_confirmations: Option<u8>,
      options: &ValidationOptions,
  ) -> Result<ConsignmentValidation, Error> {
@@ -527,10 +556,10 @@ index f017780..0a46a2d 100644
      let resolver = get_resolver(indexer_config, options.bitcoin_network)?;
      let safe_height = min_confirmations
          .map(|min_confirmations| -> Result<_, Error> {
-@@ -867,11 +1197,11 @@ impl ResolveRejectList for RemoteRejectListResolver<'_> {
+@@ -862,11 +1217,11 @@ impl ResolveRejectList for RemoteRejectListResolver<'_> {
      }
  }
-
+ 
 -/// The wallet's on-chain witness resolver (the indexer-backed [`AnyResolver`]).
 +/// The wallet's on-chain witness resolver backed by the admitted indexer.
  #[cfg(feature = "_validation")]
@@ -539,12 +568,12 @@ index f017780..0a46a2d 100644
 -    pub(crate) inner: &'a AnyResolver,
 +    pub(crate) inner: &'a IndexerResolver,
  }
-
+ 
  #[cfg(feature = "_validation")]
-@@ -1334,12 +1664,325 @@ fn history_rejected(
+@@ -1350,12 +1705,325 @@ fn history_rejected(
      rejected[&start]
  }
-
+ 
 +#[cfg(all(test, feature = "esplora"))]
 +pub(crate) mod dev_signet_esplora_fixture {
 +    use super::*;
@@ -854,11 +883,11 @@ index f017780..0a46a2d 100644
 +}
 +
  #[cfg(all(test, feature = "electrum_validation"))]
- mod tests {
+ pub(crate) mod tests {
      use super::*;
-
+ 
      const GENESIS_HEADER_HEX: &str = "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c";
-
+ 
 +    #[cfg(feature = "electrum")]
 +    const DEV_HEADER: &str = "00000020f61eee3b63a380a477a063af32b2bbc97c9ff9f01f2c4225e973988108000000ff4f693674163783e85d4c1c57205c20804084d70447bd224cf95f8c08510f00fe1c8069ae77031e22260200";
 +    #[cfg(feature = "electrum")]
@@ -866,8 +895,8 @@ index f017780..0a46a2d 100644
 +
      /// Start a mock electrum server that accepts a single connection, refusing any further one,
      /// and answers the requests needed to check it can be reached, returning its URL.
-     fn start_single_connection_electrum_mock() -> String {
-@@ -1531,4 +2174,122 @@ mod tests {
+     pub(crate) fn start_single_connection_electrum_mock() -> String {
+@@ -1533,4 +2201,122 @@ pub(crate) mod tests {
          let reject_list = RejectList::from_decisions([(opout, true), (opout, false)]);
          assert!(reject_list.rejects(&opout) && !reject_list.allows(&opout));
      }
@@ -991,10 +1020,10 @@ index f017780..0a46a2d 100644
 +    }
  }
 diff --git a/src/utils.rs b/src/utils.rs
-index 15d547f..fd846e7 100644
+index bb1f6da1db204358afaeab41c91f93edd0505a55..ec018836c6da69e7d82aabb4b699c8b87c4ff13c 100644
 --- a/src/utils.rs
 +++ b/src/utils.rs
-@@ -496,13 +496,22 @@ pub(crate) fn check_proxy(
+@@ -491,13 +491,29 @@ pub(crate) fn check_proxy(
  pub(crate) fn get_indexer_and_resolver(
      indexer_config: &IndexerConfig,
      bitcoin_network: BitcoinNetwork,
@@ -1004,11 +1033,12 @@ index 15d547f..fd846e7 100644
 +
 +    let checkpoint = indexer_config.signet_checkpoint(bitcoin_network)?;
      #[cfg_attr(not(feature = "bitcoind"), allow(unused_mut))]
-     let mut indexer = build_indexer(indexer_config)?;
+-    let mut indexer = build_indexer(indexer_config)?;
 -    // this also checks connectivity (and credentials for bitcoind)
 -    indexer.block_hash(0).map_err(|e| Error::InvalidIndexer {
 -        details: unreachable_indexer_details(indexer_config, &e),
 -    })?;
++    let mut indexer = build_indexer_for_network(indexer_config, Some(bitcoin_network))?;
 +    // This also checks connectivity (and credentials for bitcoind).
 +    let header_hash = |height| {
 +        indexer
@@ -1018,11 +1048,33 @@ index 15d547f..fd846e7 100644
 +            })
 +    };
 +    let genesis = header_hash(0)?;
++    if bitcoin_network == BitcoinNetwork::Mainnet
++        && genesis != bitcoin::constants::genesis_block(bitcoin::Network::Bitcoin).block_hash().to_string()
++    {
++        return Err(Error::InvalidIndexer {
++            details: s!("the wallet indexer reports a different Bitcoin chain"),
++        });
++    }
 +    check_signet_indexer(checkpoint, &genesis, || header_hash(1))?;
      #[allow(irrefutable_let_patterns)]
      #[cfg(feature = "bitcoind")]
      if let Indexer::Bitcoind(client) = &mut indexer {
-@@ -533,25 +542,30 @@ pub(crate) fn build_indexer(indexer_config: &IndexerConfig) -> Result<Indexer, E
+@@ -515,6 +531,14 @@ pub(crate) fn get_indexer_and_resolver(
+ /// contacted the service yet, except for electrum, whose client connects on creation.
+ #[cfg(feature = "_online")]
+ pub(crate) fn build_indexer(indexer_config: &IndexerConfig) -> Result<Indexer, Error> {
++    build_indexer_for_network(indexer_config, None)
++}
++
++#[cfg(feature = "_online")]
++fn build_indexer_for_network(
++    indexer_config: &IndexerConfig,
++    #[cfg_attr(not(feature = "electrum"), allow(unused_variables))] network: Option<BitcoinNetwork>,
++) -> Result<Indexer, Error> {
+     match indexer_config {
+         #[cfg(feature = "bitcoind")]
+         IndexerConfig::Bitcoind { url, auth } => {
+@@ -528,25 +552,30 @@ pub(crate) fn build_indexer(indexer_config: &IndexerConfig) -> Result<Indexer, E
              })))
          }
          #[cfg(feature = "electrum")]
@@ -1031,7 +1083,7 @@ index 15d547f..fd846e7 100644
              let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
 -            let client = ElectrumClient::from_config(url, electrum_config()).map_err(|e| {
 -                Error::InvalidIndexer {
-+            let client = ElectrumClient::from_config(url, electrum_config(indexer_config))
++            let client = ElectrumClient::from_config(url, electrum_config(indexer_config, network))
 +                .map_err(|e| Error::InvalidIndexer {
                      details: unreachable_indexer_details(indexer_config, &e),
 -                }
@@ -1061,13 +1113,13 @@ index 15d547f..fd846e7 100644
              Err(Error::InvalidIndexer {
                  details: format!(
 diff --git a/src/wallet/core.rs b/src/wallet/core.rs
-index 614bbba..0ec6dd5 100644
+index 412551b8476bd2b67c37e22eeb2eea127ad6f811..c95083eebed4c2206a6f07baeeee5d9ca0340fa7 100644
 --- a/src/wallet/core.rs
 +++ b/src/wallet/core.rs
-@@ -564,12 +564,26 @@ pub trait WalletCore {
+@@ -580,12 +580,26 @@ pub trait WalletCore {
          &self.online_data().as_ref().unwrap().indexer
      }
-
+ 
 +    #[cfg(feature = "esplora")]
 +    fn check_dev_esplora_checkpoint(&self) -> Result<(), Error> {
 +        use crate::no_wallet::validation::{SignetCheckpoint, check_signet_indexer};
@@ -1092,10 +1144,10 @@ index 614bbba..0ec6dd5 100644
          }
          #[cfg(not(feature = "_online"))]
          {
-@@ -774,6 +788,9 @@ pub trait WalletCore {
+@@ -790,6 +804,9 @@ pub trait WalletCore {
      ) -> Result<(), Error> {
          debug!(self.logger(), "Syncing {:?}...", options);
-
+ 
 +        #[cfg(feature = "esplora")]
 +        self.check_dev_esplora_checkpoint()?;
 +
@@ -1103,10 +1155,10 @@ index 614bbba..0ec6dd5 100644
              SyncKeychain::Colored => self.reconcile_pending_witness(txn)?,
              SyncKeychain::Vanilla { .. } => HashMap::new(),
 diff --git a/src/wallet/mod.rs b/src/wallet/mod.rs
-index 5337281..1b7852c 100644
+index 74884eaa954536737607c373f5c58a80f385f1a0..d2a01b80affd6c83f6b1ea87f2504d21b3452acf 100644
 --- a/src/wallet/mod.rs
 +++ b/src/wallet/mod.rs
-@@ -56,7 +56,10 @@ pub use objects::{
+@@ -52,7 +52,10 @@ pub use objects::{
  };
  pub use offline::RgbWalletOpsOffline;
  #[cfg(feature = "_online")]
@@ -1116,13 +1168,13 @@ index 5337281..1b7852c 100644
 +#[cfg(feature = "esplora")]
 +pub use crate::no_wallet::validation::check_dev_esplora_tip;
  pub use singlesig::{SinglesigKeys, Wallet};
-
+ 
  pub(crate) use backup::WalletBackup;
 diff --git a/src/wallet/objects.rs b/src/wallet/objects.rs
-index b251dd1..2963522 100644
+index 5ef074dbe148ca4220664da09df87688dae344b3..79dfe60fd35f6aacae5722f5645c0ba905a515e3 100644
 --- a/src/wallet/objects.rs
 +++ b/src/wallet/objects.rs
-@@ -63,7 +63,7 @@ pub struct OnlineData {
+@@ -76,7 +76,7 @@ pub struct OnlineData {
      pub(crate) id: u64,
      pub(crate) indexer_config: IndexerConfig,
      pub(crate) indexer: Indexer,
@@ -1132,10 +1184,10 @@ index b251dd1..2963522 100644
      pub(crate) evm_chains: HashMap<u64, EvmChain>,
      // the RPC URLs of evm_chains, for what resolves claims and reject lists through them
 diff --git a/src/wallet/online.rs b/src/wallet/online.rs
-index d527bb0..fa40d01 100644
+index f724483a510892a65f1721fc4fe82d505c77785a..fd7a6018d608579c30b5adea451194edb0260908 100644
 --- a/src/wallet/online.rs
 +++ b/src/wallet/online.rs
-@@ -39,7 +39,7 @@ pub fn check_indexer_url(
+@@ -40,7 +40,7 @@ pub fn check_indexer_url(
                  s!("not a valid electrum nor esplora server")
              },
          })?;
@@ -1144,14 +1196,14 @@ index d527bb0..fa40d01 100644
          // the esplora config is a blind fallback guess (see detect_indexer), so an unreachable
          // esplora server means neither probed protocol answered
          match (&indexer_config, &e) {
-@@ -52,8 +52,15 @@ pub fn check_indexer_url(
+@@ -53,8 +53,15 @@ pub fn check_indexer_url(
              }
              _ => e,
          }
 -    })?;
 +    })
 +}
-
+ 
 +/// Check that the configured indexer and RGB resolver connect to the expected Bitcoin chain.
 +pub fn check_indexer_config(
 +    indexer_config: &IndexerConfig,
@@ -1160,10 +1212,10 @@ index d527bb0..fa40d01 100644
 +    get_indexer_and_resolver(indexer_config, bitcoin_network)?;
      Ok(indexer_config.protocol())
  }
-
-@@ -421,6 +428,9 @@ pub trait WalletOnline: WalletOffline {
+ 
+@@ -439,6 +446,9 @@ pub trait WalletOnline: WalletOffline {
      }
-
+ 
      fn broadcast_tx(&self, tx: BdkTransaction) -> Result<BdkTransaction, Error> {
 +        #[cfg(feature = "esplora")]
 +        self.check_dev_esplora_checkpoint()?;
