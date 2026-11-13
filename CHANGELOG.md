@@ -5,6 +5,17 @@ All notable changes to `@utexo/wdk-wallet-rgb` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0-alpha.24] — Unreleased
+
+- Use unmodified BFA.8 and stock Electrum/Esplora clients; remove custom upstream API dependencies from the adapter.
+- Enable NIA/CFA issuance on every supported RGB profile and preserve bridge configuration during consistency rescans.
+- Implement exact expired ordinary-invoice cancellation through the public library API.
+- Preserve exposed transaction inputs independently of ambiguous RGB transfer failure.
+- Check the configured Bitcoin chain at WDK network boundaries and retain operation identities across reconnects.
+- Report the missing standalone contract import API without blocking unrelated wallet operations.
+- Add native builds and packed desktop qualification for the supported Node/Bare target matrix.
+- Require Bare 1.37.1 or newer, including embedded mobile runtimes, and verify clean and existing-host dependency installs.
+
 ## [2.0.3] — 2026-01-28
 
 ### Changed

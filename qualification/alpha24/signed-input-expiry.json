@@ -1,0 +1,80 @@
+{
+  "identity": {
+    "version": "2.1.0-alpha.24",
+    "integrity": "sha512-Vw6zxVb8atz94ScfbaMoY7KlXKtBP4/jKUVzaVaVpprsLEpmUk7679GHiEdTM6Dj7WMRynwiZWpNWL9Jq00OPQ==",
+    "source": "2f7b21d8637baad548504ea870deb2c0d4d0a37d",
+    "tree": "5492824f3cf47b4c821dfca8b7a63fed27858486",
+    "nodeSha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94",
+    "bareSha256": "d94609b3e5c7ffd6046de2cc198cb519f202f0245ad02710697d14498552808f"
+  },
+  "phase": "passed",
+  "realExpiry": true,
+  "faultFixture": {
+    "senderProxy": "127.0.0.1:50891",
+    "retentionGraceSeconds": 0,
+    "recipientAcknowledged": false
+  },
+  "walletStateEdited": false,
+  "machineClockChanged": false,
+  "results": {
+    "node": {
+      "txid": "6d2e5a13f6fd1ff0ce18049d0214cefe5232461fefddf7cc92b629850563a996",
+      "exposure": {
+        "txid": "6d2e5a13f6fd1ff0ce18049d0214cefe5232461fefddf7cc92b629850563a996",
+        "kind": "rgb-send",
+        "inputs": [
+          "ed1f8fc452a99428b8b47c177c657e9a53139741fced07087511f2d28146b6f0:6",
+          "ed1f8fc452a99428b8b47c177c657e9a53139741fced07087511f2d28146b6f0:10",
+          "ed1f8fc452a99428b8b47c177c657e9a53139741fced07087511f2d28146b6f0:8"
+        ]
+      },
+      "emptyInputs": [
+        "ed1f8fc452a99428b8b47c177c657e9a53139741fced07087511f2d28146b6f0:8"
+      ],
+      "signedTransactionSha256": "7b15b3be5f132b377f2b6a28deeb081cfd4d7257b7360ba563ae632fd8b3590e",
+      "stockStatus": "Failed",
+      "recoverSend": "unresolved",
+      "duplicateRejected": true,
+      "replacementRejected": true,
+      "replacementReachedSignerApproval": false,
+      "niaIssuanceRejected": true,
+      "cfaIssuanceRejected": true,
+      "blindedReceiveRejected": true,
+      "freshWitnessReceiveAvailable": true,
+      "reservationSurvivesRestart": true,
+      "originalSignedTransactionStillAcceptedByBitcoin": true,
+      "confirmations": 6,
+      "claimScope": "Bitcoin acceptance only; no recipient ACK or RGB settlement assertion"
+    },
+    "bare": {
+      "txid": "77aafd19ebcdfcf5ede1b51eb5b8c0b49b8ab85da5d0faaecc586a65c851f43f",
+      "exposure": {
+        "txid": "77aafd19ebcdfcf5ede1b51eb5b8c0b49b8ab85da5d0faaecc586a65c851f43f",
+        "kind": "rgb-send",
+        "inputs": [
+          "0b5da93822058b1974ecd25adbed890728a6d9d82c52bd323274f9e251663536:8",
+          "0b5da93822058b1974ecd25adbed890728a6d9d82c52bd323274f9e251663536:7",
+          "0b5da93822058b1974ecd25adbed890728a6d9d82c52bd323274f9e251663536:0"
+        ]
+      },
+      "emptyInputs": [
+        "0b5da93822058b1974ecd25adbed890728a6d9d82c52bd323274f9e251663536:8"
+      ],
+      "signedTransactionSha256": "a3724dbd24faffd40bf921e0d6c901f44091bbdeb7e8fcaa88cc268b8ba56df7",
+      "stockStatus": "Failed",
+      "recoverSend": "unresolved",
+      "duplicateRejected": true,
+      "replacementRejected": true,
+      "replacementReachedSignerApproval": false,
+      "niaIssuanceRejected": true,
+      "cfaIssuanceRejected": true,
+      "blindedReceiveRejected": true,
+      "freshWitnessReceiveAvailable": true,
+      "reservationSurvivesRestart": true,
+      "originalSignedTransactionStillAcceptedByBitcoin": true,
+      "confirmations": 6,
+      "claimScope": "Bitcoin acceptance only; no recipient ACK or RGB settlement assertion"
+    }
+  },
+  "completedAt": "2026-11-13T11:57:37.291Z"
+}

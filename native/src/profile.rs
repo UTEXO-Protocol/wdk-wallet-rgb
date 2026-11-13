@@ -1,0 +1,363 @@
+// SPDX-License-Identifier: Apache-2.0
+use crate::engine::{Credentials, Result, input, validated_url};
+use rgb_lib::BitcoinNetwork;
+use rgb_lib::wallet::IndexerConfig;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+use std::sync::OnceLock;
+use zeroize::Zeroize;
+
+const SIGNET_ELECTRUM: &str = "ssl://electrum.iriswallet.com:50033";
+const MAINNET_ELECTRUM: &str = "ssl://electrum.iriswallet.com:50003";
+const DEV_SERVICES_JSON: &str = include_str!("../../src/onchain-dev-services.json");
+
+pub(crate) struct SignetServices {
+    pub(crate) proxy: &'static str,
+    pub(crate) arbitrum_rpc: &'static str,
+}
+
+const STAGING_SERVICES: SignetServices = SignetServices {
+    proxy: "rpcs://staging.rgb-proxy.utexo.com/json-rpc",
+    arbitrum_rpc: "https://arb1.arbitrum.io/rpc",
+};
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct DevServices {
+    enabled: bool,
+    indexer_url: &'static str,
+    proxy_endpoint: &'static str,
+    arbitrum_rpc: &'static str,
+}
+
+impl DevServices {
+    fn require_enabled(&self) -> Result<&Self> {
+        if !self.enabled {
+            return Err(input("Dev Signet hosted access is disabled."));
+        }
+        Ok(self)
+    }
+}
+
+fn dev_services() -> Result<&'static DevServices> {
+    static CONFIG: OnceLock<Option<DevServices>> = OnceLock::new();
+    CONFIG
+        .get_or_init(|| serde_json::from_str(DEV_SERVICES_JSON).ok())
+        .as_ref()
+        .ok_or_else(|| input("Dev Signet service policy is invalid."))
+}
+
+#[derive(Clone, Copy, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum Profile {
+    Public,
+    Staging,
+    Dev,
+}
+
+impl Profile {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::Public => "public",
+            Self::Staging => "staging",
+            Self::Dev => "dev",
+        }
+    }
+
+    pub(crate) fn bridge_services(self) -> Result<Option<SignetServices>> {
+        match self {
+            Self::Public => Ok(None),
+            Self::Staging => Ok(Some(STAGING_SERVICES)),
+            Self::Dev => {
+                let services = dev_services()?.require_enabled()?;
+                Ok(Some(SignetServices {
+                    proxy: services.proxy_endpoint,
+                    arbitrum_rpc: services.arbitrum_rpc,
+                }))
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum SignetCheckpoint {
+    Public,
+    Dev,
+}
+
+impl SignetCheckpoint {
+    pub(crate) fn block_one(self) -> &'static str {
+        match self {
+            Self::Public => "00000086d6b2636cb2a392d45edc4ec544a10024d30141c9adf4bfd9de533b53",
+            Self::Dev => "0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb",
+        }
+    }
+}
+
+pub(crate) fn signet_checkpoint(profile: Option<Profile>) -> SignetCheckpoint {
+    match profile {
+        Some(Profile::Dev) => SignetCheckpoint::Dev,
+        _ => SignetCheckpoint::Public,
+    }
+}
+
+pub(crate) fn version(source: &str, overlay: &str) -> Value {
+    json!({
+        "protocol": 2,
+        "source": source,
+        "overlayTree": overlay,
+        "integrationTree": "5492824f3cf47b4c821dfca8b7a63fed27858486",
+        "runtime": crate::RUNTIME,
+        "indexer": "electrum-and-dev-esplora",
+        "networkChecks": 6,
+        "contractRegistration": 0,
+        "exposedInputs": 1,
+        "unsignedRecovery": 1,
+        "journalWrites": 1,
+        "assetIssuance": 2,
+    })
+}
+
+pub(crate) fn indexer(
+    indexer_url: String,
+    auth: Option<Credentials>,
+    network: BitcoinNetwork,
+    profile: Option<Profile>,
+) -> Result<IndexerConfig> {
+    if let Some(mut auth) = auth {
+        auth.username.zeroize();
+        auth.password.zeroize();
+        return Err(input(
+            "Bitcoin Core credentials are not supported by this wallet.",
+        ));
+    }
+    let endpoint = indexer_url.strip_suffix('/').unwrap_or(&indexer_url);
+    match (network, profile) {
+        (BitcoinNetwork::Signet, Some(Profile::Dev)) => {
+            let approved = dev_services()?.require_enabled()?.indexer_url;
+            if endpoint != approved {
+                return Err(input(
+                    "Dev Signet requires the approved HTTPS Esplora endpoint.",
+                ));
+            }
+            return Ok(IndexerConfig::Esplora {
+                url: approved.into(),
+            });
+        }
+        (BitcoinNetwork::Signet, _) if endpoint == SIGNET_ELECTRUM => {
+            return Ok(IndexerConfig::Electrum {
+                url: SIGNET_ELECTRUM.into(),
+            });
+        }
+        (BitcoinNetwork::Mainnet, None) if endpoint == MAINNET_ELECTRUM => {
+            return Ok(IndexerConfig::Electrum {
+                url: MAINNET_ELECTRUM.into(),
+            });
+        }
+        (BitcoinNetwork::Regtest, None) => {}
+        _ => {
+            return Err(input(
+                "The wallet requires the approved indexer for its network and profile.",
+            ));
+        }
+    }
+    let url = validated_url(&indexer_url, &["ssl", "tcp"], true)?;
+    let (Some(host), Some(port)) = (url.host_str(), url.port()) else {
+        return Err(input(
+            "The Electrum endpoint requires an explicit host and port.",
+        ));
+    };
+    if !matches!(url.path(), "" | "/") {
+        return Err(input(
+            "The Electrum endpoint requires an explicit port and no path or query.",
+        ));
+    }
+    Ok(IndexerConfig::Electrum {
+        url: format!("{}://{host}:{port}", url.scheme()),
+    })
+}
+
+pub(crate) fn clear_indexer_credentials(_: &mut IndexerConfig) {}
+
+pub(crate) fn after_wallet_new() {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn admits_only_electrum_with_plain_tcp_restricted_to_regtest() {
+        let regtest = BitcoinNetwork::Regtest;
+        let signet = BitcoinNetwork::Signet;
+        assert!(indexer("tcp://127.0.0.1:48001".into(), None, regtest, None).is_ok());
+        assert_eq!(
+            indexer(format!("{SIGNET_ELECTRUM}/"), None, signet, None)
+                .unwrap()
+                .url(),
+            SIGNET_ELECTRUM
+        );
+        assert!(indexer(SIGNET_ELECTRUM.into(), None, regtest, None).is_err());
+        for url in [
+            "tcp://example.test:50001",
+            "tcp://electrum.iriswallet.com:50033",
+            "ssl://electrum.iriswallet.com:50033//",
+            "ssl://electrum.iriswallet.com:50033?",
+            "ssl://example.test",
+            "ssl://example.test:50002",
+            "ssl://example.test:50002/rpc",
+            "ssl://example.test:50002?timeout=0",
+            "ssl://name:pw@example.test:50002",
+            "https://example.test:443",
+            "http://127.0.0.1:8332",
+        ] {
+            assert!(
+                indexer(url.into(), None, signet, None).is_err(),
+                "accepted {url}"
+            );
+        }
+        let credentials = Credentials {
+            username: "user".into(),
+            password: "pass".into(),
+        };
+        assert!(
+            indexer(
+                "tcp://127.0.0.1:48001".into(),
+                Some(credentials),
+                regtest,
+                None
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn ordinary_public_networks_admit_only_their_own_tls_electrum() {
+        for (network, profile, approved, other) in [
+            (
+                BitcoinNetwork::Mainnet,
+                None,
+                MAINNET_ELECTRUM,
+                SIGNET_ELECTRUM,
+            ),
+            (
+                BitcoinNetwork::Signet,
+                Some(Profile::Public),
+                SIGNET_ELECTRUM,
+                MAINNET_ELECTRUM,
+            ),
+        ] {
+            for url in [approved.to_owned(), format!("{approved}/")] {
+                assert_eq!(
+                    indexer(url, None, network, profile).unwrap().url(),
+                    approved
+                );
+            }
+            for url in [
+                other,
+                "tcp://127.0.0.1:50001",
+                "https://esplora.example.com",
+            ] {
+                assert!(
+                    indexer(url.into(), None, network, profile).is_err(),
+                    "accepted {url}"
+                );
+            }
+        }
+        assert!(
+            indexer(
+                MAINNET_ELECTRUM.into(),
+                None,
+                BitcoinNetwork::Mainnet,
+                Some(Profile::Public)
+            )
+            .is_err()
+        );
+        assert!(Profile::Public.bridge_services().unwrap().is_none());
+    }
+
+    #[test]
+    fn dev_admits_only_pinned_services_and_its_own_esplora_checkpoint() {
+        const DEV_ESPLORA: &str = "https://dev.esplora-01.mint.utexo.com";
+        let services = dev_services().unwrap();
+        assert_eq!(services.indexer_url, DEV_ESPLORA);
+        assert_eq!(
+            services.proxy_endpoint,
+            "rpcs://dev.rgb-proxy.utexo.com/json-rpc"
+        );
+        assert_eq!(services.arbitrum_rpc, "https://arb1.arbitrum.io/rpc");
+        let active = Profile::Dev.bridge_services().unwrap().unwrap();
+        assert_eq!(active.proxy, services.proxy_endpoint);
+        assert_eq!(active.arbitrum_rpc, services.arbitrum_rpc);
+        assert_eq!(
+            signet_checkpoint(Some(Profile::Dev)).block_one(),
+            "0000001b808e4ece11c0cd922eaf9eee8d7dfba7e23e90b4f9614248daaf72cb"
+        );
+        assert_ne!(
+            signet_checkpoint(Some(Profile::Dev)).block_one(),
+            signet_checkpoint(Some(Profile::Staging)).block_one()
+        );
+        for url in [DEV_ESPLORA.into(), format!("{DEV_ESPLORA}/")] {
+            assert!(matches!(
+                indexer(url, None, BitcoinNetwork::Signet, Some(Profile::Dev)).unwrap(),
+                IndexerConfig::Esplora { url } if url == DEV_ESPLORA
+            ));
+        }
+        for url in [
+            "http://dev.esplora-01.mint.utexo.com",
+            "https://dev.esplora-01.mint.utexo.com/redirect",
+            "https://dev.esplora-01.mint.utexo.com?",
+            "https://other.example",
+        ] {
+            assert!(indexer(url.into(), None, BitcoinNetwork::Signet, Some(Profile::Dev)).is_err());
+        }
+        assert!(
+            indexer(
+                DEV_ESPLORA.into(),
+                None,
+                BitcoinNetwork::Signet,
+                Some(Profile::Staging)
+            )
+            .is_err()
+        );
+        assert!(
+            indexer(
+                SIGNET_ELECTRUM.into(),
+                None,
+                BitcoinNetwork::Signet,
+                Some(Profile::Dev)
+            )
+            .is_err()
+        );
+        assert!(
+            indexer(
+                "ssl://127.0.0.1:48002".into(),
+                None,
+                BitcoinNetwork::Signet,
+                Some(Profile::Dev)
+            )
+            .is_err()
+        );
+        assert!(
+            indexer(
+                "tcp://127.0.0.1:48001".into(),
+                None,
+                BitcoinNetwork::Regtest,
+                Some(Profile::Dev)
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn a_disabled_dev_service_policy_cannot_return_active_endpoints() {
+        let config: DevServices = serde_json::from_str(
+            r#"{
+            "enabled":false,
+            "indexerUrl":"https://dev-esplora.example",
+            "proxyEndpoint":"rpcs://dev-proxy.example/json-rpc",
+            "arbitrumRpc":"https://arb.example/rpc"
+        }"#,
+        )
+        .unwrap();
+        assert!(config.require_enabled().is_err());
+    }
+}

@@ -1,0 +1,532 @@
+{
+  "date": "2026-11-13",
+  "rustAuditDatabase": {
+    "advisory-count": 1490,
+    "last-commit": "af7b3ec33460b8e2de8d422e16d628518891a519",
+    "last-updated": "2026-11-12T15:21:59+01:00"
+  },
+  "nativeLockSha256": "fb3683817ff79f58fb7475065804433dd7dbf3b7eaff62a51cc111eaa93e23f8",
+  "bareLockSha256": "fdc48289868bc51ad9772a764fe79970782fd97b35f11f91d30b8c3bbfedb830",
+  "vulnerabilities": {
+    "found": true,
+    "count": 8,
+    "list": [
+      {
+        "advisory": {
+          "id": "RUSTSEC-2026-0459",
+          "package": "libsqlite3-sys",
+          "title": "`libsqlite3-sys` via C SQLite CVE-2026-119375",
+          "description": "SQLite versions before 3.54.0 can return uninitialized page-cache memory when a process opens a database file together with a sibling write-ahead-log (`-wal`) file whose page size differs from the database's. A crafted pair of files can make ordinary queries return stale bytes from the process's memory. The attack vector is local and needs the victim to open the files.\n\nAs `libsqlite3-sys` bundles SQLite when it is built from its bundled source (the `bundled` feature, which `rusqlite`'s `bundled` feature enables), it is susceptible to the vulnerability. The releases `0.6.0` to `0.38.2` bundle SQLite `3.13.0` to `3.53.2` and are affected; the earlier releases contain no SQLite source. `libsqlite3-sys` was updated to bundle the patched version of SQLite in `0.39.0` (SQLite `3.54.0`) and `0.39.1` (SQLite `3.54.1`), released with [`rusqlite` 0.41](https://github.com/rusqlite/rusqlite/releases/tag/v0.41.0). `libsqlite3-sys` `0.39` declares Rust 1.88 and `rusqlite` `0.41` declares Rust 1.89.\n\nOnly a process that opens a database file, with its `-wal`, that a less trusted party could have written is exposed. A build that links a system SQLite instead of the bundled source is not affected by the copy in this crate; its exposure is that of the system library's version. The `bundled-sqlcipher` feature builds SQLCipher instead of SQLite; in `0.39.0` and `0.39.1` it depends on `sqlcipher-src =419.0.6`, which bundles SQLite `3.53.4` and is affected.",
+          "date": "2026-10-30",
+          "aliases": [
+            "CVE-2026-119375",
+            "GHSA-72w2-rjgg-q729"
+          ],
+          "related": [],
+          "collection": "crates",
+          "categories": [
+            "memory-exposure"
+          ],
+          "keywords": [
+            "sqlite",
+            "wal",
+            "uninitialized-memory",
+            "information-disclosure"
+          ],
+          "cvss": "CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:P/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+          "informational": null,
+          "references": [
+            "https://sqlite.org/bugs/info/2026-08-17T15:54:41Z",
+            "https://github.com/sqlite/sqlite/commit/e5bf119821f25be1d7f10ef0a2edbe175289166e",
+            "https://sqlite.org/releaselog/3_54_0.html",
+            "https://github.com/rusqlite/rusqlite/releases/tag/v0.41.0"
+          ],
+          "source": null,
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-119375",
+          "withdrawn": null,
+          "license": "CC0-1.0",
+          "expect-deleted": false
+        },
+        "versions": {
+          "patched": [
+            ">=0.39.0"
+          ],
+          "unaffected": [
+            "<0.6.0"
+          ]
+        },
+        "affected": null,
+        "package": {
+          "name": "libsqlite3-sys",
+          "version": "0.37.0",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "b1f111c8c41e7c61a49cd34e44c7619462967221a6443b0ec299e0ac30cfb9b1",
+          "dependencies": [
+            {
+              "name": "cc",
+              "version": "1.11.0",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "pkg-config",
+              "version": "0.3.34",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "vcpkg",
+              "version": "0.2.15",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            }
+          ],
+          "replace": null
+        }
+      },
+      {
+        "advisory": {
+          "id": "RUSTSEC-2026-0346",
+          "package": "rustls",
+          "title": "`Debug` impls for client session values expose TLS secrets",
+          "description": "The `Debug` implementations of `Tls12ClientSessionValue` and\n`Tls13ClientSessionValue` were derived, and so included the TLS 1.2 master\nsecret or TLS 1.3 resumption PSK in their output.\n\nCustom `ClientSessionStore` implementations that format these values with\n`Debug` (for example, when logging) could disclose these secrets to readers of\nthe logs. This conflicts with rustls's\n[key-material redaction policy](https://github.com/rustls/rustls/blob/99f2358cae2954837dbb866faf6727de75489ab9/SECURITY.md#boundary-public-api).\n\nOrdinary connection and built-in session cache `Debug` output is redacted and\nis not affected.",
+          "date": "2026-10-14",
+          "aliases": [
+            "CVE-2026-123609",
+            "GHSA-c8m5-c952-6cm4"
+          ],
+          "related": [],
+          "collection": "crates",
+          "categories": [
+            "crypto-failure"
+          ],
+          "keywords": [],
+          "cvss": "CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:U/C:H/I:N/A:N",
+          "informational": null,
+          "references": [],
+          "source": null,
+          "url": "https://github.com/rustls/rustls/pull/3299",
+          "withdrawn": null,
+          "license": "CC0-1.0",
+          "expect-deleted": false
+        },
+        "versions": {
+          "patched": [
+            ">=0.23.46"
+          ],
+          "unaffected": [
+            "<0.21.0"
+          ]
+        },
+        "affected": null,
+        "package": {
+          "name": "rustls",
+          "version": "0.21.12",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "3f56a14d1f48b391359b22f731fd4bd7e43c97f3c50eee276f3aa09c94784d3e",
+          "dependencies": [
+            {
+              "name": "log",
+              "version": "0.4.35",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "ring",
+              "version": "0.17.14",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "rustls-webpki",
+              "version": "0.101.7",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "sct",
+              "version": "0.7.1",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            }
+          ],
+          "replace": null
+        }
+      },
+      {
+        "advisory": {
+          "id": "RUSTSEC-2026-0349",
+          "package": "rustls",
+          "title": "Unauthenticated ServerHello can downgrade later connections to classical key exchange",
+          "description": "The client recorded the server-selected key exchange group for each server\nname when processing the ServerHello, before the server was authenticated.\nThis record is used to predict which key share to send in future ClientHellos\nto that server name.\n\nA network attacker can answer one connection attempt with a ServerHello\nselecting X25519, and then close the connection. Later ClientHellos for that\nname carry only an X25519 key share, while `supported_groups` still lists\nX25519MLKEM768 first. If the genuine server accepts that share rather than\nsending a HelloRetryRequest for its preferred hybrid group, the handshake\ncompletes with classical-only key exchange and no error. This persists for as\nlong as the entry stays in the client's session store.\n\nThe impact is loss of post-quantum confidentiality for affected connections\n(\"harvest now, decrypt later\"). There is no key compromise and no\nauthentication bypass.\n\nThe following are not affected:\n\n- connections to servers which send a HelloRetryRequest for their preferred group,\n- clients with resumption disabled (as nothing is stored), and\n- other server names.\n\nThis behaviour is discussed in\n[draft-ietf-tls-key-share-prediction](https://www.ietf.org/archive/id/draft-ietf-tls-key-share-prediction-01.html#name-security-considerations),\nso the practical impact depends largely on server policy.",
+          "date": "2026-10-14",
+          "aliases": [
+            "CVE-2026-123611",
+            "GHSA-w44r-93j7-qv28"
+          ],
+          "related": [],
+          "collection": "crates",
+          "categories": [
+            "crypto-failure"
+          ],
+          "keywords": [],
+          "cvss": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N",
+          "informational": null,
+          "references": [],
+          "source": null,
+          "url": "https://github.com/rustls/rustls/pull/3355",
+          "withdrawn": null,
+          "license": "CC0-1.0",
+          "expect-deleted": false
+        },
+        "versions": {
+          "patched": [
+            ">=0.23.46"
+          ],
+          "unaffected": []
+        },
+        "affected": null,
+        "package": {
+          "name": "rustls",
+          "version": "0.21.12",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "3f56a14d1f48b391359b22f731fd4bd7e43c97f3c50eee276f3aa09c94784d3e",
+          "dependencies": [
+            {
+              "name": "log",
+              "version": "0.4.35",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "ring",
+              "version": "0.17.14",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "rustls-webpki",
+              "version": "0.101.7",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "sct",
+              "version": "0.7.1",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            }
+          ],
+          "replace": null
+        }
+      },
+      {
+        "advisory": {
+          "id": "RUSTSEC-2026-0104",
+          "package": "rustls-webpki",
+          "title": "Reachable panic in certificate revocation list parsing",
+          "description": "A panic was reachable when parsing certificate revocation lists via [`BorrowedCertRevocationList::from_der`]\nor [`OwnedCertRevocationList::from_der`].  This was the result of mishandling a syntactically valid empty\n`BIT STRING` appearing in the `onlySomeReasons` element of a `IssuingDistributionPoint` CRL extension.\n\nThis panic is reachable prior to a CRL's signature being verified.\n\nApplications that do not use CRLs are not affected.\n\nThank you to [@tynus3](https://github.com/tynus3) for the report.",
+          "date": "2026-04-22",
+          "aliases": [
+            "CVE-2026-93599",
+            "GHSA-82j2-j2ch-gfr8"
+          ],
+          "related": [],
+          "collection": "crates",
+          "categories": [
+            "denial-of-service"
+          ],
+          "keywords": [
+            "crl",
+            "certificate revocation list",
+            "x509"
+          ],
+          "cvss": null,
+          "informational": null,
+          "references": [],
+          "source": null,
+          "url": null,
+          "withdrawn": null,
+          "license": "CC0-1.0",
+          "expect-deleted": false
+        },
+        "versions": {
+          "patched": [
+            ">=0.103.13, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.7"
+          ],
+          "unaffected": []
+        },
+        "affected": null,
+        "package": {
+          "name": "rustls-webpki",
+          "version": "0.101.7",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "8b6275d1ee7a1cd780b64aca7726599a1dbc893b1e64144529e55c3c2f745765",
+          "dependencies": [
+            {
+              "name": "ring",
+              "version": "0.17.14",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "untrusted",
+              "version": "0.9.0",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            }
+          ],
+          "replace": null
+        }
+      },
+      {
+        "advisory": {
+          "id": "RUSTSEC-2026-0098",
+          "package": "rustls-webpki",
+          "title": "Name constraints for URI names were incorrectly accepted",
+          "description": "Name constraints for URI names were ignored and therefore accepted.\n\nNote this library does not provide an API for asserting URI names, and URI name constraints are otherwise not implemented.  URI name constraints are now rejected unconditionally.\n\nSince name constraints are restrictions on otherwise properly-issued certificates, this bug is reachable only after signature verification and requires misissuance to exploit.\n\nThis vulnerability is identified as [GHSA-965h-392x-2mh5](https://github.com/rustls/webpki/security/advisories/GHSA-965h-392x-2mh5). Thank you to [@1seal](https://github.com/1seal) for the report.",
+          "date": "2026-04-14",
+          "aliases": [
+            "CVE-2026-93600",
+            "GHSA-965h-392x-2mh5"
+          ],
+          "related": [],
+          "collection": "crates",
+          "categories": [],
+          "keywords": [
+            "name constraints",
+            "x509"
+          ],
+          "cvss": null,
+          "informational": null,
+          "references": [],
+          "source": null,
+          "url": null,
+          "withdrawn": null,
+          "license": "CC0-1.0",
+          "expect-deleted": false
+        },
+        "versions": {
+          "patched": [
+            ">=0.103.12, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.6"
+          ],
+          "unaffected": []
+        },
+        "affected": null,
+        "package": {
+          "name": "rustls-webpki",
+          "version": "0.101.7",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "8b6275d1ee7a1cd780b64aca7726599a1dbc893b1e64144529e55c3c2f745765",
+          "dependencies": [
+            {
+              "name": "ring",
+              "version": "0.17.14",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "untrusted",
+              "version": "0.9.0",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            }
+          ],
+          "replace": null
+        }
+      },
+      {
+        "advisory": {
+          "id": "RUSTSEC-2026-0099",
+          "package": "rustls-webpki",
+          "title": "Name constraints were accepted for certificates asserting a wildcard name",
+          "description": "Permitted subtree name constraints for DNS names were accepted for certificates asserting a wildcard name.\n\nThis was incorrect because, given a name constraint of `accept.example.com`, `*.example.com` could feasibly allow a name of `reject.example.com` which is outside the constraint.\nThis is very similar to [CVE-2025-61727](https://go.dev/issue/76442).\n\nSince name constraints are restrictions on otherwise properly-issued certificates, this bug is reachable only after signature verification and requires misissuance to exploit.\n\nThis vulnerability is identified as [GHSA-xgp8-3hg3-c2mh](https://github.com/rustls/webpki/security/advisories/GHSA-xgp8-3hg3-c2mh). Thank you to [@1seal](https://github.com/1seal) for the report.",
+          "date": "2026-04-14",
+          "aliases": [
+            "CVE-2026-93601",
+            "GHSA-xgp8-3hg3-c2mh"
+          ],
+          "related": [],
+          "collection": "crates",
+          "categories": [],
+          "keywords": [
+            "name constraints",
+            "x509"
+          ],
+          "cvss": null,
+          "informational": null,
+          "references": [],
+          "source": null,
+          "url": null,
+          "withdrawn": null,
+          "license": "CC0-1.0",
+          "expect-deleted": false
+        },
+        "versions": {
+          "patched": [
+            ">=0.103.12, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.6"
+          ],
+          "unaffected": []
+        },
+        "affected": null,
+        "package": {
+          "name": "rustls-webpki",
+          "version": "0.101.7",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "8b6275d1ee7a1cd780b64aca7726599a1dbc893b1e64144529e55c3c2f745765",
+          "dependencies": [
+            {
+              "name": "ring",
+              "version": "0.17.14",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "untrusted",
+              "version": "0.9.0",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            }
+          ],
+          "replace": null
+        }
+      },
+      {
+        "advisory": {
+          "id": "RUSTSEC-2026-0382",
+          "package": "rustls-webpki",
+          "title": "Certificate verification may accept distrusted intermediates",
+          "description": "Affected versions may accept certificate paths containing distrusted emSign\nintermediate public keys when the configured trust anchors allow such paths.\nThe private keys corresponding to these intermediates are now well known.\n\nVersions 0.103.16 and 0.104.0-alpha.8 reject paths containing these public keys.",
+          "date": "2026-10-20",
+          "aliases": [
+            "CVE-2026-111943"
+          ],
+          "related": [],
+          "collection": "crates",
+          "categories": [
+            "crypto-failure"
+          ],
+          "keywords": [
+            "certificate",
+            "distrust",
+            "x509"
+          ],
+          "cvss": null,
+          "informational": null,
+          "references": [
+            "https://emudhra.we-have-a-problem.com/",
+            "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449"
+          ],
+          "source": null,
+          "url": "https://github.com/rustls/webpki/pull/546",
+          "withdrawn": null,
+          "license": "CC0-1.0",
+          "expect-deleted": false
+        },
+        "versions": {
+          "patched": [
+            ">=0.103.16, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.8"
+          ],
+          "unaffected": []
+        },
+        "affected": null,
+        "package": {
+          "name": "rustls-webpki",
+          "version": "0.101.7",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "8b6275d1ee7a1cd780b64aca7726599a1dbc893b1e64144529e55c3c2f745765",
+          "dependencies": [
+            {
+              "name": "ring",
+              "version": "0.17.14",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            },
+            {
+              "name": "untrusted",
+              "version": "0.9.0",
+              "source": "registry+https://github.com/rust-lang/crates.io-index"
+            }
+          ],
+          "replace": null
+        }
+      },
+      {
+        "advisory": {
+          "id": "RUSTSEC-2026-0381",
+          "package": "webpki-roots",
+          "title": "Bundled root certificates allow trust in distrusted emSign intermediates",
+          "description": "Affected versions include `emSign ECC Root CA - G3`, which can allow certificate\npaths through distrusted emSign intermediates.\n\nAffected versions may accept certificate paths containing distrusted emSign\nintermediate public keys. The private keys corresponding to these intermediates\nare now well known.\n\nVersion 1.0.10+ removes this root.\n\nThe `webpki-roots` 0.26.11 compatibility package contains no independent trust\nstore and re-exports the roots from its separately resolved 1.x dependency.\nThat parent dependency must resolve to 1.0.10 or newer; an older parent remains\naffected by this advisory.",
+          "date": "2026-10-19",
+          "aliases": [
+            "CVE-2026-111943"
+          ],
+          "related": [],
+          "collection": "crates",
+          "categories": [
+            "crypto-failure"
+          ],
+          "keywords": [
+            "certificate",
+            "distrust",
+            "x509"
+          ],
+          "cvss": null,
+          "informational": null,
+          "references": [
+            "https://emudhra.we-have-a-problem.com/",
+            "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449"
+          ],
+          "source": null,
+          "url": "https://github.com/rustls/webpki-roots/pull/133",
+          "withdrawn": null,
+          "license": "CC0-1.0",
+          "expect-deleted": false
+        },
+        "versions": {
+          "patched": [
+            ">=1.0.10"
+          ],
+          "unaffected": [
+            "=0.26.11"
+          ]
+        },
+        "affected": null,
+        "package": {
+          "name": "webpki-roots",
+          "version": "0.25.4",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1",
+          "replace": null
+        }
+      }
+    ]
+  },
+  "warnings": {
+    "unmaintained": [
+      {
+        "kind": "unmaintained",
+        "package": {
+          "name": "unsafe-libyaml",
+          "version": "0.2.11",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861",
+          "replace": null
+        },
+        "advisory": {
+          "id": "RUSTSEC-2024-0449",
+          "package": "unsafe-libyaml",
+          "title": "unsafe-libyaml is unmaintained",
+          "description": "The [repository](https://github.com/dtolnay/unsafe-libyaml) was archived by\nits owner on 2024-03-25 and is read-only. The last release is 0.2.11\n(March 2024).\n\n`unsafe-libyaml` is a machine translation of libyaml's C code into unsafe\nRust (c2rust). Bugs found in it will not be fixed upstream. It is used by\n`serde_yaml` (itself deprecated) and by forks such as `serde_yaml_ng`.\n\n## Alternatives\n\nConsider a YAML parser written in safe Rust, for example:\n\n- [saphyr](https://crates.io/crates/saphyr) ([serde-saphyr](https://crates.io/crates/serde-saphyr) for serde users)\n- [noyalib](https://crates.io/crates/noyalib)",
+          "date": "2024-03-25",
+          "aliases": [],
+          "related": [],
+          "collection": "crates",
+          "categories": [],
+          "keywords": [],
+          "cvss": null,
+          "informational": "unmaintained",
+          "references": [],
+          "source": null,
+          "url": "https://github.com/dtolnay/unsafe-libyaml",
+          "withdrawn": null,
+          "license": "CC0-1.0",
+          "expect-deleted": false
+        },
+        "affected": null,
+        "versions": {
+          "patched": [],
+          "unaffected": []
+        }
+      }
+    ]
+  },
+  "runtimeNpmVulnerabilities": 0,
+  "assessment": "See QUALIFICATION.md for reachability and compatible-upgrade limits. Functional acceptance does not close these dependency findings."
+}

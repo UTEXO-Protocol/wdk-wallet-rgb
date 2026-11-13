@@ -1,0 +1,99 @@
+{
+  "passed": true,
+  "sourceCommit": "b550b504ebde2274b9a3c506a2b935324c481728",
+  "packageVersion": "2.1.0-alpha.24",
+  "packSha256": "c2ecdef68aa785bbad12d6df72b5d96febe8a84595fc658e732fca9a5337ed01",
+  "installedPackFilesChecked": 25,
+  "runtimes": {
+    "bare": {
+      "mintTxid": "94b97810f74e0fce020423bfe3ee3bd4959c0aa4175871195a59d76aed2b3157",
+      "burns": [
+        {
+          "route": "Polygon",
+          "txid": "9030958e7789c9c3c62b3e5cd2c9a541dd784c488959b3a862725ea6126c295a",
+          "proofSha256": "66ba8819c660b1b1b2a5a6092e897571ad43ccc8a4696fd3a25c924841f80094",
+          "processRestarts": 1
+        },
+        {
+          "route": "Ethereum",
+          "txid": "2f86775766c6ed1a030e0e739f86eeea609993b355d39b73a3f36fdfe57b0f76",
+          "proofSha256": "0687bb94db5407e0843a1eecfda9dd5577bf08811bb67f9833faaac9dba30755",
+          "processRestarts": 2
+        },
+        {
+          "route": "Arbitrum",
+          "txid": "4b2c728e0bf0c5bd614902950dcb045e081f52b619dbabfe37d8c012e3e7285d",
+          "proofSha256": "3af188882a8372e974ed7f3209a766124dfb776309fa4f66a93ccd8ce28d12cc",
+          "processRestarts": 3
+        },
+        {
+          "route": "Plasma",
+          "txid": "2c1e35487d68223f0b3c52a79b9f49915e57586149f7115e4473f075b69bea8c",
+          "proofSha256": "2058e1c512666dc3e3af12367198f8eefbd17fa117fb7c90094aacb4574b64e1",
+          "processRestarts": 4
+        },
+        {
+          "route": "Tron",
+          "txid": "04e238b56c2ffe648f56f64f9bfa22806471e0077891642dd71ff181ef217172",
+          "proofSha256": "d4f3a75a8fe3815c71b7d47c0900f2f47a0ee6f601379fdf450ee427af380956",
+          "processRestarts": 5
+        }
+      ],
+      "nativeSha256": "d94609b3e5c7ffd6046de2cc198cb519f202f0245ad02710697d14498552808f"
+    },
+    "node": {
+      "mintTxid": "a0a943fdc0b86999f6a307283e9c2240db0dc85700a5b66ddc0ff6f5c6ddde17",
+      "burns": [
+        {
+          "route": "Polygon",
+          "txid": "30bc4b1add6b825aebd648d6e147dd2b8e394a42c4de4f4cbb1b607d408ea4fc",
+          "proofSha256": "5aacda593994ff6a8759d290c3ec5ba4c6f61ec8c6a64277909abaa7f87633d6",
+          "processRestarts": 1
+        },
+        {
+          "route": "Ethereum",
+          "txid": "e631769a9aa173560650b29dd408419ca8d218d23a38df36e40bad817ed33cfe",
+          "proofSha256": "85dce35d07c15586c2456146dd326718d3b47688c8588b61b715750d2da3b1fc",
+          "processRestarts": 2
+        },
+        {
+          "route": "Arbitrum",
+          "txid": "aa052b307969a29269d8856da74bda4b5fd59835195787d33a0133ee0cedb768",
+          "proofSha256": "130ec08d3919f1ad8df0f1f60b9d4be1b84bd3be49023282844bbb6c0b473768",
+          "processRestarts": 3
+        },
+        {
+          "route": "Plasma",
+          "txid": "adb0201648e7dea89cf8a7d568229071f62a13322efcc23fcdfe25dab0f653a6",
+          "proofSha256": "a4ce05436df8ada947ef04476d12c0f6aa7789ae2c11693eab8f2f293847b4ae",
+          "processRestarts": 4
+        },
+        {
+          "route": "Tron",
+          "txid": "cefdb210ce42d4d1924173560516639cdd03b340c25987bf8f986fcebe2cfb53",
+          "proofSha256": "e09367798954b3643f08f3354f2ae81e6b14ef30b7642031badcc3b7e8e26a85",
+          "processRestarts": 5
+        }
+      ],
+      "nativeSha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94"
+    }
+  },
+  "scope": [
+    "actual generic first-receive BFA mint through isolated local proxy and chains",
+    "all five V1 destination commitments independently checked with Foundry",
+    "actual funded burn and consignment validation by independent issuer",
+    "post-native-End final-journal failure and full peer-process restart",
+    "same request recovers original txid and proof without native Begin/End replay",
+    "wrong endpoint rejected before approval and foreign topic proof denied"
+  ],
+  "limitations": [
+    "No hosted bridge was operated and no hosted payout was executed.",
+    "Local issuer uses compatible BFA.7 source 9ec49c0; wallet runtime uses unmodified BFA.8 2f7b21d.",
+    "Standalone contract registration remains unavailable; mint used generic unknown-asset receive.",
+    "Journal failure is injected after native End; peer restart is orderly, not a random process crash."
+  ],
+  "harnessSha256": {
+    "qualify-packed-routes.mjs": "9682e2b333f1ba0c76d7493bab82b20a24ae210a904a413e1ba16675f7f8b247",
+    "bridge-rpc-peer.mjs": "88dab17b185782b4c1ad83b6ce354de61759b5af533546faaefd390fc3203bf8"
+  }
+}

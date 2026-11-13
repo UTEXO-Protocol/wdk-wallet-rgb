@@ -1,7 +1,7 @@
 {
   "name": "@utexo/wdk-wallet-rgb",
-  "version": "2.0.0",
-  "description": "A simple package to manage wallets for RGB.",
+  "version": "2.1.0-alpha.24",
+  "description": "Isolated on-chain RGB wallet candidate for WDK.",
   "keywords": [
     "wdk",
     "wallet",
@@ -14,56 +14,77 @@
     "type": "git",
     "url": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb.git"
   },
-  "main": "index.js",
+  "main": "./onchain.js",
   "type": "module",
-  "types": "./types",
+  "addon": true,
+  "types": "./onchain.d.ts",
   "scripts": {
-    "build:types": "tsc",
-    "lint": "standard --env jest",
-    "lint:fix": "standard --fix --env jest",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
+    "test": "node --test tests-onchain/*.test.js",
+    "check:types": "tsc -p tsconfig.onchain.json"
   },
   "dependencies": {
-    "@scure/base": "^1.2.4",
-    "@scure/bip32": "1.7.0",
-    "@tetherto/wdk-wallet": "^1.0.0-beta.10",
-    "@utexo/rgb-lib-bare": "^0.3.0-beta.18",
-    "@utexo/rgb-sdk": "https://github.com/Jainakin/rgb-sdk#f560ae4",
-    "@utexo/rgb-sdk-core": "^1.0.0-beta.4",
-    "bare-node-runtime": "1.2.0",
-    "bip39": "3.1.0",
-    "sodium-universal": "5.0.1"
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "@scure/base": "2.4.0",
+    "@scure/bip32": "2.4.0",
+    "@scure/btc-signer": "2.4.1",
+    "@tetherto/wdk-wallet": "1.0.0-beta.25",
+    "bare-fs": "4.8.4",
+    "bare-path": "3.1.2",
+    "bare-timers": "3.2.4",
+    "bare-url": "2.5.5",
+    "bare-worker": "4.5.3"
   },
   "devDependencies": {
-    "cross-env": "7.0.3",
-    "jest": "29.7.0",
-    "standard": "17.1.2",
-    "typescript": "5.8.3"
+    "@tetherto/wdk": "1.0.0-beta.23",
+    "bare": "1.37.1",
+    "bare-pack": "3.0.2",
+    "bare-runtime": "1.37.1",
+    "typescript": "7.0.2"
   },
   "exports": {
     ".": {
-      "types": "./types/index.d.ts",
-      "bare": "./bare.js",
-      "default": "./index.js"
+      "types": "./onchain.d.ts",
+      "bare": "./onchain.js",
+      "node": "./onchain.js"
     },
-    "./package": {
-      "default": "./package.json"
+    "./package": "./package.json",
+    "./webrgb": {
+      "types": "./webrgb-onchain.d.ts",
+      "react-native": "./src/onchain-webrgb.js",
+      "bare": "./src/onchain-webrgb.js",
+      "node": "./src/onchain-webrgb.js"
     }
   },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
+  "private": true,
+  "engines": {
+    "node": "^22.21.0 || >=24.9.0",
+    "bare": ">=1.37.1"
   },
-  "jest": {
-    "moduleNameMapper": {
-      "^@utexo/rgb-lib-bare$": "<rootDir>/tests/__mocks__/rgb-lib-bare.mjs"
+  "files": [
+    "onchain.js",
+    "onchain.d.ts",
+    "src/onchain-*.js",
+    "src/burn-destination.js",
+    "CANDIDATE.md",
+    "src/onchain-bare-thread.cjs",
+    "src/onchain-bare-native.json",
+    "src/onchain-dev-services.json",
+    "prebuilds/*/utexo__wdk-wallet-rgb.bare",
+    "webrgb-onchain.d.ts"
+  ],
+  "imports": {
+    "#onchain-webrgb-url": {
+      "bare": "./src/onchain-io-bare.js",
+      "default": "./src/onchain-webrgb-url.js"
+    },
+    "#onchain-io": {
+      "bare": "./src/onchain-io-bare.js",
+      "node": "./src/onchain-io-node.js"
+    },
+    "#onchain-worker": {
+      "bare": "./src/onchain-bare-worker.js",
+      "node": "./src/onchain-worker.js"
     }
-  },
-  "standard": {
-    "ignore": [
-      "bare.js",
-      "tests/**/*.js"
-    ]
   }
 }

@@ -1,35 +1,346 @@
-name: Build and Test
+name: SDK checks
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev]
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
+
+  workflow_dispatch:
+    inputs:
+      enable_native:
+        description: Build and exercise the complete native target matrix
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  javascript:
+    name: Node ${{ matrix.node }}
     runs-on: ubuntu-latest
-
-    steps: 
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22.23.4', '24.22.2']
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: '22'
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-      
-      - name: Install dependencies
-        run: npm install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GH_TOKEN: ${{ github.token }}
-      
-      - name: Lint
-        run: npm run lint
-      
-      - name: Run tests
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit
+      - name: Unit tests
         run: npm test
+      - name: Check public types
+        run: npm run check:types
+      - name: Bundle WebRGB for Android Bare
+        run: |
+          out=$(mktemp -d)
+          trap 'rm -r "$out"' EXIT
+          node_modules/.bin/bare-pack --host android-arm64 --linked --out "$out/webrgb.bundle" src/onchain-webrgb.js
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=moderate
+      - name: Check source-only package inventory
+        run: node scripts/check-candidate-pack.mjs
 
+  native-admission:
+    name: Private native source admission
+    if: github.repository == 'UTEXO-Protocol/wdk-wallet-rgb' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    outputs:
+      enabled: ${{ steps.admit.outputs.enabled }}
+    steps:
+      - name: Check source access without exposing credentials to build tools
+        id: admit
+        env:
+          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN }}
+          REQUIRE_NATIVE: ${{ inputs.enable_native == true }}
+          MANUAL_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          if test "$MANUAL_RUN" = true && test "$REQUIRE_NATIVE" != true; then
+            printf 'enabled=false\n' >> "$GITHUB_OUTPUT"
+            printf '%s\n' 'Native matrix was not requested for this manual run.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if test -z "$GH_TOKEN"; then
+            printf 'enabled=false\n' >> "$GITHUB_OUTPUT"
+            printf '%s\n' 'Native matrix did not run: ORG_READ_TOKEN must have read access to rgb-lib-bfa.' >> "$GITHUB_STEP_SUMMARY"
+            if test "$REQUIRE_NATIVE" = true; then
+              printf '%s\n' '::error::The requested native build needs ORG_READ_TOKEN with rgb-lib-bfa read access.'
+              exit 1
+            fi
+            exit 0
+          fi
+          revision=2f7b21d8637baad548504ea870deb2c0d4d0a37d
+          test "$(gh api "repos/UTEXO-Protocol/rgb-lib-bfa/git/commits/$revision" --jq .sha)" = "$revision"
+          printf 'enabled=true\n' >> "$GITHUB_OUTPUT"
+
+  desktop:
+    name: ${{ matrix.kind }} ${{ matrix.target }}
+    needs: native-admission
+    if: needs.native-admission.outputs.enabled == 'true'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { kind: node, target: darwin-arm64, runner: macos-15 }
+          - { kind: node, target: darwin-x64, runner: macos-15-intel }
+          - { kind: node, target: linux-x64-gnu, runner: ubuntu-22.04 }
+          - { kind: node, target: linux-arm64-gnu, runner: ubuntu-24.04-arm }
+          - { kind: node, target: linux-x64-musl, runner: ubuntu-22.04 }
+          - { kind: bare, target: darwin-arm64, runner: macos-15 }
+          - { kind: bare, target: darwin-x64, runner: macos-15-intel }
+          - { kind: bare, target: linux-x64, runner: ubuntu-22.04 }
+          - { kind: bare, target: linux-arm64, runner: ubuntu-24.04-arm }
+    env:
+      TARGET: ${{ matrix.target }}
+      KIND: ${{ matrix.kind }}
+      CARGO_BUILD_JOBS: '3'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      GIT_TERMINAL_PROMPT: '0'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify the unmodified BFA.8 source
+        env:
+          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN }}
+        run: |
+          python3 -I -B native/scripts/prepare-source.py --bare
+          printf 'NATIVE_RESULT=%s\n' "$RUNNER_TEMP/wdk-native-result" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: matrix.target != 'linux-x64-musl'
+        with:
+          node-version: '22.23.4'
+          package-manager-cache: false
+      - name: Install the locked toolchain and dependencies
+        if: matrix.target != 'linux-x64-musl'
+        run: |
+          test -z "${GH_TOKEN:-}${ORG_READ_TOKEN:-}"
+          rustup toolchain install 1.94.0 --profile minimal
+          npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build and test the Node worker
+        if: matrix.kind == 'node' && matrix.target != 'linux-x64-musl'
+        run: |
+          node native/scripts/node-host.mjs build "$TARGET" "$NATIVE_RESULT"
+          cargo +1.94.0 test --locked --release --manifest-path native/Cargo.toml -- --test-threads=1
+      - name: Build and test the Bare engine
+        if: matrix.kind == 'bare'
+        env:
+          UTEXO_BARE_OUTPUT_DIR: ${{ env.NATIVE_RESULT }}
+        run: |
+          bash native/scripts/build-bare.sh
+          CARGO_TARGET_DIR="$PWD/native/target/bare-rust" cargo +1.94.0 test --locked --release --manifest-path native/bare/Cargo.toml -- --test-threads=1
+      - name: Test the packed desktop consumer and lifecycle
+        if: matrix.target != 'linux-x64-musl'
+        run: bash scripts/qualify-desktop.sh "$KIND" "$TARGET" "$NATIVE_RESULT"
+      - name: Build and test in an actual musl userland
+        if: matrix.target == 'linux-x64-musl'
+        run: |
+          output_parent="$RUNNER_TEMP/wdk-musl-output"
+          mkdir -m 0700 "$output_parent"
+          docker run --rm --platform linux/amd64 \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/wdk" \
+            --mount "type=bind,source=$output_parent,target=/output" \
+            --workdir /wdk --env "OUTPUT_UID=$(id -u)" --env "OUTPUT_GID=$(id -g)" \
+            --env CARGO_BUILD_JOBS=3 --env CARGO_NET_GIT_FETCH_WITH_CLI=true --env GIT_TERMINAL_PROMPT=0 \
+            docker.io/library/node:22.23.4-alpine3.23@sha256:546f76c5ef8161c2c37932978a63c89eb7ea61062537e5865361603d9d3af668 \
+            sh -ec '
+              apk add --no-cache bash binutils build-base ca-certificates cmake curl git linux-headers pkgconf python3
+              curl --fail --silent --show-error --location \
+                https://static.rust-lang.org/rustup/archive/1.28.2/x86_64-unknown-linux-musl/rustup-init \
+                --output /tmp/rustup-init
+              printf "%s  %s\n" e6599a1c7be58a2d8eaca66a80e0dc006d87bbcf780a58b7343d6e14c1605cb2 /tmp/rustup-init | sha256sum -c -
+              chmod 0755 /tmp/rustup-init
+              /tmp/rustup-init -y --no-modify-path --profile minimal --default-host x86_64-unknown-linux-musl --default-toolchain 1.94.0
+              export PATH="/root/.cargo/bin:$PATH"
+              git config --global --add safe.directory /wdk
+              git config --global --add safe.directory /wdk/native/.sources/rgb-lib-bfa-clean
+              npm ci --ignore-scripts --no-audit --no-fund
+              node native/scripts/node-host.mjs build linux-x64-musl /output/native-result
+              cargo +1.94.0 test --locked --release --manifest-path native/Cargo.toml -- --test-threads=1
+              bash scripts/qualify-desktop.sh node linux-x64-musl /output/native-result
+              chown -R "$OUTPUT_UID:$OUTPUT_GID" /output/native-result
+            '
+          mv "$output_parent/native-result" "$NATIVE_RESULT"
+      - name: Upload binaries and qualification receipts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-${{ matrix.kind }}-${{ matrix.target }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ env.NATIVE_RESULT }}/*
+          if-no-files-found: error
+          retention-days: 14
+
+  android:
+    name: Bare ${{ matrix.target }}
+    needs: native-admission
+    if: needs.native-admission.outputs.enabled == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: android-arm64, rust: aarch64-linux-android, abi: arm64-v8a }
+          - { target: android-arm, rust: armv7-linux-androideabi, abi: armeabi-v7a }
+          - { target: android-x64, rust: x86_64-linux-android, abi: x86_64 }
+          - { target: android-ia32, rust: i686-linux-android, abi: x86 }
+    env:
+      BARE_TARGET: ${{ matrix.target }}
+      RUST_TARGET: ${{ matrix.rust }}
+      ANDROID_ABI: ${{ matrix.abi }}
+      BARE_KIT_COMMIT: 9cd80b8ba96e591b222987a80f394012e19d45b0
+      BARE_COMMIT: 32aa0ae69da547f0d0cca011f3e8bcbbfc9f44c3
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      GIT_TERMINAL_PROMPT: '0'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.23.4'
+          package-manager-cache: false
+      - name: Verify the unmodified BFA.8 source
+        env:
+          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN }}
+        run: |
+          python3 -I -B native/scripts/prepare-source.py --bare
+          printf 'UTEXO_BARE_OUTPUT_DIR=%s\n' "$RUNNER_TEMP/android-output" >> "$GITHUB_ENV"
+      - name: Install the pinned NDK, Rust and CMake
+        run: |
+          sdk_manager="$(command -v sdkmanager || printf '%s\n' "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager")"
+          "$sdk_manager" 'ndk;28.2.13676358'
+          rustup toolchain install 1.94.0 --profile minimal --target "$RUST_TARGET"
+          archive="$RUNNER_TEMP/cmake-4.4.4-linux-x86_64.tar.gz"
+          curl --fail --silent --show-error --location --proto '=https' \
+            --output "$archive" https://github.com/Kitware/CMake/releases/download/v4.4.4/cmake-4.4.4-linux-x86_64.tar.gz
+          printf '%s  %s\n' e5bb807f7728cb60cd8b27ebc97a2edb469b68655f21e844a600c3575b76f5bb "$archive" | sha256sum --check --status
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+          printf '%s\n' "$RUNNER_TEMP/cmake-4.4.4-linux-x86_64/bin" >> "$GITHUB_PATH"
+      - name: Fetch the exact Bare Kit and Bare runtime sources
+        run: |
+          fetch_source() {
+            git init --quiet "$3"
+            git -C "$3" -c credential.helper= -c http.followRedirects=false fetch --quiet --depth=1 --no-tags "$1" "$2"
+            git -C "$3" -c core.hooksPath=/dev/null checkout --quiet --detach FETCH_HEAD
+            test "$(git -C "$3" rev-parse HEAD)" = "$2"
+          }
+          fetch_source https://github.com/holepunchto/bare-kit.git "$BARE_KIT_COMMIT" "$RUNNER_TEMP/bare-kit"
+          fetch_source https://github.com/holepunchto/bare.git "$BARE_COMMIT" "$RUNNER_TEMP/bare"
+      - name: Build the runtime used for native symbol verification
+        run: |
+          npm ci --prefix "$RUNNER_TEMP/bare-kit" --ignore-scripts --no-audit --no-fund
+          npm ci --prefix "$RUNNER_TEMP/bare" --ignore-scripts --no-audit --no-fund
+          cmake -S "$RUNNER_TEMP/bare-kit" -B "$RUNNER_TEMP/bare-kit-build" -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_HOME/ndk/28.2.13676358/build/cmake/android.toolchain.cmake" \
+            "-DFETCHCONTENT_SOURCE_DIR_GITHUB+HOLEPUNCHTO+BARE=$RUNNER_TEMP/bare" \
+            -DCMAKE_BUILD_TYPE=Release -DANDROID_PLATFORM=android-29 -DANDROID_STL=c++_static \
+            -DANDROID_ABI="$ANDROID_ABI"
+          cmake --build "$RUNNER_TEMP/bare-kit-build" --target bare_kit_shared --parallel 2
+      - name: Build and verify the addon ELF
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          bash native/scripts/build-bare-android.sh "$version" "$BARE_TARGET"
+          addon="$UTEXO_BARE_OUTPUT_DIR/utexo__wdk-wallet-rgb.bare"
+          runtime="$RUNNER_TEMP/bare-kit-build/src/libbare-kit.so"
+          node native/scripts/verify-bare-android.mjs "$addon" "$runtime" "$version" "$BARE_TARGET" > "$UTEXO_BARE_OUTPUT_DIR/native-verification.json"
+          jq -e --arg abi "$ANDROID_ABI" --arg target "$RUST_TARGET" \
+            '.abi == $abi and .target == $target and .bindNow and .nodelete and .nxStack and .relro.aligned' \
+            "$UTEXO_BARE_OUTPUT_DIR/native-verification.json" >/dev/null
+          cp "$runtime" "$UTEXO_BARE_OUTPUT_DIR/libbare-kit.so"
+          jq -n --arg commit "$(git rev-parse HEAD)" --arg tree "$(git rev-parse 'HEAD^{tree}')" \
+            --arg target "$BARE_TARGET" --arg sdkVersion "$version" \
+            --arg cargoLockSha256 "$(sha256sum native/bare/Cargo.lock | cut -d ' ' -f 1)" \
+            --arg bareKitCommit "$BARE_KIT_COMMIT" --arg bareCommit "$BARE_COMMIT" \
+            --arg rustc "$(rustc +1.94.0 -Vv)" \
+            '{commit:$commit,tree:$tree,target:$target,sdkVersion:$sdkVersion,cargoLockSha256:$cargoLockSha256,bareKitCommit:$bareKitCommit,bareCommit:$bareCommit,rustc:$rustc,nativeRuntimeExecuted:false}' \
+            > "$UTEXO_BARE_OUTPUT_DIR/build-receipt.json"
+          (cd "$UTEXO_BARE_OUTPUT_DIR" && sha256sum utexo__wdk-wallet-rgb.bare libbare-kit.so native-verification.json build-receipt.json > SHA256SUMS)
+      - name: Upload the addon and ABI verification receipts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-bare-${{ matrix.target }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ env.UTEXO_BARE_OUTPUT_DIR }}/*
+          if-no-files-found: error
+          retention-days: 14
+
+  ios:
+    name: Bare ${{ matrix.target }}
+    needs: native-admission
+    if: needs.native-admission.outputs.enabled == 'true'
+    runs-on: macos-26
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: ios-arm64, rust: aarch64-apple-ios }
+          - { target: ios-arm64-simulator, rust: aarch64-apple-ios-sim }
+          - { target: ios-x64-simulator, rust: x86_64-apple-ios }
+    env:
+      BARE_TARGET: ${{ matrix.target }}
+      RUST_TARGET: ${{ matrix.rust }}
+      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      GIT_TERMINAL_PROMPT: '0'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.23.4'
+          package-manager-cache: false
+      - name: Install the pinned Rust target
+        run: rustup toolchain install 1.94.0 --profile minimal --target "$RUST_TARGET"
+      - name: Verify the unmodified BFA.8 source
+        env:
+          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN }}
+        run: |
+          python3 -I -B native/scripts/prepare-source.py --bare
+          printf 'UTEXO_BARE_OUTPUT_DIR=%s\n' "$RUNNER_TEMP/ios-output" >> "$GITHUB_ENV"
+      - name: Build and verify the iOS addon
+        run: |
+          bash native/scripts/build-bare-ios.sh "$BARE_TARGET"
+          addon="$UTEXO_BARE_OUTPUT_DIR/utexo__wdk-wallet-rgb.bare"
+          {
+            printf 'commit=%s\ntree=%s\ntarget=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse 'HEAD^{tree}')" "$BARE_TARGET"
+            printf 'runtime-executed=false\n'
+            xcodebuild -version
+            rustc +1.94.0 -Vv
+            shasum -a 256 native/bare/Cargo.lock "$addon"
+            xcrun lipo -archs "$addon"
+            xcrun vtool -show-build "$addon"
+            xcrun nm -gjU "$addon" | LC_ALL=C sort
+            xcrun otool -L "$addon"
+          } > "$UTEXO_BARE_OUTPUT_DIR/build-receipt.txt"
+      - name: Upload the addon and ABI verification receipts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-bare-${{ matrix.target }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ env.UTEXO_BARE_OUTPUT_DIR }}/*
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,87 @@
+{
+  "identity": {
+    "version": "2.1.0-alpha.24",
+    "integrity": "sha512-Vw6zxVb8atz94ScfbaMoY7KlXKtBP4/jKUVzaVaVpprsLEpmUk7679GHiEdTM6Dj7WMRynwiZWpNWL9Jq00OPQ==",
+    "source": "2f7b21d8637baad548504ea870deb2c0d4d0a37d",
+    "tree": "5492824f3cf47b4c821dfca8b7a63fed27858486",
+    "nodeSha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94",
+    "bareSha256": "d94609b3e5c7ffd6046de2cc198cb519f202f0245ad02710697d14498552808f"
+  },
+  "phase": "passed",
+  "realExpiry": true,
+  "walletStateEdited": false,
+  "machineClockChanged": false,
+  "results": {
+    "node": {
+      "cases": [
+        {
+          "schema": "Nia",
+          "mode": "blind",
+          "cancelled": true,
+          "retryAfterRestart": true,
+          "lostResponseAfterCommit": false
+        },
+        {
+          "schema": "Nia",
+          "mode": "witness",
+          "cancelled": true,
+          "retryAfterRestart": true,
+          "lostResponseAfterCommit": false
+        },
+        {
+          "schema": "Cfa",
+          "mode": "blind",
+          "cancelled": true,
+          "retryAfterRestart": true,
+          "lostResponseAfterCommit": false
+        },
+        {
+          "schema": "Cfa",
+          "mode": "witness",
+          "cancelled": true,
+          "retryAfterRestart": true,
+          "lostResponseAfterCommit": true
+        }
+      ],
+      "arbitraryAssetExcluded": true,
+      "unrelatedLiveInvoicesPreserved": true,
+      "blindedReservationsReleased": true
+    },
+    "bare": {
+      "cases": [
+        {
+          "schema": "Nia",
+          "mode": "blind",
+          "cancelled": true,
+          "retryAfterRestart": true,
+          "lostResponseAfterCommit": false
+        },
+        {
+          "schema": "Nia",
+          "mode": "witness",
+          "cancelled": true,
+          "retryAfterRestart": true,
+          "lostResponseAfterCommit": false
+        },
+        {
+          "schema": "Cfa",
+          "mode": "blind",
+          "cancelled": true,
+          "retryAfterRestart": true,
+          "lostResponseAfterCommit": false
+        },
+        {
+          "schema": "Cfa",
+          "mode": "witness",
+          "cancelled": true,
+          "retryAfterRestart": true,
+          "lostResponseAfterCommit": true
+        }
+      ],
+      "arbitraryAssetExcluded": true,
+      "unrelatedLiveInvoicesPreserved": true,
+      "blindedReservationsReleased": true
+    }
+  },
+  "completedAt": "2026-11-13T12:16:30.039Z"
+}
