@@ -1,6 +1,6 @@
 # Bare host candidate
 
-Native builds and artifact admission are on hold pending [upstream RGB changes](../../QUALIFICATION.md#upstream-requirements-for-an-unpatched-build). The commands below document the qualification flow once the hold is lifted.
+Builds use unmodified BFA.8 and stock client crates. Artifact admission is separate from compilation; record and verify each target before packaging. See [current qualification](../../QUALIFICATION.md).
 
 Alpha.14 is the private BFA.7 Android candidate for manual Dev testing. Alpha.10 uses the earlier BFA.5 Dev profile. See the [Dev checkpoint scope](../README.md#dev-checkpoint-candidate).
 
@@ -9,7 +9,7 @@ The private SDK candidate uses the same watch-only engine for the Node and Bare 
 ## Exact sources
 
 - RGB BFA.8 tag at `2f7b21d8637baad548504ea870deb2c0d4d0a37d`.
-- The [source preparation script](../scripts/prepare-source.py) verifies the unmodified upstream tree. The embedded wallet needs upstream support to avoid installing a process-wide panic hook.
+- The [source preparation script](../scripts/prepare-source.py) verifies the unmodified upstream tree. Stock RGB installs a process-wide logging panic hook. Wallet close drops its logger guard and joins its logging thread; captured hook/logger allocations can accumulate across constructions. No custom hook replacement is performed by this addon.
 - The independent Bare lock enables Electrum and the gated Dev Esplora backend.
 - Build headers `bare-headers@1.35.0` and standalone test CLI `bare@1.36.2`. The macOS CLI run reported runtime `1.36.0`. The Android Bare Kit 3.0.1 worklet reported runtime `1.36.2`. Exact npm tarball integrities are recorded in `package-lock.json`.
 

@@ -2,11 +2,11 @@
 import { registerHooks } from 'node:module'
 import nativeManifest from '../../src/onchain-bare-native.json' with { type: 'json' }
 
-// Only synthetic worker tests load a wallet module with the hold lifted.
-export async function importWalletFixture (name) {
+// Synthetic workers and the release-hold regression use an explicit manifest.
+export async function importWalletFixture (name, releaseHold = false) {
   const wallet = new URL('../../src/onchain-wallet.js?native-fixture=' + name, import.meta.url).href
   const manifest = new URL('../../src/onchain-bare-native.json', import.meta.url).href
-  const fixture = 'data:application/json,' + encodeURIComponent(JSON.stringify({ ...nativeManifest, releaseHold: false }))
+  const fixture = 'data:application/json,' + encodeURIComponent(JSON.stringify({ ...nativeManifest, releaseHold }))
   const hooks = registerHooks({
     resolve (specifier, context, nextResolve) {
       const resolved = nextResolve(specifier, context)

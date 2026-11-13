@@ -61,7 +61,7 @@ assert.equal(native.protocol, 2)
 const targets = Object.keys(native.targets)
 if (native.releaseHold !== false) {
   assert.deepEqual(targets, [], 'Native targets must be empty while the release is blocked')
-  assert.ok(!requireNative, 'Native pack blocked pending upstream RGB safeguards')
+  assert.ok(!requireNative, 'Native pack has not passed artifact admission')
 }
 for (const target of targets) assertTargetPin(target, native.targets[target], manifest.version)
 if (!requireNative) {

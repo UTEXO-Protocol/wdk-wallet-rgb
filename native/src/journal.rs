@@ -35,6 +35,8 @@ pub(super) enum Scope {
     Invoice,
     #[serde(skip)]
     Issuance,
+    #[serde(skip)]
+    ExposedInputs,
 }
 
 impl Scope {
@@ -43,6 +45,7 @@ impl Scope {
             Self::Spend => ".wdk-onchain-journal-v1",
             Self::Invoice => ".wdk-onchain-invoices-v1",
             Self::Issuance => ".wdk-onchain-issuance-v1",
+            Self::ExposedInputs => ".wdk-onchain-exposed-inputs-v1",
         }
     }
 
@@ -55,7 +58,7 @@ impl Scope {
                 Some("rgb-output" | "btc-send" | "rgb-send" | "rgb-burn")
             ),
             Self::Invoice => kind == Some("rgb-receive"),
-            Self::Issuance => false,
+            Self::Issuance | Self::ExposedInputs => false,
         };
         let stage_valid = matches!(
             record["stage"].as_str(),
@@ -118,7 +121,12 @@ pub(super) fn read_record<T: super::DeserializeOwned>(path: &Path) -> Result<Opt
         .map_err(|_| corrupt())
 }
 
-pub(super) fn commit(dir: &Path, path: PathBuf, record: &Value, creating_identity: bool) -> Result<()> {
+pub(super) fn commit(
+    dir: &Path,
+    path: PathBuf,
+    record: &Value,
+    creating_identity: bool,
+) -> Result<()> {
     let data = serde_json::to_vec(record).map_err(|_| input("Invalid wallet journal data."))?;
     if data.len() >= MAX_RECORD_BYTES {
         return Err(input("Wallet journal record exceeds its size limit."));
@@ -227,6 +235,18 @@ impl Session {
             )?;
         }
         Ok(dir)
+    }
+
+    pub(super) fn existing_journal_scope(&self, scope: Scope) -> Result<Option<PathBuf>> {
+        let path = self.root.join(scope.directory());
+        match path.symlink_metadata() {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(storage(error)),
+            Ok(_) => {}
+        }
+        let dir = self.journal_directory(scope, false)?;
+        self.check_journal_identity(&dir.join(IDENTITY))?;
+        Ok(Some(dir))
     }
 
     pub(super) fn write_journal_record(&self, params: Value) -> Result<Value> {

@@ -288,35 +288,42 @@ impl Session {
             }
             _ => None,
         };
-        let admitted = witness_vout.is_some_and(|vout| {
-            self.wallet
+        let admission = (|| {
+            let vout = witness_vout.ok_or_else(|| fault(
+                "SEND_PLAN_REJECTED",
+                "The native plan did not commit to the exact requested RGB recipient and amount.",
+            ))?;
+            let inspection = self
+                .wallet
                 .inspect_rgb_transfer(plan.psbt, plan.details.fascia_path, plan.details.entropy)
-                .is_ok_and(|inspection| {
-                    exact_rgb_send(
-                        &inspection,
-                        &txid,
-                        &p.asset_id,
-                        amount,
-                        &p.recipient_id,
-                        vout,
-                    )
-                })
-        });
-        if admitted {
-            return Ok(result);
+                .map_err(native)?;
+            if !exact_rgb_send(
+                &inspection,
+                &txid,
+                &p.asset_id,
+                amount,
+                &p.recipient_id,
+                vout,
+            ) {
+                return Err(fault(
+                    "SEND_PLAN_REJECTED",
+                    "The native plan did not commit to the exact requested RGB recipient and amount.",
+                ));
+            }
+            self.require_unexposed_rgb_outputs(&inspection)
+        })();
+        if let Err(error) = admission {
+            // No signatures exist and End has not run. Only release this worker's
+            // exact reservation. If cancellation is uncertain, leave it blocked.
+            self.discard_prepared(TransactionId { txid }).map_err(|_| {
+                fault(
+                    "SEND_PLAN_UNRESOLVED",
+                    "An invalid RGB send plan could not be released safely.",
+                )
+            })?;
+            return Err(error);
         }
-        // No signatures exist and End has not run. Only release this worker's
-        // exact reservation. If cancellation is uncertain, leave it blocked.
-        self.discard_prepared(TransactionId { txid }).map_err(|_| {
-            fault(
-                "SEND_PLAN_UNRESOLVED",
-                "An invalid RGB send plan could not be released safely.",
-            )
-        })?;
-        Err(fault(
-            "SEND_PLAN_REJECTED",
-            "The native plan did not commit to the exact requested RGB recipient and amount.",
-        ))
+        Ok(result)
     }
 
     pub(super) fn send_status(&mut self, p: SendStatus) -> Result<Value> {
@@ -333,6 +340,9 @@ impl Session {
                     ));
                 }
                 let online = self.online()?;
+                if self.prepared.is_none() {
+                    self.check_online_chain()?;
+                }
                 let matches = self
                     .wallet
                     .list_transactions(Some(online), self.prepared.is_some())
@@ -382,7 +392,11 @@ impl Session {
                         ),
                         None,
                     ) => "submitted",
-                    (Some(TransferStatus::Failed), None) => "failed",
+                    // BFA.8 can release a failed transfer's inputs after proxy data loss
+                    // and a deadline, although its signed TX may still exist elsewhere.
+                    // This is not evidence that a new payment is safe. The independent
+                    // exposed-input journal preserves those inputs across restart.
+                    (Some(TransferStatus::Failed), None) => "unresolved",
                     _ => "unresolved",
                 };
                 Ok(json!({"kind":"rgb-send","txid":p.txid,"batchTransferIdx":batch,"state":state}))

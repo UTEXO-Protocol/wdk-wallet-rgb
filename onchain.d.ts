@@ -238,7 +238,7 @@ export class WalletAccountRgb {
   }
   getAddress(): Promise<string>
   getNewAddress(): Promise<string>
-  getCapabilities(): { bip322: { signing: true; verification: true; protocol: 'bip322-simple'; specVersion: '2.0.0'; addressTypes: readonly string[]; verificationAddressTypes: readonly string[] } | { status: 'unavailable'; reason: string } }
+  getCapabilities(): { contractRegistration: { status: 'unavailable'; reason: string }; bip322: { signing: true; verification: true; protocol: 'bip322-simple'; specVersion: '2.0.0'; addressTypes: readonly string[]; verificationAddressTypes: readonly string[] } | { status: 'unavailable'; reason: string } }
   getMessageSigningAddress(): Promise<string>
   signMessageBip322(message: string, address: string): Promise<string>
   verifyMessageBip322(message: string, address: string, signature: string): Promise<boolean>
@@ -270,11 +270,12 @@ export class WalletAccountRgb {
   refresh(assetId?: string): Promise<RefreshResult>
   refreshTransfers(options?: { assetId?: string }): Promise<RefreshResult>
   sync(): Promise<RefreshResult>
+  /** Unavailable with stock BFA.8: rejects with CONTRACT_IMPORT_UNAVAILABLE. */
   registerAssetContract(options: { contract: Uint8Array; assetId: string; sha256: string }): Promise<{ assetId: string }>
   importRgbContract(options: { contract: Uint8Array; assetId: string; sha256: string }): Promise<{ assetId: string }>
-  /** Issues an ordinary NIA on a Mainnet, Public Signet or Regtest RGB account with available RGB outputs. */
+  /** Issues an ordinary NIA on any supported RGB profile with available confirmed outputs. */
   issueAssetNia(options: IssueAssetNiaRequest): Promise<AssetView>
-  /** Issues a text-only CFA on a Mainnet, Public Signet or Regtest RGB account with available RGB outputs. */
+  /** Issues a text-only CFA on any supported RGB profile with available confirmed outputs. */
   issueAssetCfa(options: IssueAssetCfaRequest): Promise<AssetView>
   blindReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>
   witnessReceive(options?: ReceiveRequest): Promise<ReceiveInvoice>

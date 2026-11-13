@@ -332,8 +332,8 @@ export class WalletAccountRgb {
         config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir, config.iosNativeFrameworkDir
       )
       const version = await worker.request('version')
-      if (version?.protocol !== nativeManifest.protocol || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 5 || version.source !== nativeManifest.source || version.overlayTree !== nativeManifest.overlayTree ||
-        version.runtime !== nativeRuntime || version.integrationTree !== nativeManifest.integrationTree || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 2) {
+      if (version?.protocol !== nativeManifest.protocol || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 6 || version.source !== nativeManifest.source || version.overlayTree !== nativeManifest.overlayTree ||
+        version.runtime !== nativeRuntime || version.integrationTree !== nativeManifest.integrationTree || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 2 || version.contractRegistration !== 0 || version.exposedInputs !== 1) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
       const identity = signer.identity
@@ -530,6 +530,7 @@ export class WalletAccountRgb {
   getCapabilities () {
     this.#assertOpen()
     return Object.freeze({
+      contractRegistration: Object.freeze({ status: 'unavailable', reason: 'BFA.8 has no public standalone contract import API' }),
       bip322: this.#config.authorizeMessage
         ? BIP322_CAPABILITIES
         : Object.freeze({ status: 'unavailable', reason: 'Message authorization is not configured' })

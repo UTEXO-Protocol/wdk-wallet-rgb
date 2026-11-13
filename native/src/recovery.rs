@@ -168,6 +168,7 @@ impl Session {
                     txid: row.txid.clone(),
                 })?;
             } else if let Some(idx) = row.batch_transfer_idx {
+                self.check_online_chain()?;
                 if !self
                     .wallet
                     .fail_transfers(self.online()?, Some(idx), false, false)

@@ -26,8 +26,6 @@ url = "2.5"
 
 
 [patch.crates-io]
-electrum-client = { path = "../.sources/electrum-client" }
-esplora-client = { path = "../.sources/esplora-client" }
 rgb-aluvm = { git = "https://github.com/rgb-protocol/rgb-aluvm", rev = "eb956ccaadf64930990e2ed08f6c4232caee24f9" }
 rgb-ascii-armor = { git = "https://github.com/rgb-protocol/rgb-ascii-armor", rev = "40cdea632fd6d0527494893e83b99cea60ace310" }
 rgb-consensus = { git = "https://github.com/rgb-protocol/rgb-consensus", rev = "d4bbbce212e4d9967e10cc3c6a7db2f664d52bd2" }

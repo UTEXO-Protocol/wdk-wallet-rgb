@@ -6,9 +6,9 @@ use rgb_lib::bitcoin::{Address as BitcoinAddress, Network as Bitcoin, Psbt, Txid
 use rgb_lib::keys::WitnessVersion;
 use rgb_lib::no_wallet::{BundleFilter, inspect_consignment};
 use rgb_lib::wallet::{
-    AssetFilter, Balance, DatabaseType, EvmChain, IndexerConfig, Invoice, Online, OnlineOptions, RecipientInfo,
-    RgbInspection, RgbWalletOpsOffline, RgbWalletOpsOnline, SinglesigKeys, TransferScope,
-    TransitionGlobal, TransportEndpoint, Wallet, WalletData,
+    AssetFilter, Balance, DatabaseType, EvmChain, IndexerConfig, Invoice, Online, OnlineOptions,
+    RecipientInfo, RgbInspection, RgbWalletOpsOffline, RgbWalletOpsOnline, SinglesigKeys,
+    TransferScope, TransitionGlobal, TransportEndpoint, Wallet, WalletData,
 };
 use rgb_lib::{AssetSchema, Assignment, BitcoinNetwork, TransferStatus, TypeOfTransition};
 use serde::de::DeserializeOwned;
@@ -43,8 +43,14 @@ mod issuance;
 #[path = "send.rs"]
 mod send;
 
+#[path = "cancellation.rs"]
+mod cancellation;
+
+#[path = "input_reservations.rs"]
+mod input_reservations;
+
 const SOURCE: &str = "2f7b21d8637baad548504ea870deb2c0d4d0a37d";
-const OVERLAY: &str = "83f4612d41cb79df2b78c6bfdb50441be908e4dd";
+const OVERLAY: &str = "5492824f3cf47b4c821dfca8b7a63fed27858486";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -73,10 +79,6 @@ pub(crate) fn input(message: &'static str) -> Fault {
 }
 fn native(err: rgb_lib::Error) -> Fault {
     match err {
-        rgb_lib::Error::ContractIdMismatch { .. } => fault(
-            "CONTRACT_MISMATCH",
-            "The validated RGB contract has a different asset ID.",
-        ),
         rgb_lib::Error::InvalidIndexer { .. } => fault(
             "INVALID_INDEXER",
             "The indexer is unavailable, incompatible, or on a different Bitcoin network.",
@@ -185,6 +187,17 @@ struct GoOnline {
     #[serde(default)]
     proxy_auth_keys: BTreeMap<String, String>,
 }
+impl Drop for GoOnline {
+    fn drop(&mut self) {
+        for secret in self.proxy_auth_keys.values_mut() {
+            secret.zeroize();
+        }
+        if let Some(credentials) = self.bitcoind_auth.as_mut() {
+            credentials.username.zeroize();
+            credentials.password.zeroize();
+        }
+    }
+}
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Receive {
@@ -291,6 +304,32 @@ struct Prepared {
     batch_idx: Option<i32>,
     discard_requested: bool,
 }
+// Retain only the last successfully admitted connection configuration. Consistency
+// scans must not silently clear the bridge's EVM routes or proxy credentials.
+// Credentials remain in memory and are cleared when this configuration is replaced.
+struct SessionOnlineOptions(OnlineOptions);
+
+impl SessionOnlineOptions {
+    fn consistency_options(&self) -> OnlineOptions {
+        let mut options = self.0.clone();
+        options.skip_consistency_check = false;
+        options
+    }
+
+    fn clear_secrets(&mut self) {
+        for secret in self.0.proxy_auth_keys.values_mut() {
+            secret.zeroize();
+        }
+        crate::profile::clear_indexer_credentials(&mut self.0.indexer_config);
+    }
+}
+
+impl Drop for SessionOnlineOptions {
+    fn drop(&mut self) {
+        self.clear_secrets();
+    }
+}
+
 struct Session {
     // Drop the wallet and its local database before releasing ownership of its directory.
     wallet: Wallet,
@@ -302,6 +341,7 @@ struct Session {
     profile: Option<crate::profile::Profile>,
     transport_endpoint: Option<String>,
     online: Option<Online>,
+    connection_options: Option<SessionOnlineOptions>,
     indexer_url: Option<String>,
     prepared: Option<Prepared>,
 }
@@ -320,10 +360,16 @@ fn chain(network: &str) -> Result<BitcoinNetwork> {
 }
 
 fn btc_only() -> Fault {
-    fault("RGB_MODE_UNAVAILABLE", "This wallet is configured for Bitcoin only.")
+    fault(
+        "RGB_MODE_UNAVAILABLE",
+        "This wallet is configured for Bitcoin only.",
+    )
 }
 fn bridge_unavailable() -> Fault {
-    fault("BRIDGE_MODE_UNAVAILABLE", "This wallet profile does not support bridge operations.")
+    fault(
+        "BRIDGE_MODE_UNAVAILABLE",
+        "This wallet profile does not support bridge operations.",
+    )
 }
 fn mint_chain(
     rpc_url: String,
@@ -471,9 +517,13 @@ fn bind_identity(root: &Path, params: &Open, network: BitcoinNetwork) -> Result<
 pub(crate) fn validated_url(value: &str, allowed: &[&str], allow_plain: bool) -> Result<Url> {
     let url = Url::parse(value).map_err(|_| input("Invalid network endpoint."))?;
     if value.len() > 2048
-        || value.bytes().any(|b| b.is_ascii_control() || b.is_ascii_whitespace() || b == b'\\')
+        || value
+            .bytes()
+            .any(|b| b.is_ascii_control() || b.is_ascii_whitespace() || b == b'\\')
         || value.split_once("://").is_none_or(|(_, tail)| {
-            tail.split('/').next().is_none_or(|host| host.is_empty() || host.contains('@'))
+            tail.split('/')
+                .next()
+                .is_none_or(|host| host.is_empty() || host.contains('@'))
         })
         || !allowed.contains(&url.scheme())
         || url.host().is_none()
@@ -495,7 +545,8 @@ fn validate_proxy(endpoint: &str, regtest: bool) -> Result<()> {
     validated_url(endpoint, &["rpc", "rpcs"], regtest).map(|_| ())
 }
 fn validate_public_proxy(endpoint: &str) -> Result<()> {
-    let invalid = || input("The public RGB proxy must use a TLS endpoint with a public DNS hostname.");
+    let invalid =
+        || input("The public RGB proxy must use a TLS endpoint with a public DNS hostname.");
     // Invoice parsing decodes percent escapes before splitting transport endpoints.
     if endpoint.contains([',', '%']) {
         return Err(invalid());
@@ -503,18 +554,34 @@ fn validate_public_proxy(endpoint: &str) -> Result<()> {
     validated_url(endpoint, &["rpcs"], false)?;
     let address = endpoint.strip_prefix("rpcs://").ok_or_else(invalid)?;
     let authority = address.split('/').next().ok_or_else(invalid)?;
-    if !authority.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b':' | b'-')) {
+    if !authority
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b':' | b'-'))
+    {
         return Err(invalid());
     }
     // HTTPS parsing catches noncanonical IPv4 literals before they can be treated as DNS names.
     let https = Url::parse(&format!("https://{address}")).map_err(|_| invalid())?;
     let domain = https.domain().ok_or_else(invalid)?;
-    if domain.len() > 253 || !domain.contains('.')
-        || !domain.rsplit('.').next().and_then(|label| label.as_bytes().first()).is_some_and(u8::is_ascii_alphabetic)
-        || [".localhost", ".local", ".internal", ".home.arpa"].iter().any(|suffix| domain.ends_with(suffix))
-        || domain.split('.').any(|label| label.is_empty() || label.len() > 63
-            || label.starts_with('-') || label.ends_with('-')
-            || !label.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-'))
+    if domain.len() > 253
+        || !domain.contains('.')
+        || !domain
+            .rsplit('.')
+            .next()
+            .and_then(|label| label.as_bytes().first())
+            .is_some_and(u8::is_ascii_alphabetic)
+        || [".localhost", ".local", ".internal", ".home.arpa"]
+            .iter()
+            .any(|suffix| domain.ends_with(suffix))
+        || domain.split('.').any(|label| {
+            label.is_empty()
+                || label.len() > 63
+                || label.starts_with('-')
+                || label.ends_with('-')
+                || !label
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'-')
+        })
     {
         return Err(invalid());
     }
@@ -633,10 +700,13 @@ impl Worker {
                 }
                 let p: Open = decode(params)?;
                 let network = chain(&p.network)?;
-                if p.mode.is_none() && (network == BitcoinNetwork::Mainnet
-                    || matches!(p.profile, Some(crate::profile::Profile::Public)))
+                if p.mode.is_none()
+                    && (network == BitcoinNetwork::Mainnet
+                        || matches!(p.profile, Some(crate::profile::Profile::Public)))
                 {
-                    return Err(input("The public Bitcoin network requires an explicit wallet mode."));
+                    return Err(input(
+                        "The public Bitcoin network requires an explicit wallet mode.",
+                    ));
                 }
                 let mode = p.mode.unwrap_or_default();
                 let signet_rgb = network == BitcoinNetwork::Signet && mode == journal::Mode::Rgb;
@@ -658,7 +728,11 @@ impl Worker {
                 match (&p.transport_endpoint, ordinary_rgb) {
                     (Some(endpoint), true) => validate_public_proxy(endpoint)?,
                     (None, false) => {}
-                    _ => return Err(input("Only ordinary public RGB wallets require a bound RGB proxy.")),
+                    _ => {
+                        return Err(input(
+                            "Only ordinary public RGB wallets require a bound RGB proxy.",
+                        ));
+                    }
                 }
                 if !lower_hex(&p.master_fingerprint, 8)
                     || !(100..=120).contains(&p.account_xpub_vanilla.len())
@@ -687,8 +761,10 @@ impl Worker {
                 if let Some(endpoint) = &p.transport_endpoint {
                     identity_fields.push(endpoint);
                 }
-                let journal_identity = sha256(&serde_json::to_vec(&identity_fields)
-                    .map_err(|_| input("Invalid wallet journal identity."))?);
+                let journal_identity = sha256(
+                    &serde_json::to_vec(&identity_fields)
+                        .map_err(|_| input("Invalid wallet journal identity."))?,
+                );
                 let fingerprint_path = root.join(&p.master_fingerprint);
                 if let Ok(meta) = fingerprint_path.symlink_metadata() {
                     if !meta.is_dir() {
@@ -730,15 +806,7 @@ impl Worker {
                     },
                 );
                 crate::profile::after_wallet_new();
-                let mut wallet = wallet.map_err(native)?;
-                if ordinary_rgb || mode == journal::Mode::BtcOnly
-                    || matches!(p.profile, Some(crate::profile::Profile::Dev))
-                {
-                    wallet.require_verified_colored_outputs();
-                }
-                if let Some(endpoint) = &p.transport_endpoint {
-                    wallet.bind_rgb_proxy(endpoint.clone()).map_err(native)?;
-                }
+                let wallet = wallet.map_err(native)?;
                 let mut opened = json!({"network":p.network,"watchOnly":true});
                 if let Some(profile) = p.profile {
                     opened["profile"] = json!(profile);
@@ -756,6 +824,7 @@ impl Worker {
                     profile: p.profile,
                     transport_endpoint: p.transport_endpoint,
                     online: None,
+                    connection_options: None,
                     indexer_url: None,
                     prepared: None,
                 });
@@ -777,17 +846,25 @@ impl Worker {
 
 impl Session {
     fn bridge_services(&self) -> Result<Option<crate::profile::SignetServices>> {
-        Ok(self.profile.map(crate::profile::Profile::bridge_services).transpose()?.flatten())
+        Ok(self
+            .profile
+            .map(crate::profile::Profile::bridge_services)
+            .transpose()?
+            .flatten())
     }
 
     fn validate_wallet_proxy(&self, endpoint: &str) -> Result<()> {
         if let Some(approved) = &self.transport_endpoint {
             if endpoint != approved {
-                return Err(input("The RGB proxy does not match the wallet's bound endpoint."));
+                return Err(input(
+                    "The RGB proxy does not match the wallet's bound endpoint.",
+                ));
             }
         } else if let Some(services) = self.bridge_services()? {
             if endpoint != services.proxy {
-                return Err(input("The wallet requires the approved RGB proxy for its Signet profile."));
+                return Err(input(
+                    "The wallet requires the approved RGB proxy for its Signet profile.",
+                ));
             }
         }
         validate_proxy(endpoint, self.network == BitcoinNetwork::Regtest)
@@ -801,6 +878,17 @@ impl Session {
             )
         })
     }
+    fn check_online_chain(&self) -> Result<()> {
+        self.online()?;
+        let url = self.indexer_url.clone().ok_or_else(|| {
+            fault(
+                "WALLET_OFFLINE",
+                "The RGB wallet has no online indexer session.",
+            )
+        })?;
+        let config = crate::profile::indexer(url, None, self.network, self.profile)?;
+        network::check_indexer_chain(&config, self.network, self.profile)
+    }
     fn online_options(indexer_config: IndexerConfig) -> OnlineOptions {
         OnlineOptions {
             indexer_config,
@@ -811,6 +899,29 @@ impl Session {
             evm_chains: HashMap::new(),
         }
     }
+    fn consistency_online(&mut self) -> Result<Online> {
+        self.online()?;
+        let options = self
+            .connection_options
+            .as_ref()
+            .ok_or_else(|| {
+                fault(
+                    "WALLET_OFFLINE",
+                    "The RGB wallet has no admitted connection configuration.",
+                )
+            })?
+            .consistency_options();
+        let online = self.wallet.go_online(options).map_err(|error| match error {
+            rgb_lib::Error::Inconsistency { .. } => fault(
+                "WALLET_INCONSISTENT",
+                "The Bitcoin chain and RGB wallet state disagree. Reconcile the wallet before issuing an asset.",
+            ),
+            other => native(other),
+        })?;
+        self.online = Some(online);
+        Ok(online)
+    }
+
     fn skip_read_sync(&self) -> bool {
         self.online.is_none() || self.prepared.is_some()
     }
@@ -845,10 +956,18 @@ impl Session {
         self.prepared = Some(Prepared {
             kind,
             psbt,
-            txid,
+            txid: txid.clone(),
             batch_idx,
             discard_requested: false,
         });
+        if let Err(error) =
+            self.require_unexposed_psbt(&self.prepared.as_ref().expect("just prepared").psbt)
+        {
+            // Begin may already have reserved inputs, but no signature was returned to RGB.
+            // Release only this live unsigned plan; uncertain cleanup keeps it blocked.
+            self.discard_prepared(TransactionId { txid })?;
+            return Err(error);
+        }
         Ok(reply)
     }
     fn submit(&mut self, kind: Kind, p: Signed) -> Result<Value> {
@@ -865,6 +984,7 @@ impl Session {
                 )
             })?;
         assert_signed_plan(pending, &signed)?;
+        self.reserve_exposed_inputs(pending)?;
         // Consume the authority before the possibly irreversible native call. Do not restore
         // it even on failure: the server may have accepted/broadcast the transaction.
         let pending = self.prepared.take().expect("checked above");
@@ -958,6 +1078,7 @@ impl Session {
                             && row.txid.as_deref() == Some(&p.txid)
                     })
                     .count();
+                self.check_online_chain()?;
                 if matching != 1
                     || !self
                         .wallet
@@ -979,7 +1100,7 @@ impl Session {
         self.idle()?;
         let regtest = self.network == BitcoinNetwork::Regtest;
         let config = crate::profile::indexer(
-            p.indexer_url,
+            std::mem::take(&mut p.indexer_url),
             p.bitcoind_auth.take(),
             self.network,
             self.profile,
@@ -991,7 +1112,9 @@ impl Session {
             for secret in p.proxy_auth_keys.values_mut() {
                 secret.zeroize();
             }
-            return Err(input("This wallet profile does not accept EVM RPC or proxy credentials."));
+            return Err(input(
+                "This wallet profile does not accept EVM RPC or proxy credentials.",
+            ));
         }
         if let Some(services) = self.bridge_services()? {
             if p.evm_rpc_urls.len() != 1
@@ -1001,14 +1124,16 @@ impl Session {
                 for secret in p.proxy_auth_keys.values_mut() {
                     secret.zeroize();
                 }
-                return Err(input("Signet RGB requires the approved Arbitrum RPC without proxy credentials."));
+                return Err(input(
+                    "Signet RGB requires the approved Arbitrum RPC without proxy credentials.",
+                ));
             }
         }
         if p.evm_rpc_urls.len() > 16 || p.proxy_auth_keys.len() > 16 {
             return Err(input("Too many network endpoints."));
         }
         let mut evm_chains = HashMap::new();
-        for (id, url) in p.evm_rpc_urls {
+        for (id, url) in std::mem::take(&mut p.evm_rpc_urls) {
             validated_url(&url, &["https", "http"], regtest)?;
             let id = positive(&id, u64::MAX)?;
             evm_chains.insert(id, mint_chain(url, self.network, self.profile, id));
@@ -1019,22 +1144,19 @@ impl Session {
                 return Err(input("Invalid proxy authentication key."));
             }
         }
-        let mut options = OnlineOptions {
-            proxy_auth_keys: p.proxy_auth_keys.into_iter().collect(),
+        network::check_indexer_chain(&config, self.network, self.profile)?;
+        let options = SessionOnlineOptions(OnlineOptions {
+            proxy_auth_keys: std::mem::take(&mut p.proxy_auth_keys).into_iter().collect(),
             evm_chains,
             ..Self::online_options(config)
-        };
-        let online = self.wallet.go_online(options.clone());
-        // The caller-provided copy is no longer needed. Upstream owns the runtime copy of
-        // required credentials until wallet drop; no credentials are serialized in responses.
-        for secret in options.proxy_auth_keys.values_mut() {
-            secret.zeroize();
-        }
-        crate::profile::clear_indexer_credentials(&mut options.indexer_config);
+        });
+        let online = self.wallet.go_online(options.0.clone());
         self.online = None;
         self.indexer_url = None;
+        self.connection_options = None;
         self.online = Some(online.map_err(native)?);
         self.indexer_url = Some(indexer_url);
+        self.connection_options = Some(options);
         Ok(json!({}))
     }
     fn receive(&mut self, p: Receive, blind: bool) -> Result<Value> {
@@ -1068,6 +1190,11 @@ impl Session {
         }
         let assignment = optional_amount(p.amount)?;
         let result = if blind {
+            let unspents = self
+                .wallet
+                .list_unspents(Some(online), false, false)
+                .map_err(native)?;
+            self.require_unexposed_allocations(&unspents)?;
             self.wallet.blind_receive(
                 Some(online),
                 p.asset_id,
@@ -1128,30 +1255,43 @@ impl Session {
                 false,
             )
             .map_err(native)?;
-        let expected_txid = tx_id(&parse_psbt(&plan.psbt)?);
-        let inspection = self
-            .wallet
-            .inspect_rgb_transfer(
-                plan.psbt.clone(),
-                plan.details.fascia_path,
-                plan.details.entropy,
-            )
-            .map_err(native)?;
-        if burn_matches(
-            &inspection,
-            &p.asset_id,
-            &expected_txid,
-            &p.commitment,
-            Some(amount),
-        ) != Some(amount)
-        {
-            return Err(fault(
-                "UNEXPECTED_BURN_PLAN",
-                "The native plan did not commit to the exact requested BFA burn.",
-            ));
+        let result = self.prepare(Kind::Burn, plan.psbt.clone(), plan.batch_transfer_idx)?;
+        let expected_txid = self.prepared.as_ref().expect("just prepared").txid.clone();
+        let admission = (|| {
+            let inspection = self
+                .wallet
+                .inspect_rgb_transfer(plan.psbt, plan.details.fascia_path, plan.details.entropy)
+                .map_err(native)?;
+            if burn_matches(
+                &inspection,
+                &p.asset_id,
+                &expected_txid,
+                &p.commitment,
+                Some(amount),
+            ) != Some(amount)
+            {
+                return Err(fault(
+                    "UNEXPECTED_BURN_PLAN",
+                    "The native plan did not commit to the exact requested BFA burn.",
+                ));
+            }
+            self.require_unexposed_rgb_outputs(&inspection)
+        })();
+        if let Err(error) = admission {
+            self.discard_prepared(TransactionId {
+                txid: expected_txid,
+            })
+            .map_err(|_| {
+                fault(
+                    "BURN_PLAN_UNRESOLVED",
+                    "An invalid RGB burn plan could not be released safely.",
+                )
+            })?;
+            return Err(error);
         }
-        self.prepare(Kind::Burn, plan.psbt, plan.batch_transfer_idx)
+        Ok(result)
     }
+
     fn proof(&self, p: Proof) -> Result<Value> {
         require_asset(&p.asset_id)?;
         require_txid(&p.txid)?;
@@ -1165,7 +1305,10 @@ impl Session {
             .transpose()?;
         let transfers = self
             .wallet
-            .list_transfers(AssetFilter::Id(p.asset_id.clone()), TransferScope::Txid(p.txid.clone()))
+            .list_transfers(
+                AssetFilter::Id(p.asset_id.clone()),
+                TransferScope::Txid(p.txid.clone()),
+            )
             .map_err(|_| proof_error())?;
         let mut matched = transfers.into_iter().filter(|t| {
             t.kind == rgb_lib::wallet::TransferKind::Burn
@@ -1232,41 +1375,72 @@ impl Session {
                 "Contract bytes do not match their expected SHA-256.",
             ));
         }
-        let mut staged = tempfile::NamedTempFile::new_in(&self.root).map_err(storage)?;
-        staged.write_all(&bytes).map_err(storage)?;
-        let path = staged
-            .path()
-            .to_str()
-            .ok_or_else(|| input("Invalid wallet directory encoding."))?
-            .to_string();
-        let asset_id = self
-            .wallet
-            .import_contract(path, Some(p.expected_asset_id))
-            .map_err(|e| match e {
-                rgb_lib::Error::InvalidConsignment
-                | rgb_lib::Error::UnknownRgbSchema { .. }
-                | rgb_lib::Error::UnsupportedSchema { .. } => fault(
-                    "CONTRACT_FORMAT_UNSUPPORTED",
-                    "The contract cannot be decoded or is not a standalone supported RGB contract.",
-                ),
-                other => native(other),
-            })?;
-        Ok(json!({"assetId":asset_id}))
+        // Stock BFA.8 only exposes transfer import, which requires a real
+        // consignment and outpoint. Never fabricate either or write its private
+        // database to imitate standalone contract registration.
+        Err(fault(
+            "CONTRACT_IMPORT_UNAVAILABLE",
+            "This RGB library has no public standalone contract import API.",
+        ))
     }
     fn dispatch(&mut self, method: &str, params: Value) -> Result<Value> {
         if self.journal_mode == journal::Mode::BtcOnly
-            && matches!(method,
-                "checkProxyEndpoint" | "refresh" | "blindReceive" | "witnessReceive" |
-                "createUtxosBegin" | "createUtxosEnd" | "cancelAbandonedOutputs" |
-                "sendRgbBegin" | "sendRgbEnd" | "burnBegin" | "burnEnd" | "importContract" |
-                "getConsignment" | "getReceivedMint" | "issueAsset" | "cancelReceiveInvoice")
+            && matches!(
+                method,
+                "checkProxyEndpoint"
+                    | "refresh"
+                    | "blindReceive"
+                    | "witnessReceive"
+                    | "createUtxosBegin"
+                    | "createUtxosEnd"
+                    | "cancelAbandonedOutputs"
+                    | "sendRgbBegin"
+                    | "sendRgbEnd"
+                    | "burnBegin"
+                    | "burnEnd"
+                    | "importContract"
+                    | "getConsignment"
+                    | "getReceivedMint"
+                    | "issueAsset"
+                    | "cancelReceiveInvoice"
+            )
         {
             return Err(btc_only());
         }
         if self.transport_endpoint.is_some()
-            && matches!(method, "burnBegin" | "burnEnd" | "getConsignment" | "getReceivedMint")
+            && matches!(
+                method,
+                "burnBegin" | "burnEnd" | "getConsignment" | "getReceivedMint"
+            )
         {
             return Err(bridge_unavailable());
+        }
+        // Recheck the configured chain at each WDK network-operation boundary.
+        // Stock RGB owns its internal resolver/reconnect sockets; this is not
+        // an assertion that those independent connections enforce block one.
+        if self.online.is_some()
+            && (matches!(
+                method,
+                "refresh"
+                    | "blindReceive"
+                    | "witnessReceive"
+                    | "cancelReceiveInvoice"
+                    | "createUtxosBegin"
+                    | "createUtxosEnd"
+                    | "sendBtcBegin"
+                    | "sendBtcEnd"
+                    | "sendRgbBegin"
+                    | "sendRgbEnd"
+                    | "burnBegin"
+                    | "burnEnd"
+                    | "getFeeRate"
+            ) || (!self.skip_read_sync()
+                && matches!(
+                    method,
+                    "getBtcBalance" | "listUnspents" | "listTransactions"
+                )))
+        {
+            self.check_online_chain()?;
         }
         match method {
             "goOnline" => self.go_online(decode(params)?),
@@ -1356,7 +1530,7 @@ impl Session {
                 };
                 let rows = self.wallet.list_transfers(filter, scope).map_err(native)?;
                 Ok(Value::Array(rows.into_iter().map(|r| {
-                    let receive_cancellation_eligible = self.wallet.receive_cancellation_eligible(&r);
+                    let receive_cancellation_eligible = cancellation::eligible(&r, self.network);
                     let change_utxo = match r.change_utxos.as_slice() {
                         [only] => Some(only),
                         _ => None,
@@ -1405,24 +1579,7 @@ impl Session {
             "witnessReceive" => self.receive(decode(params)?, false),
             "cancelReceiveInvoice" => {
                 let p: CancelReceive = decode(params)?;
-                if p.batch_transfer_idx <= 0 || p.recipient_id.len() > 512
-                    || RecipientInfo::new(p.recipient_id.clone()).is_err()
-                {
-                    return Err(input("Invalid RGB receive invoice identity."));
-                }
-                self.idle()?;
-                self.wallet.cancel_expired_receive(
-                    self.online()?, p.batch_transfer_idx, &p.recipient_id,
-                ).map_err(|error| match error {
-                    rgb_lib::Error::BatchTransferNotFound { .. } => fault(
-                        "RECEIVE_NOT_FOUND", "The exact receive invoice was not found.",
-                    ),
-                    _ => fault(
-                        "RECEIVE_CANCELLATION_UNAVAILABLE",
-                        "The wallet could not establish that this expired receive invoice is safe to cancel.",
-                    ),
-                })?;
-                Ok(json!({"cancelled": true}))
+                self.cancel_receive(p)
             }
             "createUtxosBegin" => {
                 let p: CreateOutputs = decode(params)?;
@@ -1555,9 +1712,18 @@ mod tests {
             second.dispatch("open", params.clone()).unwrap_err().code,
             "WALLET_IN_USE"
         );
-        assert_eq!(first.dispatch("getBtcBalance", json!({})).unwrap()["vanilla"]["spendable"], "0");
-        assert_eq!(first.dispatch("listTransactions", json!({})).unwrap(), json!([]));
-        assert_eq!(first.dispatch("listUnspents", json!({})).unwrap(), json!([]));
+        assert_eq!(
+            first.dispatch("getBtcBalance", json!({})).unwrap()["vanilla"]["spendable"],
+            "0"
+        );
+        assert_eq!(
+            first.dispatch("listTransactions", json!({})).unwrap(),
+            json!([])
+        );
+        assert_eq!(
+            first.dispatch("listUnspents", json!({})).unwrap(),
+            json!([])
+        );
         let address = first.dispatch("getAddress", json!({})).unwrap();
         assert!(address["address"].as_str().unwrap().starts_with("bcrt1p"));
         let closed = first.dispatch("close", json!({})).unwrap();
@@ -1595,7 +1761,9 @@ mod tests {
             let identity_bytes = serde_json::to_vec(&identity).unwrap();
             let identity_path = dir.path().join(IDENTITY_FILE);
             std::fs::write(&identity_path, &identity_bytes).unwrap();
-            let wallet_root = dir.path().join(params["masterFingerprint"].as_str().unwrap());
+            let wallet_root = dir
+                .path()
+                .join(params["masterFingerprint"].as_str().unwrap());
             std::fs::create_dir(&wallet_root).unwrap();
             let legacy_database = wallet_root.join("rgb_lib_db");
             let sentinel = b"old wallet state must remain untouched";
@@ -1704,69 +1872,58 @@ mod tests {
     }
 
     #[test]
-    fn contract_registration_admits_exact_asset_and_chain_without_creating_funds() {
-        let dir = tempfile::tempdir().unwrap();
-        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
-        let mut worker = Worker::default();
-        worker
-            .dispatch("open", open_params(dir.path(), "regtest"))
-            .unwrap();
-        let valid = json!({"contractBase64":CONTRACT.trim(),"expectedAssetId":CONTRACT_ID,"sha256":CONTRACT_SHA256});
-        let mut altered = valid.clone();
-        altered["sha256"] = "f".repeat(64).into();
-        assert_eq!(
-            worker.dispatch("importContract", altered).unwrap_err().code,
-            "CONTRACT_DIGEST_MISMATCH"
-        );
-        let mut different = valid.clone();
-        different["expectedAssetId"] =
-            "rgb:Mh2T02nk-P45ItF~-cSwk40U-Pc2Jx78-zaKBfR0-_7ANkkw".into();
-        assert_eq!(
-            worker
-                .dispatch("importContract", different)
-                .unwrap_err()
-                .code,
-            "CONTRACT_MISMATCH"
-        );
-        let asset = json!({"assetId":CONTRACT_ID});
-        assert_eq!(
-            worker
-                .dispatch("getAssetBalance", asset.clone())
-                .unwrap_err()
-                .code,
-            "ASSET_NOT_FOUND"
-        );
-        for _ in 0..2 {
+    fn unsupported_contract_registration_does_not_block_wallets_or_create_assets() {
+        for (network, profile) in [
+            ("regtest", None),
+            ("mainnet", None),
+            ("signet", Some("public")),
+            ("signet", Some("dev")),
+            ("signet", Some("staging")),
+        ] {
+            let dir = tempfile::tempdir().unwrap();
+            std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+            let mut params = open_params(dir.path(), network);
+            params["mode"] = json!("rgb");
+            if let Some(profile) = profile {
+                params["profile"] = json!(profile);
+            }
+            if network == "mainnet" || profile == Some("public") {
+                params["transportEndpoint"] = json!("rpcs://proxy.example.com/json-rpc");
+            }
+            let mut worker = Worker::default();
+            worker.dispatch("open", params.clone()).unwrap();
+            let request = json!({"contractBase64":CONTRACT.trim(),"expectedAssetId":CONTRACT_ID,"sha256":CONTRACT_SHA256});
+            let mut invalid = request.clone();
+            invalid["sha256"] = json!("f".repeat(64));
             assert_eq!(
-                worker.dispatch("importContract", valid.clone()).unwrap()["assetId"],
-                CONTRACT_ID
+                worker.dispatch("importContract", invalid).unwrap_err().code,
+                "CONTRACT_DIGEST_MISMATCH"
             );
+            for _ in 0..2 {
+                assert_eq!(
+                    worker
+                        .dispatch("importContract", request.clone())
+                        .unwrap_err()
+                        .code,
+                    "CONTRACT_IMPORT_UNAVAILABLE"
+                );
+                assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
+                assert_eq!(
+                    worker.dispatch("listTransfers", json!({})).unwrap(),
+                    json!([])
+                );
+                worker.dispatch("close", json!({})).unwrap();
+                worker.dispatch("open", params.clone()).unwrap();
+            }
         }
-        assert_eq!(
-            worker.dispatch("getAssetMetadata", asset.clone()).unwrap(),
-            json!({
-                "assetId":CONTRACT_ID,"schema":"Bfa","name":"WDK L1 Qualification BFA","ticker":"QBFA","precision":6,
-            })
-        );
-        assert_eq!(
-            worker.dispatch("getAssetBalance", asset.clone()).unwrap(),
-            json!({"settled":"0","future":"0","spendable":"0"})
-        );
-        assert_eq!(worker.dispatch("listTransfers", asset).unwrap(), json!([]));
-
-        let second = tempfile::tempdir().unwrap();
-        std::fs::set_permissions(second.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
-        let mut wrong_chain = Worker::default();
-        let mut params = open_params(second.path(), "signet");
-        params["mode"] = json!("btc-only");
-        wrong_chain.dispatch("open", params).unwrap();
-        let contract = decode(valid).unwrap();
-        assert!(wrong_chain.session.as_mut().unwrap().import_contract(contract).is_err());
     }
 
     #[test]
     fn indexer_missing_fee_estimate_is_reported_as_unavailable() {
-        assert_eq!(native(rgb_lib::Error::CannotEstimateFees).code, "FEE_UNAVAILABLE");
+        assert_eq!(
+            native(rgb_lib::Error::CannotEstimateFees).code,
+            "FEE_UNAVAILABLE"
+        );
     }
 
     #[test]
@@ -1774,7 +1931,9 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         let mut worker = Worker::default();
-        worker.dispatch("open", open_params(dir.path(), "regtest")).unwrap();
+        worker
+            .dispatch("open", open_params(dir.path(), "regtest"))
+            .unwrap();
         let request = json!({
             "operationId": "issue-native-test-01", "schema": "Nia", "name": "Local Token",
             "ticker": "LOCAL1", "precision": 2, "amounts": ["1000", "2000"],
@@ -1793,34 +1952,20 @@ mod tests {
         ] {
             let mut invalid = request.clone();
             invalid[key] = value;
-            assert_eq!(worker.dispatch("issueAsset", invalid).unwrap_err().code, "INVALID_PARAMS");
+            assert_eq!(
+                worker.dispatch("issueAsset", invalid).unwrap_err().code,
+                "INVALID_PARAMS"
+            );
         }
-        assert_eq!(worker.dispatch("issueAsset", request).unwrap_err().code, "WALLET_OFFLINE");
-        assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
-        assert!(!dir.path().join(".wdk-onchain-issuance-v1/.pending.json").exists());
-    }
-
-    #[test]
-    fn bfa5_regtest_contract_is_rejected_without_registration() {
-        const LEGACY_ID: &str = "rgb:rkMVlCDS-TPWWQZK-1Sg4G77-076Bqzl-a6SHf5U-WlnW1yA";
-        const LEGACY_SHA: &str = "7eabc7ff78e046ad2b6f26e1d61b5c151ffa53870ced7001bc2a15c80ddfd3f8";
-        const LEGACY_CONTRACT: &str = include_str!("../tests/fixtures/regtest-bfa.5.rgb.base64");
-        let dir = tempfile::tempdir().unwrap();
-        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
-        let mut worker = Worker::default();
-        worker.dispatch("open", open_params(dir.path(), "regtest")).unwrap();
-        let request = json!({
-            "contractBase64": LEGACY_CONTRACT.trim(),
-            "expectedAssetId": LEGACY_ID,
-            "sha256": LEGACY_SHA,
-        });
         assert_eq!(
-            worker.dispatch("importContract", request).unwrap_err().code,
-            "CONTRACT_FORMAT_UNSUPPORTED"
+            worker.dispatch("issueAsset", request).unwrap_err().code,
+            "WALLET_OFFLINE"
         );
-        assert_eq!(
-            worker.dispatch("getAssetBalance", json!({"assetId": LEGACY_ID})).unwrap_err().code,
-            "ASSET_NOT_FOUND"
+        assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
+        assert!(
+            !dir.path()
+                .join(".wdk-onchain-issuance-v1/.pending.json")
+                .exists()
         );
     }
 
@@ -1830,24 +1975,71 @@ mod tests {
         std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         let mut worker = Worker::default();
         let mut params = open_params(dir.path(), "signet");
-        assert_eq!(worker.dispatch("open", params.clone()).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
+        assert_eq!(
+            worker.dispatch("open", params.clone()).unwrap_err().code,
+            "RGB_MODE_UNAVAILABLE"
+        );
         params["mode"] = json!("btc-only");
-        assert_eq!(worker.dispatch("open", params).unwrap()["network"], "signet");
+        assert_eq!(
+            worker.dispatch("open", params).unwrap()["network"],
+            "signet"
+        );
 
-        assert_eq!(worker.dispatch("goOnline", json!({
-            "indexerUrl": "ssl://electrum.iriswallet.com:50033",
-            "evmRpcUrls": {"42161": "https://example.test"},
-        })).unwrap_err().code, "INVALID_PARAMS");
-        assert_eq!(worker.dispatch("goOnline", json!({
-            "indexerUrl": "tcp://127.0.0.1:50001",
-        })).unwrap_err().code, "INVALID_PARAMS");
-        assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
-        for method in ["checkProxyEndpoint", "importContract", "createUtxosBegin", "refresh", "sendRgbBegin", "burnBegin", "issueAsset"] {
-            assert_eq!(worker.dispatch(method, json!({})).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
+        assert_eq!(
+            worker
+                .dispatch(
+                    "goOnline",
+                    json!({
+                        "indexerUrl": "ssl://electrum.iriswallet.com:50033",
+                        "evmRpcUrls": {"42161": "https://example.test"},
+                    })
+                )
+                .unwrap_err()
+                .code,
+            "INVALID_PARAMS"
+        );
+        assert_eq!(
+            worker
+                .dispatch(
+                    "goOnline",
+                    json!({
+                        "indexerUrl": "tcp://127.0.0.1:50001",
+                    })
+                )
+                .unwrap_err()
+                .code,
+            "INVALID_PARAMS"
+        );
+        assert_eq!(
+            worker.dispatch("getAddress", json!({})).unwrap_err().code,
+            "WALLET_OFFLINE"
+        );
+        for method in [
+            "checkProxyEndpoint",
+            "importContract",
+            "createUtxosBegin",
+            "refresh",
+            "sendRgbBegin",
+            "burnBegin",
+            "issueAsset",
+        ] {
+            assert_eq!(
+                worker.dispatch(method, json!({})).unwrap_err().code,
+                "RGB_MODE_UNAVAILABLE"
+            );
         }
-        assert_eq!(worker.dispatch("discardUnsubmitted", json!({
-            "kind": "rgb-output", "checkpoint": [],
-        })).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
+        assert_eq!(
+            worker
+                .dispatch(
+                    "discardUnsubmitted",
+                    json!({
+                        "kind": "rgb-output", "checkpoint": [],
+                    })
+                )
+                .unwrap_err()
+                .code,
+            "RGB_MODE_UNAVAILABLE"
+        );
     }
 
     #[test]
@@ -1855,7 +2047,11 @@ mod tests {
         const PROXY: &str = "rpcs://proxy.example.com/json-rpc";
         for (network, profile, indexer) in [
             ("mainnet", None, "ssl://electrum.iriswallet.com:50003"),
-            ("signet", Some("public"), "ssl://electrum.iriswallet.com:50033"),
+            (
+                "signet",
+                Some("public"),
+                "ssl://electrum.iriswallet.com:50033",
+            ),
         ] {
             let dir = tempfile::tempdir().unwrap();
             std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
@@ -1866,10 +2062,16 @@ mod tests {
             let mut worker = Worker::default();
             let mut implicit = params.clone();
             implicit["transportEndpoint"] = json!(PROXY);
-            assert_eq!(worker.dispatch("open", implicit).unwrap_err().code, "INVALID_PARAMS");
+            assert_eq!(
+                worker.dispatch("open", implicit).unwrap_err().code,
+                "INVALID_PARAMS"
+            );
 
             params["mode"] = json!("rgb");
-            assert_eq!(worker.dispatch("open", params.clone()).unwrap_err().code, "INVALID_PARAMS");
+            assert_eq!(
+                worker.dispatch("open", params.clone()).unwrap_err().code,
+                "INVALID_PARAMS"
+            );
             for invalid in [
                 "rpc://proxy.example.com/json-rpc",
                 "rpcs://proxy.example.com./json-rpc",
@@ -1884,7 +2086,10 @@ mod tests {
                 "rpcs://proxy.example.com/json-rpc?token=no",
             ] {
                 params["transportEndpoint"] = json!(invalid);
-                assert_eq!(worker.dispatch("open", params.clone()).unwrap_err().code, "INVALID_PARAMS");
+                assert_eq!(
+                    worker.dispatch("open", params.clone()).unwrap_err().code,
+                    "INVALID_PARAMS"
+                );
             }
             assert!(dir.path().read_dir().unwrap().next().is_none());
 
@@ -1894,41 +2099,71 @@ mod tests {
             assert_eq!(opened["profile"].as_str(), profile);
             assert_eq!(opened["transportEndpoint"], PROXY);
             let session = worker.session.as_mut().unwrap();
-            assert_eq!(session.wallet.get_wallet_data().supported_schemas, vec![AssetSchema::Nia, AssetSchema::Cfa]);
+            assert_eq!(
+                session.wallet.get_wallet_data().supported_schemas,
+                vec![AssetSchema::Nia, AssetSchema::Cfa]
+            );
             assert!(session.validate_wallet_proxy(PROXY).is_ok());
-            assert!(session.validate_wallet_proxy("rpcs://other.example.com/json-rpc").is_err());
-            // Exercise the same predicate used for peer-advertised sender ACK
-            // endpoints and restored transfer metadata.
-            session.wallet.bind_rgb_proxy(PROXY.into()).unwrap();
-            assert!(matches!(
-                session.wallet.bind_rgb_proxy("rpcs://other.example.com/json-rpc".into()),
-                Err(rgb_lib::Error::InvalidTransportEndpoint { .. })
-            ));
+            assert!(
+                session
+                    .validate_wallet_proxy("rpcs://other.example.com/json-rpc")
+                    .is_err()
+            );
+            // Endpoint binding is enforced on WDK inputs. Stock RGB handles
+            // sender-advertised ACK URLs internally without this extra policy.
             for config in [
                 json!({"indexerUrl":indexer,"evmRpcUrls":{"42161":"https://example.test"}}),
                 json!({"indexerUrl":indexer,"proxyAuthKeys":{(PROXY):"00".repeat(32)}}),
             ] {
-                assert_eq!(worker.dispatch("goOnline", config).unwrap_err().code, "INVALID_PARAMS");
+                assert_eq!(
+                    worker.dispatch("goOnline", config).unwrap_err().code,
+                    "INVALID_PARAMS"
+                );
             }
             for method in ["burnBegin", "burnEnd", "getConsignment", "getReceivedMint"] {
-                assert_eq!(worker.dispatch(method, json!({})).unwrap_err().code, "BRIDGE_MODE_UNAVAILABLE");
+                assert_eq!(
+                    worker.dispatch(method, json!({})).unwrap_err().code,
+                    "BRIDGE_MODE_UNAVAILABLE"
+                );
             }
             for request in [
                 json!({"operationId":"issue-public-nia-01", "schema":"Nia", "name":"Native NIA", "ticker":"NIA", "precision":0, "amounts":["1"]}),
                 json!({"operationId":"issue-public-cfa-01", "schema":"Cfa", "name":"Native CFA", "precision":0, "amounts":["1"]}),
             ] {
-                assert_eq!(worker.dispatch("issueAsset", request).unwrap_err().code, "WALLET_OFFLINE");
+                assert_eq!(
+                    worker.dispatch("issueAsset", request).unwrap_err().code,
+                    "WALLET_OFFLINE"
+                );
             }
-            assert!(!dir.path().join(".wdk-onchain-issuance-v1/.pending.json").exists());
-            assert_eq!(worker.dispatch("snapshotUnsigned", json!({"kind":"rgb-burn"})).unwrap_err().code, "BRIDGE_MODE_UNAVAILABLE");
-            assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
+            assert!(
+                !dir.path()
+                    .join(".wdk-onchain-issuance-v1/.pending.json")
+                    .exists()
+            );
+            assert_eq!(
+                worker
+                    .dispatch("snapshotUnsigned", json!({"kind":"rgb-burn"}))
+                    .unwrap_err()
+                    .code,
+                "BRIDGE_MODE_UNAVAILABLE"
+            );
+            assert_eq!(
+                worker.dispatch("getAddress", json!({})).unwrap_err().code,
+                "WALLET_OFFLINE"
+            );
             assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
 
             worker.dispatch("close", json!({})).unwrap();
             let mut rotated = params.clone();
             rotated["transportEndpoint"] = json!("rpcs://other.example.com/json-rpc");
-            assert_eq!(worker.dispatch("open", rotated).unwrap_err().code, "WALLET_IDENTITY_MISMATCH");
-            assert_eq!(worker.dispatch("open", params).unwrap()["transportEndpoint"], PROXY);
+            assert_eq!(
+                worker.dispatch("open", rotated).unwrap_err().code,
+                "WALLET_IDENTITY_MISMATCH"
+            );
+            assert_eq!(
+                worker.dispatch("open", params).unwrap()["transportEndpoint"],
+                PROXY
+            );
         }
     }
 
@@ -1946,9 +2181,16 @@ mod tests {
                     json!({"operationId":"issue-bridge-nia-01", "schema":"Nia", "name":"Native NIA", "ticker":"VTEST", "precision":0, "amounts":["1"]}),
                     json!({"operationId":"issue-bridge-cfa-01", "schema":"Cfa", "name":"Native CFA", "precision":0, "amounts":["1"]}),
                 ] {
-                    assert_eq!(worker.dispatch("issueAsset", request).unwrap_err().code, "WALLET_OFFLINE");
+                    assert_eq!(
+                        worker.dispatch("issueAsset", request).unwrap_err().code,
+                        "WALLET_OFFLINE"
+                    );
                 }
-                assert!(!dir.path().join(".wdk-onchain-issuance-v1/.pending.json").exists());
+                assert!(
+                    !dir.path()
+                        .join(".wdk-onchain-issuance-v1/.pending.json")
+                        .exists()
+                );
                 assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
                 worker.dispatch("close", json!({})).unwrap();
                 worker.dispatch("open", params.clone()).unwrap();
@@ -1963,15 +2205,42 @@ mod tests {
         let mut params = open_params(dir.path(), "mainnet");
         let mut worker = Worker::default();
         params["mode"] = json!("btc-only");
-        assert_eq!(worker.dispatch("open", params.clone()).unwrap()["network"], "mainnet");
-        assert_eq!(worker.session.as_ref().unwrap().wallet.get_wallet_data().supported_schemas, vec![AssetSchema::Nia]);
-        assert_eq!(worker.dispatch("importContract", json!({})).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
-        assert_eq!(worker.dispatch("issueAsset", json!({})).unwrap_err().code, "RGB_MODE_UNAVAILABLE");
-        assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
+        assert_eq!(
+            worker.dispatch("open", params.clone()).unwrap()["network"],
+            "mainnet"
+        );
+        assert_eq!(
+            worker
+                .session
+                .as_ref()
+                .unwrap()
+                .wallet
+                .get_wallet_data()
+                .supported_schemas,
+            vec![AssetSchema::Nia]
+        );
+        assert_eq!(
+            worker
+                .dispatch("importContract", json!({}))
+                .unwrap_err()
+                .code,
+            "RGB_MODE_UNAVAILABLE"
+        );
+        assert_eq!(
+            worker.dispatch("issueAsset", json!({})).unwrap_err().code,
+            "RGB_MODE_UNAVAILABLE"
+        );
+        assert_eq!(
+            worker.dispatch("getAddress", json!({})).unwrap_err().code,
+            "WALLET_OFFLINE"
+        );
         worker.dispatch("close", json!({})).unwrap();
         params["mode"] = json!("rgb");
         params["transportEndpoint"] = json!("rpcs://proxy.example.com/json-rpc");
-        assert_eq!(worker.dispatch("open", params).unwrap_err().code, "WALLET_IDENTITY_MISMATCH");
+        assert_eq!(
+            worker.dispatch("open", params).unwrap_err().code,
+            "WALLET_IDENTITY_MISMATCH"
+        );
     }
 
     #[test]
@@ -1983,7 +2252,10 @@ mod tests {
         let mut worker = Worker::default();
         let mut wrong_mode = params.clone();
         wrong_mode["mode"] = json!("btc-only");
-        assert_eq!(worker.dispatch("open", wrong_mode).unwrap_err().code, "INVALID_PARAMS");
+        assert_eq!(
+            worker.dispatch("open", wrong_mode).unwrap_err().code,
+            "INVALID_PARAMS"
+        );
         assert!(worker.session.is_none());
         assert!(dir.path().read_dir().unwrap().next().is_none());
         let opened = worker.dispatch("open", params).unwrap();
@@ -1993,9 +2265,18 @@ mod tests {
 
         const DEV_ESPLORA: &str = "https://dev.esplora-01.mint.utexo.com";
         for method in ["checkIndexerUrl", "checkProxyEndpoint"] {
-            assert_eq!(worker.dispatch(method, json!({
-                "url": "https://example.test",
-            })).unwrap_err().code, "INVALID_PARAMS");
+            assert_eq!(
+                worker
+                    .dispatch(
+                        method,
+                        json!({
+                            "url": "https://example.test",
+                        })
+                    )
+                    .unwrap_err()
+                    .code,
+                "INVALID_PARAMS"
+            );
         }
         for request in [
             json!({"indexerUrl": DEV_ESPLORA, "evmRpcUrls": {"42161": "https://example.test"}}),
@@ -2009,9 +2290,62 @@ mod tests {
                 "evmRpcUrls": {"42161": "https://arb1.arbitrum.io/rpc"},
             }),
         ] {
-            assert_eq!(worker.dispatch("goOnline", request).unwrap_err().code, "INVALID_PARAMS");
+            assert_eq!(
+                worker.dispatch("goOnline", request).unwrap_err().code,
+                "INVALID_PARAMS"
+            );
         }
-        assert_eq!(worker.dispatch("getAddress", json!({})).unwrap_err().code, "WALLET_OFFLINE");
+        assert_eq!(
+            worker.dispatch("getAddress", json!({})).unwrap_err().code,
+            "WALLET_OFFLINE"
+        );
+    }
+
+    #[test]
+    fn issuance_consistency_scan_retains_bridge_routes_and_proxy_credentials() {
+        for profile in [
+            crate::profile::Profile::Dev,
+            crate::profile::Profile::Staging,
+        ] {
+            let url = "https://arb1.arbitrum.io/rpc".to_owned();
+            let chain = mint_chain(url, BitcoinNetwork::Signet, Some(profile), 42_161);
+            let indexer_config = match profile {
+                crate::profile::Profile::Dev => IndexerConfig::Esplora {
+                    url: "https://dev.esplora-01.mint.utexo.com".into(),
+                },
+                _ => IndexerConfig::Electrum {
+                    url: "ssl://electrum.iriswallet.com:50033".into(),
+                },
+            };
+            let original = OnlineOptions {
+                evm_chains: HashMap::from([(42_161, chain)]),
+                // Authenticated proxies are supported on local fixtures, independently
+                // of Dev's deployment policy; a consistency scan must preserve both.
+                proxy_auth_keys: HashMap::from([(
+                    "rpc://127.0.0.1:3000/json-rpc".into(),
+                    "11".repeat(32),
+                )]),
+                vanilla_sync_lookback: 37,
+                failed_witness_receive_grace_secs: 172_800,
+                ..Session::online_options(indexer_config)
+            };
+            let mut retained = SessionOnlineOptions(original.clone());
+            retained.0.skip_consistency_check = true;
+            for _ in 0..2 {
+                let copy = retained.consistency_options();
+                assert_eq!(copy.indexer_config, original.indexer_config);
+                assert_eq!(copy.evm_chains, original.evm_chains);
+                assert_eq!(copy.proxy_auth_keys, original.proxy_auth_keys);
+                assert_eq!(copy.vanilla_sync_lookback, original.vanilla_sync_lookback);
+                assert_eq!(
+                    copy.failed_witness_receive_grace_secs,
+                    original.failed_witness_receive_grace_secs
+                );
+                assert!(!copy.skip_consistency_check);
+            }
+            retained.clear_secrets();
+            assert!(retained.0.proxy_auth_keys.values().all(String::is_empty));
+        }
     }
 
     #[test]
@@ -2021,7 +2355,12 @@ mod tests {
         let signet = BitcoinNetwork::Signet;
         let arbitrum = 42_161;
         let window = |network, profile, chain| {
-            let policy = mint_chain("https://arb1.arbitrum.io/rpc".into(), network, profile, chain);
+            let policy = mint_chain(
+                "https://arb1.arbitrum.io/rpc".into(),
+                network,
+                profile,
+                chain,
+            );
             policy.min_mint_lock_blocks..=policy.max_mint_lock_blocks
         };
 
@@ -2037,96 +2376,6 @@ mod tests {
         assert_eq!(window(signet, None, arbitrum), 2..=7_200);
         assert_eq!(window(signet, Some(Profile::Dev), 1), 2..=7_200);
         assert_eq!(window(BitcoinNetwork::Regtest, None, 31_337), 2..=512);
-    }
-
-    #[test]
-    #[ignore = "requires the current issuer-approved Dev BUSDT genesis in CON1 format"]
-    fn dev_busdt_registers_idempotently_in_the_offline_dev_profile() {
-        let asset_id = "rgb:A6k89KtR-e3oXqRP-uH3jUrz-LU_sYL3-hMZ0k3O-6u8DXbE";
-        let digest = "60a1b4f0d79706a7a51c6388fa14b951e119bae1ceffd811f4ebc62249817c4c";
-        let bytes = std::fs::read(std::env::var_os("UTEXO_DEV_BFA6_GENESIS_CONTRACT").unwrap()).unwrap();
-        assert_eq!(sha256(&bytes), digest);
-
-        let dir = tempfile::tempdir().unwrap();
-        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
-        let mut params = open_params(dir.path(), "signet");
-        params["profile"] = json!("dev");
-        let mut worker = Worker::default();
-        worker.dispatch("open", params.clone()).unwrap();
-
-        let request = json!({"contractBase64":STANDARD.encode(bytes),"expectedAssetId":asset_id,"sha256":digest});
-        let asset = json!({"assetId":asset_id});
-        assert_eq!(worker.dispatch("importContract", request.clone()).unwrap()["assetId"], asset_id);
-        worker.dispatch("close", json!({})).unwrap();
-        worker.dispatch("open", params).unwrap();
-        assert_eq!(
-            worker.dispatch("getAssetMetadata", asset.clone()).unwrap(),
-            json!({"assetId":asset_id,"schema":"Bfa","name":"Bridged USDT","ticker":"BUSDT","precision":6})
-        );
-        assert_eq!(worker.dispatch("importContract", request).unwrap()["assetId"], asset_id);
-        assert_eq!(
-            worker.dispatch("getAssetBalance", asset.clone()).unwrap(),
-            json!({"settled":"0","future":"0","spendable":"0"})
-        );
-        assert_eq!(worker.dispatch("listTransfers", asset).unwrap(), json!([]));
-    }
-
-    #[test]
-    #[ignore = "requires the BUSDT contract recovered from Dev E2E run 41698713237"]
-    fn recovered_bfa5_dev_busdt_is_rejected_offline() {
-        let id = "rgb:fbkO6B_i-qyLXa6d-x3sAOaX-cx~vZB9-rxNSUle-9lXBTf8";
-        let digest = "a678ebf73f3a0523b307cd2fe8019a321ac938eaf547c2c65a7ac079948332ce";
-        let bytes = std::fs::read(std::env::var_os("UTEXO_DEV_BUSDT_CONTRACT").unwrap()).unwrap();
-        assert_eq!(sha256(&bytes), digest);
-        let request = json!({"contractBase64":STANDARD.encode(bytes),"expectedAssetId":id,"sha256":digest});
-        let asset = json!({"assetId":id});
-
-        let dir = tempfile::tempdir().unwrap();
-        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
-        let mut worker = Worker::default();
-        let mut params = open_params(dir.path(), "signet");
-        // Exercise the contract decoder on the same Bitcoin network independently
-        // of the earlier public dispatch and disabled Dev profile gates.
-        params["mode"] = json!("btc-only");
-        worker.dispatch("open", params).unwrap();
-        let contract = decode(request).unwrap();
-        assert_eq!(
-            worker.session.as_mut().unwrap().import_contract(contract).unwrap_err().code,
-            "CONTRACT_FORMAT_UNSUPPORTED"
-        );
-        assert_eq!(
-            worker.dispatch("getAssetBalance", asset).unwrap_err().code,
-            "ASSET_NOT_FOUND"
-        );
-    }
-
-    #[test]
-    fn malformed_contract_is_rejected_without_registration() {
-        let dir = tempfile::tempdir().unwrap();
-        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
-        let mut worker = Worker::default();
-        worker
-            .dispatch("open", open_params(dir.path(), "regtest"))
-            .unwrap();
-        let mut bytes = STANDARD.decode(CONTRACT.trim()).unwrap();
-        bytes.truncate(16);
-        let digest = sha256(&bytes);
-        let request = json!({
-            "contractBase64": STANDARD.encode(bytes),
-            "expectedAssetId": CONTRACT_ID,
-            "sha256": digest,
-        });
-        assert_eq!(
-            worker.dispatch("importContract", request).unwrap_err().code,
-            "CONTRACT_FORMAT_UNSUPPORTED"
-        );
-        assert_eq!(
-            worker
-                .dispatch("getAssetBalance", json!({"assetId": CONTRACT_ID}))
-                .unwrap_err()
-                .code,
-            "ASSET_NOT_FOUND"
-        );
     }
 
     #[test]

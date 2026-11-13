@@ -6,11 +6,12 @@ import { registerHooks } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { WalletManagerRgb as BlockedWalletManagerRgb, burnDestinationFor } from '../onchain.js'
+import { burnDestinationFor } from '../onchain.js'
 import { importWalletFixture } from './fixtures/native-manifest.js'
 import devServices from '../src/onchain-dev-services.json' with { type: 'json' }
 
 const { WalletManagerRgb } = await importWalletFixture('network')
+const { WalletManagerRgb: BlockedWalletManagerRgb } = await importWalletFixture('network-hold', true)
 
 const SEED = Uint8Array.from({ length: 64 }, (_, index) => index + 1)
 const INDEXER = 'tcp://127.0.0.1:50001'
@@ -50,7 +51,7 @@ const DEFAULTS = {
 }
 
 async function managerFor (t, {
-  nativeVersion = 5, nativeAssetIssuance = 2, workerIndexerProtocol, receivedMint = null, substituteProxy,
+  nativeVersion = 6, nativeAssetIssuance = 2, workerIndexerProtocol, receivedMint = null, substituteProxy,
   cancellationResponse, nativeTrees = {
     overlayTree: '5492824f3cf47b4c821dfca8b7a63fed27858486',
     integrationTree: '5492824f3cf47b4c821dfca8b7a63fed27858486'
@@ -74,7 +75,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   const { id, method, params } = JSON.parse(line)
   const reply = result => process.stdout.write(JSON.stringify({ id, result }) + '\\n')
   if (method === 'version') return reply({
-    protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance},
+    protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance}, contractRegistration: 0, exposedInputs: 1,
     indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
     source: '2f7b21d8637baad548504ea870deb2c0d4d0a37d',
     ...${JSON.stringify(nativeTrees)}
@@ -88,6 +89,9 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       transportEndpoint: ${JSON.stringify(substituteProxy ?? openProxy)} })
   }
   if (method === 'bindJournal') return reply({ written: true })
+  if (method === 'importContract') return process.stdout.write(JSON.stringify({
+    id, error: { code: 'CONTRACT_IMPORT_UNAVAILABLE', message: 'Standalone import is unavailable' }
+  }) + '\\n')
   if (method === 'goOnline') {
     assert.deepEqual(params, ${JSON.stringify(expectedOnline)})
     if (++connectionAttempts === 1) return process.stdout.write(JSON.stringify({
@@ -222,6 +226,22 @@ test('offline open rejects the patched alpha.23 native binary identity', async t
     }
   })
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
+})
+
+test('standalone contract import is unavailable without blocking any supported RGB profile', async t => {
+  const contract = new Uint8Array([1, 2, 3])
+  const sha256 = createHash('sha256').update(contract).digest('hex')
+  for (const options of [{}, ...ORDINARY_RGB, STAGING, DEV]) {
+    const manager = await managerFor(t, { ...options, startupMode: 'offline' })
+    const account = await manager.getAccount()
+    assert.equal(account.getInfo().protocol, 'RGB_L1')
+    assert.equal(account.getCapabilities().contractRegistration.status, 'unavailable')
+    await assert.rejects(account.registerAssetContract({ contract, assetId: 'rgb:fixture', sha256 }), {
+      code: 'CONTRACT_IMPORT_UNAVAILABLE'
+    })
+    assert.equal(account.getConnectionStatus(), 'offline')
+    await manager.shutdown()
+  }
 })
 
 test('receive cancellation forwards the exact target and requires native confirmation', async t => {
