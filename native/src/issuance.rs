@@ -5,7 +5,6 @@ use super::{
     Session, TransferScope, TransferStatus, Value, decode, fault, input, iso_balance, json, native,
     positive, require_asset, sha256,
 };
-use crate::profile::Profile;
 use rgb_lib::wallet::{RgbWalletOpsOffline, Transfer, TransferKind, Unspent};
 use std::collections::HashSet;
 use std::path::Path;
@@ -278,16 +277,6 @@ impl Session {
     }
 
     pub(super) fn issue_asset(&mut self, params: Value) -> Result<Value> {
-        if !matches!(
-            (self.network, self.profile),
-            (BitcoinNetwork::Mainnet | BitcoinNetwork::Regtest, None)
-                | (BitcoinNetwork::Signet, Some(Profile::Public))
-        ) {
-            return Err(fault(
-                "ASSET_ISSUANCE_UNAVAILABLE",
-                "Asset issuance requires Mainnet, Public Signet or Regtest RGB.",
-            ));
-        }
         self.idle()?;
         let request: Request = decode(params)?;
         let (amounts, supply) = request.validate()?;
@@ -319,11 +308,11 @@ impl Session {
         }
 
         let mut online = self.online()?;
-        let public = self.network != BitcoinNetwork::Regtest;
-        if public {
+        let verify_confirmations = self.network != BitcoinNetwork::Regtest;
+        if verify_confirmations {
             // FastSync does not recheck every free colored output. Refresh the
-            // wallet's full consistency scan before committing a public asset
-            // so an already-spent seal cannot be admitted from its cached row.
+            // wallet's full consistency scan before issuing outside Regtest so
+            // an already-spent seal cannot be admitted from its cached row.
             let url = self.indexer_url.clone().ok_or_else(|| {
                 fault(
                     "WALLET_OFFLINE",
@@ -344,9 +333,9 @@ impl Session {
         }
         let unspents = self
             .wallet
-            .list_unspents(Some(online), false, public)
+            .list_unspents(Some(online), false, verify_confirmations)
             .map_err(native)?;
-        if public {
+        if verify_confirmations {
             require_confirmed_slots(&unspents, amounts.len(), |txid| {
                 self.wallet
                     .get_tx_height(online, txid.to_owned())

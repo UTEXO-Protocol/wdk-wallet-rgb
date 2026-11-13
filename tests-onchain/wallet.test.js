@@ -17,6 +17,14 @@ const routes = [
   { chainId: 'tron:728126428', dstEid: 30420 }
 ]
 
+const issuanceProfiles = [
+  { network: 'regtest' },
+  { network: 'mainnet' },
+  { network: 'signet', profile: 'public' },
+  { network: 'signet', profile: 'staging' },
+  { network: 'signet', profile: 'dev' }
+]
+
 async function scratch (t) {
   const dir = await realpath(await mkdtemp(join(tmpdir(), 'wdk-onchain-')))
   t.after(() => rm(dir, { recursive: true, force: true }))
@@ -204,7 +212,7 @@ test('ordinary RGB issuance sends canonical amounts under the same operation ID 
   }
   const journal = { async assertAvailable () {} }
   const niaRpc = { ...nia, schema: 'Nia', amounts: ['1', '2', '9007199254740993'] }
-  for (const chain of [{ network: 'regtest' }, { network: 'mainnet' }, { network: 'signet', profile: 'public' }]) {
+  for (const chain of issuanceProfiles) {
     const account = new WalletAccountRgb(worker, {}, { ...chain, mode: 'rgb', routes: [] }, journal)
     assert.equal(account.getConnectionStatus(), 'offline')
     assert.deepEqual(await account.issueAssetNia(nia), {
@@ -219,32 +227,31 @@ test('ordinary RGB issuance sends canonical amounts under the same operation ID 
   }
 })
 
-test('issuance rejects bridge profiles, invalid inputs, unresolved spends and invalid native responses', async () => {
+test('issuance rejects invalid inputs, unresolved spends and invalid native responses in every RGB profile', async () => {
   const valid = { operationId: 'regtest-nia-issue-02', ticker: 'TEST', name: 'Test NIA', precision: 0, amounts: [1n] }
   const neverWorker = { request: () => assert.fail('Issuance was dispatched unexpectedly') }
-  const config = { network: 'regtest', mode: 'rgb' }
   const { ticker, ...cfa } = valid
-  for (const profile of ['dev', 'staging']) {
-    const bridgeAccount = new WalletAccountRgb(neverWorker, {}, { ...config, network: 'signet', profile }, {})
-    await assert.rejects(bridgeAccount.issueAssetNia(valid), { code: 'ASSET_ISSUANCE_UNAVAILABLE' })
-    await assert.rejects(bridgeAccount.issueAssetCfa(cfa), { code: 'ASSET_ISSUANCE_UNAVAILABLE' })
+  for (const chain of issuanceProfiles) {
+    const config = { ...chain, mode: 'rgb' }
+    const account = new WalletAccountRgb(neverWorker, {}, config, {})
+    for (const options of [
+      { operationId: 'wrong-id' }, { ticker: 'test' }, { ticker: '1TEST' }, { ticker: 'TOOLONG10' }, { name: 'Test\n' },
+      { name: 'x'.repeat(41) }, { precision: 19 }, { precision: 1.5 }, { amounts: [] }, { amounts: Array(21).fill(1) },
+      { amounts: Array(1) }, { amounts: [0] }, { amounts: ['01'] }, { amounts: [1.5] },
+      { amounts: [Number.MAX_SAFE_INTEGER + 1] }, { amounts: [0xffffffffffffffffn, 1n] }, { details: 'CFA only' }
+    ]) await assert.rejects(account.issueAssetNia({ ...valid, ...options }), TypeError)
+    for (const options of [{ details: 'Ω'.repeat(128) }, { details: '\ud800' }, { filePath: '/private/file' }]) {
+      await assert.rejects(account.issueAssetCfa({ ...cfa, ...options }), TypeError)
+    }
+    const unresolved = new WalletAccountRgb(neverWorker, {}, config, {
+      async assertAvailable () { throw Object.assign(new Error('Unresolved spend'), { code: 'OPERATION_UNRESOLVED' }) }
+    })
+    await assert.rejects(unresolved.issueAssetNia(valid), { code: 'OPERATION_UNRESOLVED' })
+    await assert.rejects(unresolved.issueAssetCfa(cfa), { code: 'OPERATION_UNRESOLVED' })
+    const invalidReply = new WalletAccountRgb({ request: () => ({ assetId: 'rgb:fixture' }) }, {}, config, { assertAvailable () {} })
+    await assert.rejects(invalidReply.issueAssetNia(valid), { code: 'NATIVE_PROTOCOL' })
+    await assert.rejects(invalidReply.issueAssetCfa(cfa), { code: 'NATIVE_PROTOCOL' })
   }
-  const account = new WalletAccountRgb(neverWorker, {}, config, {})
-  for (const options of [
-    { operationId: 'wrong-id' }, { ticker: 'test' }, { ticker: '1TEST' }, { ticker: 'TOOLONG10' }, { name: 'Test\n' },
-    { name: 'x'.repeat(41) }, { precision: 19 }, { precision: 1.5 }, { amounts: [] }, { amounts: Array(21).fill(1) },
-    { amounts: Array(1) }, { amounts: [0] }, { amounts: ['01'] }, { amounts: [1.5] },
-    { amounts: [Number.MAX_SAFE_INTEGER + 1] }, { amounts: [0xffffffffffffffffn, 1n] }, { details: 'CFA only' }
-  ]) await assert.rejects(account.issueAssetNia({ ...valid, ...options }), TypeError)
-  for (const options of [{ details: 'Ω'.repeat(128) }, { details: '\ud800' }, { filePath: '/private/file' }]) {
-    await assert.rejects(account.issueAssetCfa({ ...cfa, ...options }), TypeError)
-  }
-  const unresolved = new WalletAccountRgb(neverWorker, {}, config, {
-    async assertAvailable () { throw Object.assign(new Error('Unresolved spend'), { code: 'OPERATION_UNRESOLVED' }) }
-  })
-  await assert.rejects(unresolved.issueAssetNia(valid), { code: 'OPERATION_UNRESOLVED' })
-  const invalidReply = new WalletAccountRgb({ request: () => ({ assetId: 'rgb:fixture' }) }, {}, config, { assertAvailable () {} })
-  await assert.rejects(invalidReply.issueAssetNia(valid), { code: 'NATIVE_PROTOCOL' })
 })
 
 test('the WDK policy view has no spend, address allocation or post-close authority', async () => {

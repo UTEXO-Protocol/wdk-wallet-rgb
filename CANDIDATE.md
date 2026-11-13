@@ -60,7 +60,9 @@ The native lock owner durably writes the spend and invoice journals before relea
 
 ## Issue RGB assets
 
-Open a connected Mainnet RGB, Public Signet RGB or Regtest RGB wallet. Create RGB outputs with `createUtxos()` using BTC on the selected chain and wait for their confirmation before issuing. Each entry in `amounts` uses a separate available RGB output. Supply positive base-unit amounts as decimal strings or bigint. Safe integer numbers are accepted for compatibility with the old issuance methods.
+NIA and CFA issuance is admitted in every supported RGB environment: Mainnet, Regtest, and Signet with `profile: 'public'`, `'dev'` or `'staging'`. This does not enable RGB in a `mode: 'btc-only'` wallet or add unsupported Bitcoin networks. Native builds remain blocked as described at the top of this guide; the admission change is source-only until rebuilt binaries are qualified.
+
+Open a connected RGB wallet. Create RGB outputs with `createUtxos()` using BTC on the selected chain and wait for their confirmation before issuing. Each entry in `amounts` uses a separate available RGB output. Supply positive base-unit amounts as decimal strings or bigint. Safe integer numbers are accepted for compatibility with the old issuance methods.
 
 The example below uses Regtest. Mine the output confirmations on your local chain before running it.
 
@@ -87,4 +89,8 @@ For a collectible fungible asset, call `issueAssetCfa()` with `name`, optional t
 
 Issuance uses existing wallet allocations, requires a connected indexer for new assets and broadcasts no Bitcoin transaction. The invoice and transfer in the example use the configured RGB proxy. The SDK exposes issuance through the host account API for ordinary RGB. Preserve the wallet directory and repeat the exact call with the same operation ID after an interrupted result. A completed call returns the same asset ID on replay. If the wallet reports `INSUFFICIENT_RGB_OUTPUTS`, create and confirm more outputs before retrying.
 
-On Mainnet and Public Signet, the wallet runs a fresh consistency scan and checks every potential issuance output against the Bitcoin indexer. If any is awaiting confirmation, issuance returns `RGB_OUTPUT_CONFIRMATION_REQUIRED`. Retry after the setup confirms using the same operation ID. If the scan detects a spend outside the wallet, issuance returns `WALLET_INCONSISTENT`. The issuance call needs no proxy connection.
+On Mainnet and every Signet profile, the wallet runs a fresh consistency scan and checks every potential issuance output against the Bitcoin indexer. If any is awaiting confirmation, issuance returns `RGB_OUTPUT_CONFIRMATION_REQUIRED`. Retry after the setup confirms using the same operation ID. If the scan detects a spend outside the wallet, issuance returns `WALLET_INCONSISTENT`. The issuance call needs no proxy connection.
+
+For a disposable Dev asset, use a separate Dev wallet and a distinct operation ID, with a ticker such as `VTEST`. Fund its outputs on Dev's chain; Public Signet funds are not interchangeable with Dev funds. Both parties must use the Dev profile and its configured indexer and proxy. Issuance keeps the same Dev checkpoint checks as other wallet operations. A newly issued NIA or CFA can test RGB transfers, but it is not the bridge's configured BFA asset and cannot be redeemed through its mint/burn flow.
+
+Restart recovery requires the same wallet directory and seed, including the issuance and transfer journals. Retry an interrupted issuance with the exact original parameters and operation ID to recover its original asset. For an interrupted transfer, reconcile its original operation with `recoverSend()` rather than submitting a new one. A seed alone cannot restore the asset's RGB state.

@@ -712,10 +712,6 @@ export class WalletAccountRgb {
   #issueAsset (schema, options) {
     return this.#run(async () => {
       this.#assertRgbMode()
-      const { network, profile } = this.#config
-      if (network !== 'regtest' && network !== 'mainnet' && !(network === 'signet' && profile === 'public')) {
-        throw new WalletRuntimeError('ASSET_ISSUANCE_UNAVAILABLE', 'Asset issuance requires Regtest, Mainnet or Public Signet RGB')
-      }
       const params = issuanceParams(schema, options)
       await this.#journal.assertAvailable()
       this.#assertOpen()

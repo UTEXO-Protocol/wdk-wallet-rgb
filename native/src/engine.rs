@@ -1933,20 +1933,26 @@ mod tests {
     }
 
     #[test]
-    fn bridge_profiles_cannot_issue_assets() {
+    fn bridge_profiles_require_an_online_wallet_for_nia_and_cfa_issuance() {
         for profile in ["dev", "staging"] {
             let dir = tempfile::tempdir().unwrap();
             std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
             let mut params = open_params(dir.path(), "signet");
             params["profile"] = json!(profile);
             let mut worker = Worker::default();
-            worker.dispatch("open", params).unwrap();
-            let request = json!({
-                "operationId":"issue-bridge-nia-01", "schema":"Nia", "name":"Native NIA",
-                "ticker":"NIA", "precision":0, "amounts":["1"],
-            });
-            assert_eq!(worker.dispatch("issueAsset", request).unwrap_err().code, "ASSET_ISSUANCE_UNAVAILABLE");
-            assert!(!dir.path().join(".wdk-onchain-issuance-v1").exists());
+            worker.dispatch("open", params.clone()).unwrap();
+            for _ in 0..2 {
+                for request in [
+                    json!({"operationId":"issue-bridge-nia-01", "schema":"Nia", "name":"Native NIA", "ticker":"VTEST", "precision":0, "amounts":["1"]}),
+                    json!({"operationId":"issue-bridge-cfa-01", "schema":"Cfa", "name":"Native CFA", "precision":0, "amounts":["1"]}),
+                ] {
+                    assert_eq!(worker.dispatch("issueAsset", request).unwrap_err().code, "WALLET_OFFLINE");
+                }
+                assert!(!dir.path().join(".wdk-onchain-issuance-v1/.pending.json").exists());
+                assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
+                worker.dispatch("close", json!({})).unwrap();
+                worker.dispatch("open", params.clone()).unwrap();
+            }
         }
     }
 
