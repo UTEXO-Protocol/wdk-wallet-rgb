@@ -1,0 +1,77 @@
+{
+  "node": {
+    "target": "darwin-arm64",
+    "runtime": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "rustTarget": "aarch64-apple-darwin",
+      "node": "v26.11.1",
+      "rosetta": false
+    },
+    "abi": {
+      "format": "Mach-O",
+      "minimumOS": "11.0",
+      "needed": [
+        "/System/Library/Frameworks/Security.framework/Versions/A/Security",
+        "/System/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration",
+        "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+        "/usr/lib/libiconv.2.dylib",
+        "/usr/lib/libSystem.B.dylib"
+      ]
+    },
+    "nativeIdentity": {
+      "protocol": 2,
+      "source": "2f7b21d8637baad548504ea870deb2c0d4d0a37d",
+      "overlayTree": "5492824f3cf47b4c821dfca8b7a63fed27858486",
+      "integrationTree": "5492824f3cf47b4c821dfca8b7a63fed27858486",
+      "runtime": "node-host-process",
+      "indexer": "electrum-and-dev-esplora",
+      "networkChecks": 6,
+      "contractRegistration": 0,
+      "exposedInputs": 1,
+      "unsignedRecovery": 1,
+      "journalWrites": 1,
+      "assetIssuance": 2
+    },
+    "binary": {
+      "name": "utexo-rgb-native",
+      "sha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94",
+      "size": 44865200
+    },
+    "verified": [
+      "binary hash and ABI",
+      "mismatched hash rejected",
+      "native protocol negotiation",
+      "offline Regtest open, reads, shutdown and reopen"
+    ],
+    "packageVersion": "2.1.0-alpha.24",
+    "source": {
+      "commit": "b550b504ebde2274b9a3c506a2b935324c481728",
+      "tree": "4847575ca29681dc63a2e9099ff2b35626a79bed"
+    },
+    "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)\nbinary: rustc\ncommit-hash: 4a4ef493e3a1488c6e321570238084b38948f6db\ncommit-date: 2026-03-02\nhost: aarch64-apple-darwin\nrelease: 1.94.0\nLLVM version: 21.1.8",
+    "cargo": "cargo 1.94.0 (85eff7c80 2026-01-15)",
+    "cargoLockSha256": "fb3683817ff79f58fb7475065804433dd7dbf3b7eaff62a51cc111eaa93e23f8",
+    "buildScriptSha256": "2ea1d1cee41fc2c723721782758f41d38f9a55877ec44c991b019ebf5714d459"
+  },
+  "bare": {
+    "target": "darwin-arm64",
+    "sdkVersion": "2.1.0-alpha.24",
+    "sourceCommit": "b550b504ebde2274b9a3c506a2b935324c481728",
+    "sourceTree": "4847575ca29681dc63a2e9099ff2b35626a79bed",
+    "native": {
+      "source": "2f7b21d8637baad548504ea870deb2c0d4d0a37d",
+      "overlayTree": "5492824f3cf47b4c821dfca8b7a63fed27858486",
+      "integrationTree": "5492824f3cf47b4c821dfca8b7a63fed27858486",
+      "protocol": 2
+    },
+    "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)\nbinary: rustc\ncommit-hash: 4a4ef493e3a1488c6e321570238084b38948f6db\ncommit-date: 2026-03-02\nhost: aarch64-apple-darwin\nrelease: 1.94.0\nLLVM version: 21.1.8",
+    "cargoLockSha256": "fdc48289868bc51ad9772a764fe79970782fd97b35f11f91d30b8c3bbfedb830",
+    "buildScriptSha256": "d45f6a367c11708ccf18f66b5228b8ab6f2f95b2ed13cc0a0880382aa13a77a1",
+    "pin": {
+      "byteLength": 44777952,
+      "sha256": "d94609b3e5c7ffd6046de2cc198cb519f202f0245ad02710697d14498552808f"
+    },
+    "abi": "utexo__wdk-wallet-rgb.bare:\nMach header\n      magic  cputype cpusubtype  caps    filetype ncmds sizeofcmds      flags\nMH_MAGIC_64    ARM64        ALL  0x00       DYLIB    20       2536   NOUNDEFS DYLDLINK TWOLEVEL NO_REEXPORTED_DYLIBS MH_HAS_TLV_DESCRIPTORS\n\tutexo__wdk-wallet-rgb@2.bare (compatibility version 0.0.0, current version 0.0.0)\n\ttime stamp 1 Thu Jan  1 05:30:01 1970\n\t/System/Library/Frameworks/Security.framework/Versions/A/Security (compatibility version 1.0.0, current version 62460.1.2)\n\ttime stamp 2 Thu Jan  1 05:30:02 1970\n\t/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5027.0.69)\n\ttime stamp 2 Thu Jan  1 05:30:02 1970\n\t/System/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration (compatibility version 1.0.0, current version 1446.0.0)\n\ttime stamp 2 Thu Jan  1 05:30:02 1970\n\t/usr/lib/libresolv.9.dylib (compatibility version 1.0.0, current version 1.0.0)\n\ttime stamp 2 Thu Jan  1 05:30:02 1970\n\t/usr/lib/libiconv.2.dylib (compatibility version 7.0.0, current version 7.0.0)\n\ttime stamp 2 Thu Jan  1 05:30:02 1970\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.0.0)\n\ttime stamp 2 Thu Jan  1 05:30:02 1970"
+  }
+}

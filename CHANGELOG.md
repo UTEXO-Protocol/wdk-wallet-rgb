@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Check the configured Bitcoin chain at WDK network boundaries and retain operation identities across reconnects.
 - Report the missing standalone contract import API without blocking unrelated wallet operations.
 - Add native builds and packed desktop qualification for the supported Node/Bare target matrix.
+- Require Bare 1.37.1 or newer, including embedded mobile runtimes, and verify clean and existing-host dependency installs.
 
 ## [2.0.3] — 2026-01-28
 

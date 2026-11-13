@@ -1,0 +1,351 @@
+{
+  "sourceCommit": "b550b504ebde2274b9a3c506a2b935324c481728",
+  "packageVersion": "2.1.0-alpha.24",
+  "packSha256": "c2ecdef68aa785bbad12d6df72b5d96febe8a84595fc658e732fca9a5337ed01",
+  "identity": {
+    "version": "2.1.0-alpha.24",
+    "nodeSha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94",
+    "bareSha256": "d94609b3e5c7ffd6046de2cc198cb519f202f0245ad02710697d14498552808f",
+    "containers": {
+      "btc": {
+        "id": "b49445330ddb2fb65e5215be69da12566534a5b5940307269b5d3d5010d64746",
+        "image": "registry.gitlab.com/hashbeam/docker/bitcoind@sha256:5473c951ca8a703f7c15d9a353f99135e0a1f0cc7ef976f29d073160950098bf",
+        "imageId": "sha256:5473c951ca8a703f7c15d9a353f99135e0a1f0cc7ef976f29d073160950098bf",
+        "ports": {
+          "18443/tcp": [
+            {
+              "HostIp": "127.0.0.1",
+              "HostPort": "50843"
+            }
+          ]
+        }
+      },
+      "indexer": {
+        "id": "b14aa0869d25b2d524dc7df682e9bc219561bab95378fbe763a2c32d7b37b528",
+        "image": "olivbau/blockstream-electrs@sha256:53f7ff95fafedfc94cc6d7239edacde41ca1190955879fcfacf805394b1169c3",
+        "imageId": "sha256:53f7ff95fafedfc94cc6d7239edacde41ca1190955879fcfacf805394b1169c3",
+        "ports": {
+          "3002/tcp": [
+            {
+              "HostIp": "127.0.0.1",
+              "HostPort": "50894"
+            }
+          ]
+        }
+      },
+      "electrum": {
+        "id": "d6279634611ab0090c00f0d5fcc1538deed38f6c1a022efbf002f0d9e98da893",
+        "image": "cculianu/fulcrum@sha256:89ce6a58525514e979cc6134a7e82a4eba52787fe1ace658d65dc4c7c0730c6a",
+        "imageId": "sha256:89ce6a58525514e979cc6134a7e82a4eba52787fe1ace658d65dc4c7c0730c6a",
+        "ports": {
+          "50001/tcp": [
+            {
+              "HostIp": "127.0.0.1",
+              "HostPort": "50802"
+            }
+          ]
+        }
+      },
+      "proxy": {
+        "id": "30f81701d70bee76782e2d0835158f8c57fae57046aedcf55913642b52f491b2",
+        "image": "ghcr.io/rgb-tools/rgb-proxy-server@sha256:9c0740f1421078a5c4bf243140a4c551a8e4818cb4f2c727d4e429427b8c47ce",
+        "imageId": "sha256:9c0740f1421078a5c4bf243140a4c551a8e4818cb4f2c727d4e429427b8c47ce",
+        "ports": {
+          "3000/tcp": [
+            {
+              "HostIp": "127.0.0.1",
+              "HostPort": "50890"
+            }
+          ]
+        }
+      }
+    },
+    "publicFundsUsed": false
+  },
+  "results": {
+    "node": {
+      "nia": {
+        "assetId": "rgb:JPCJjiAO-qhArBLf-fIWWpCw-U8UYLSw-v2q3a_Z-W5h8KCM",
+        "schema": "Nia",
+        "issuance": {
+          "name": "Local NIA Fixture",
+          "ticker": "FIXNIA",
+          "precision": 2,
+          "amounts": [
+            "600",
+            "400"
+          ],
+          "btcBroadcast": false,
+          "invalidSupplyRejected": true,
+          "retryAfterRestart": "same asset ID",
+          "changedRequestRejected": true,
+          "recoveredAfterNativeResponseLoss": true,
+          "recoveredFromInjectedMissingReceipt": false,
+          "issuanceRows": 1,
+          "transplantedJournalRejected": true
+        },
+        "blind": {
+          "txid": "8c598ef3e01b948660d7c3953dac43899aede342b9cd471395f62030c36f1225",
+          "confirmations": 6,
+          "blockHash": "5c17aeb92743d385c6e41a16246292206d43a726cc3738eb6d879afae0977efe",
+          "kind": "Blind",
+          "from": "A",
+          "to": "B",
+          "amount": "450",
+          "unknownAsset": true,
+          "exposedInputsPersisted": true,
+          "pendingAllocationEvidence": {
+            "selectedEmptyInputs": [
+              "90a893cd3fe2c3e2372cbd8dd611f6d92ccc03deec523996307649116c7f1113:8"
+            ],
+            "pendingInvoice": "bcrt:utxob:LL0VrHJ2-y_g570F-mTHy_Pm-cWBAxHA-s~ThVPE-BGogoRy-exsYh",
+            "pendingIssuance": [
+              {
+                "schema": "Nia",
+                "assetId": "rgb:kTNtaQZu-UVjXFgT-52vNcyK-~U8F4PZ-Ud4SUb5-MVG92FQ",
+                "outpoint": "90a893cd3fe2c3e2372cbd8dd611f6d92ccc03deec523996307649116c7f1113:15"
+              },
+              {
+                "schema": "Cfa",
+                "assetId": "rgb:wyJvZnHf-5SZLhOe-RyTBYgq-~gmCZqX-tpjzbvg-1qxYwTs",
+                "outpoint": "90a893cd3fe2c3e2372cbd8dd611f6d92ccc03deec523996307649116c7f1113:12"
+              }
+            ],
+            "retainedPendingStatus": "WaitingCounterparty"
+          },
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "witness": {
+          "txid": "8ea75b3efc2c20e8dd28802def0eb85eb34faf132e60941c274f3faf2a1f8a0e",
+          "confirmations": 6,
+          "blockHash": "6d3d92ed9e15144d382ce11add053966859a93dba598b83c3045d8f1285a1b62",
+          "kind": "Witness",
+          "from": "B",
+          "to": "A",
+          "amount": "150",
+          "unknownAsset": false,
+          "exposedInputsPersisted": true,
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "selfSend": {
+          "txid": "a00698fa055bec0154a7cea63af02703e3518479b30dd90aa0aa4c37f0eb9e0b",
+          "confirmations": 6,
+          "blockHash": "0251f2230defd915c9914ce6b3f229386b711e54416cf10c6955b71289435fb0",
+          "kind": "Blind",
+          "from": "A",
+          "to": "A",
+          "amount": "25",
+          "unknownAsset": false,
+          "exposedInputsPersisted": true,
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "restartBalances": {
+          "A": "700",
+          "B": "300"
+        }
+      },
+      "cfa": {
+        "assetId": "rgb:Ev7g5Vdz-8nRk7kY-m~7nBBn-RIBSo2R-9FCjJDM-gaSzqEI",
+        "schema": "Cfa",
+        "issuance": {
+          "name": "Local CFA Fixture",
+          "ticker": null,
+          "precision": 2,
+          "amounts": [
+            "600",
+            "400"
+          ],
+          "btcBroadcast": false,
+          "invalidSupplyRejected": true,
+          "retryAfterRestart": "same asset ID",
+          "changedRequestRejected": true,
+          "recoveredAfterNativeResponseLoss": false,
+          "recoveredFromInjectedMissingReceipt": true,
+          "issuanceRows": 1
+        },
+        "blind": {
+          "txid": "088dd621a3fc9f1fdb2d576fa2e98e3e2e9e8f198fa7c1d612a6f291bb4a774b",
+          "confirmations": 6,
+          "blockHash": "17c105d7ae3f12e4f4b55b9408e916f9332fc0dcdd304eec4b51d72c4b8c376e",
+          "kind": "Blind",
+          "from": "A",
+          "to": "B",
+          "amount": "450",
+          "unknownAsset": true,
+          "exposedInputsPersisted": true,
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "witness": {
+          "txid": "da2e3278c2b10a0a1d308683e1bb797ad78c7a9a0d2c036c3d130d61546b337e",
+          "confirmations": 6,
+          "blockHash": "44cba812ada195fdd07160c3239dc2f4af9cb545baea351c348c9d283acba01c",
+          "kind": "Witness",
+          "from": "B",
+          "to": "A",
+          "amount": "150",
+          "unknownAsset": false,
+          "exposedInputsPersisted": true,
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "selfSend": {
+          "txid": "0ff65069b2a38dc06f71d0e0506050afc95fb76bb8bd9b20c5a62912731ecd1f",
+          "confirmations": 6,
+          "blockHash": "3a953a3de018f718c9c1002bcee9276b62df287f38394ef47a6180165a6cce18",
+          "kind": "Blind",
+          "from": "A",
+          "to": "A",
+          "amount": "25",
+          "unknownAsset": false,
+          "exposedInputsPersisted": true,
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "restartBalances": {
+          "A": "700",
+          "B": "300"
+        }
+      }
+    },
+    "bare": {
+      "nia": {
+        "assetId": "rgb:vcmBB7Xu-TnRmYlb-iJlNx~g-lVrhB1w-omUKb7s-rYZhHWM",
+        "schema": "Nia",
+        "issuance": {
+          "name": "Local NIA Fixture",
+          "ticker": "FIXNIA",
+          "precision": 2,
+          "amounts": [
+            "600",
+            "400"
+          ],
+          "btcBroadcast": false,
+          "invalidSupplyRejected": true,
+          "retryAfterRestart": "same asset ID",
+          "changedRequestRejected": true,
+          "recoveredAfterNativeResponseLoss": false,
+          "recoveredFromInjectedMissingReceipt": false,
+          "issuanceRows": 1
+        },
+        "blind": {
+          "txid": "b8f7d1d20fce9c864e96ada8a03e5bad492f50942ffe8edfaed9b58c7f847b94",
+          "confirmations": 6,
+          "blockHash": "5b1e2cc1367f82ed8b5c20d78e39d28976b822f8009058f548f3486b037fdb69",
+          "kind": "Blind",
+          "from": "A",
+          "to": "B",
+          "amount": "450",
+          "unknownAsset": true,
+          "exposedInputsPersisted": true,
+          "pendingAllocationEvidence": {
+            "selectedEmptyInputs": [
+              "b0f63b14d361b7dc856858d97a5e98341dafe0a62d975784378574c2ce715ddf:16"
+            ],
+            "pendingInvoice": "bcrt:utxob:5RXB4nKD-A0jNIMz-gNnlEuA-NmU2IGo-UE50YWv-kvhcCkT-RMDAb",
+            "pendingIssuance": [
+              {
+                "schema": "Nia",
+                "assetId": "rgb:C4PbihiZ-EMGa0vM-cNzpXkl-Yo_6Anp-k57ysba-kEndg40",
+                "outpoint": "b0f63b14d361b7dc856858d97a5e98341dafe0a62d975784378574c2ce715ddf:10"
+              },
+              {
+                "schema": "Cfa",
+                "assetId": "rgb:YD2drShP-WA1BARq-lWA9lfX-4vg6x04-eIYIWFz-W6N5eZ8",
+                "outpoint": "b0f63b14d361b7dc856858d97a5e98341dafe0a62d975784378574c2ce715ddf:2"
+              }
+            ],
+            "retainedPendingStatus": "WaitingCounterparty"
+          },
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "witness": {
+          "txid": "825f2bd6c4896b7cdc3a42d3884da19094f37d60520a721c2293771b2a62b6f7",
+          "confirmations": 6,
+          "blockHash": "13adb5ac5208352f59909e943a3766e146779df9310f682bdbe60d7169ad1310",
+          "kind": "Witness",
+          "from": "B",
+          "to": "A",
+          "amount": "150",
+          "unknownAsset": false,
+          "exposedInputsPersisted": true,
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "selfSend": {
+          "txid": "f92d651e8e50d4f84b97c64a7cb27ea32e233269f89fb86192e6b3a8d2fdab39",
+          "confirmations": 6,
+          "blockHash": "1f6afe27b866452b8fd645b7d9aa241f73f5ce7b357e23dc23846d598eec13be",
+          "kind": "Blind",
+          "from": "A",
+          "to": "A",
+          "amount": "25",
+          "unknownAsset": false,
+          "exposedInputsPersisted": true,
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "restartBalances": {
+          "A": "700",
+          "B": "300"
+        }
+      },
+      "cfa": {
+        "assetId": "rgb:JE3K8Xeg-obC1Hjn-059~M24-9OU1ZVm-8rA7JIR-bJr_CRw",
+        "schema": "Cfa",
+        "issuance": {
+          "name": "Local CFA Fixture",
+          "ticker": null,
+          "precision": 2,
+          "amounts": [
+            "600",
+            "400"
+          ],
+          "btcBroadcast": false,
+          "invalidSupplyRejected": true,
+          "retryAfterRestart": "same asset ID",
+          "changedRequestRejected": true,
+          "recoveredAfterNativeResponseLoss": false,
+          "recoveredFromInjectedMissingReceipt": true,
+          "issuanceRows": 1
+        },
+        "blind": {
+          "txid": "e41a423668a555a635e0d1d6da9089485b32de357c17baa1b4a76bdb4fc740a1",
+          "confirmations": 6,
+          "blockHash": "354354a12da2aa0f0aaa39601807f98bacd7e0de6a0a3a8b2267968308567a56",
+          "kind": "Blind",
+          "from": "A",
+          "to": "B",
+          "amount": "450",
+          "unknownAsset": true,
+          "exposedInputsPersisted": true,
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "witness": {
+          "txid": "c10598a9a47039b898ae7f56f3603eba616323723c1919b437b10b07d568ccd0",
+          "confirmations": 6,
+          "blockHash": "457319b7c44e5cded8c4f3a5e3748417e8b08ab573d0461929dd610dfa8d32d8",
+          "kind": "Witness",
+          "from": "B",
+          "to": "A",
+          "amount": "150",
+          "unknownAsset": false,
+          "exposedInputsPersisted": true,
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "selfSend": {
+          "txid": "839aac24ca3ce118347a2169da7a6f710f74d520c12162f954deca0a6aec3240",
+          "confirmations": 6,
+          "blockHash": "37ac924e1d6cfe7e0b1114bf0ae5651a9cbcd238c5f5f2829b0557c3fa4d1e0b",
+          "kind": "Blind",
+          "from": "A",
+          "to": "A",
+          "amount": "25",
+          "unknownAsset": false,
+          "exposedInputsPersisted": true,
+          "duplicateOperationRejectedWithoutBroadcast": true
+        },
+        "restartBalances": {
+          "A": "700",
+          "B": "300"
+        }
+      }
+    }
+  },
+  "scope": "Isolated Regtest; real transfers and six confirmations; no public funds or wallet database edits."
+}

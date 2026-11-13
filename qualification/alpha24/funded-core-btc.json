@@ -1,0 +1,168 @@
+{
+  "sourceCommit": "b550b504ebde2274b9a3c506a2b935324c481728",
+  "packageVersion": "2.1.0-alpha.24",
+  "packSha256": "c2ecdef68aa785bbad12d6df72b5d96febe8a84595fc658e732fca9a5337ed01",
+  "installedPackFilesChecked": 25,
+  "runs": {
+    "core23-results": {
+      "core": "1.0.0-beta.23",
+      "corePolicyIntegration": "Core beta.23 replacement middleware with fixture application rules",
+      "sdk": "2.1.0-alpha.24",
+      "nativeSha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94",
+      "sameEngineSeedDiscovery": {
+        "fundingTxid": "6d843a735000a4b05c8be1ee227c4fd16a814ffac17c1b965eee2549fc654605",
+        "confirmations": 3,
+        "amountSats": "180000",
+        "fundedDerivationIndex": 3
+      },
+      "offlineStartThenConnect": true,
+      "persistedBtcOnlyMode": true,
+      "registeredAccountPath": "0'/0/0",
+      "explicitPolicyDenialBeforeAuthorization": true,
+      "independentSdkDenialAfterPolicyAllow": {
+        "txid": "49ae78f1be981e73a4e132d8a1844741712f51b91f316bd77650f3038be97fdf",
+        "broadcast": false
+      },
+      "bip322": {
+        "noHookDenied": true,
+        "explicitDenial": true,
+        "exactUtf8Approved": true,
+        "foreignAddressDeniedBeforeApproval": true,
+        "tamperedMessageRejected": true,
+        "originalSignatureVerifiedAfterReopen": true,
+        "postShutdownDenied": true
+      },
+      "fundedBtc": {
+        "txid": "89ded1c8b8891f5815282a13076b8340b17203fe604e1075f70f0f0fa99e68df",
+        "amountSats": "20000",
+        "feeSats": "309",
+        "confirmations": 3,
+        "receiverBalanceSats": "20000",
+        "interruptedAfterNativeEnd": true,
+        "recoveredWithoutReplay": true,
+        "nativeMutations": [
+          "sendBtcBegin",
+          "sendBtcEnd"
+        ]
+      },
+      "readOnlyPolicyView": true,
+      "awaitedShutdown": true
+    },
+    "core22-results": {
+      "core": "1.0.0-beta.22",
+      "corePolicyIntegration": "Core beta.22 built-in registerPolicy",
+      "sdk": "2.1.0-alpha.24",
+      "nativeSha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94",
+      "sameEngineSeedDiscovery": {
+        "fundingTxid": "f1d3c758f32e8e0242fd326f03f585f0228020f026e6d94e1ef1ff0e3fbb5d81",
+        "confirmations": 3,
+        "amountSats": "180000",
+        "fundedDerivationIndex": 3
+      },
+      "offlineStartThenConnect": true,
+      "persistedBtcOnlyMode": true,
+      "registeredAccountPath": "0'/0/0",
+      "explicitPolicyDenialBeforeAuthorization": true,
+      "independentSdkDenialAfterPolicyAllow": {
+        "txid": "bc7108c055a63a78d9e473d262f5b3c48d59edd3dfe914e6bd7bc72b4c7f3055",
+        "broadcast": false
+      },
+      "bip322": {
+        "noHookDenied": true,
+        "explicitDenial": true,
+        "exactUtf8Approved": true,
+        "foreignAddressDeniedBeforeApproval": true,
+        "tamperedMessageRejected": true,
+        "originalSignatureVerifiedAfterReopen": true,
+        "postShutdownDenied": true
+      },
+      "fundedBtc": {
+        "txid": "650f897428ffb8776d78ce1f2720696504d0944f24f7b883e8eef586a7f4d471",
+        "amountSats": "20000",
+        "feeSats": "309",
+        "confirmations": 3,
+        "receiverBalanceSats": "20000",
+        "interruptedAfterNativeEnd": true,
+        "recoveredWithoutReplay": true,
+        "nativeMutations": [
+          "sendBtcBegin",
+          "sendBtcEnd"
+        ]
+      },
+      "readOnlyPolicyView": true,
+      "awaitedShutdown": true
+    },
+    "core23-bare-results": {
+      "runtime": "Bare v1.37.1",
+      "core": "1.0.0-beta.23",
+      "corePolicyIntegration": "Core beta.23 replacement middleware with fixture application rules",
+      "sdk": "2.1.0-alpha.24",
+      "nativeSha256": "d94609b3e5c7ffd6046de2cc198cb519f202f0245ad02710697d14498552808f",
+      "sameEngineSeedDiscovery": {
+        "fundingTxid": "016987ea29706152635ad48f0aee243ad7d6e21524eddc4172c5a373031addb7",
+        "confirmations": 3,
+        "amountSats": "180000",
+        "fundedDerivationIndex": 3
+      },
+      "offlineStartThenConnect": true,
+      "persistedBtcOnlyMode": true,
+      "registeredAccountPath": "0'/0/0",
+      "explicitPolicyDenialBeforeAuthorization": true,
+      "independentSdkDenialAfterPolicyAllow": {
+        "txid": "31f47c3af16f1e5f1914bd3886daf01c9b92ed6f8bcd8a74b3894ca5ada5646d",
+        "broadcast": false
+      },
+      "bip322": {
+        "noHookDenied": true,
+        "explicitDenial": true,
+        "exactUtf8Approved": true,
+        "foreignAddressDeniedBeforeApproval": true,
+        "tamperedMessageRejected": true,
+        "originalSignatureVerifiedAfterReopen": true,
+        "postShutdownDenied": true
+      },
+      "fundedBtc": {
+        "txid": "c9d46786c26c36e7dc6dcaeb922c01388159633edcfd248b6bb45489813f5e4b",
+        "amountSats": "20000",
+        "feeSats": "309",
+        "confirmations": 3,
+        "receiverBalanceSats": "20000",
+        "interruptedAfterNativeEnd": true,
+        "recoveredWithoutReplay": true,
+        "nativeMutations": [
+          "sendBtcBegin",
+          "sendBtcEnd"
+        ]
+      },
+      "readOnlyPolicyView": true,
+      "awaitedShutdown": true
+    }
+  },
+  "consumerDependencies": {
+    "coreLatest": "1.0.0-beta.23",
+    "coreHistoricalPolicy": "1.0.0-beta.22",
+    "coreWalletBase": "1.0.0-beta.26",
+    "rgbWalletBase": "1.0.0-beta.25",
+    "bare": "1.37.1"
+  },
+  "coreApiChanges": [
+    "Core beta.23 removed registerPolicy; registerMiddleware may return a replacement account.",
+    "Core beta.23 dispose remains synchronous; tested account.shutdown() before core.dispose().",
+    "Wallet base beta.26 only adds configuration property to WalletAccountReadOnly and its types, with no signer/manager/transaction changes."
+  ],
+  "typeChecks": {
+    "directRegisterWallet": "Existing TypeScript constructor variance error in Core beta.22 and beta.23; runtime calls pass.",
+    "scopedInterop": "Constructor type intersection typeof WalletManager & typeof WalletManagerRgb passes strict TypeScript and keeps required CandidateConfig and invalid-network errors.",
+    "files": [
+      "core-compatibility.ts",
+      "core22-compatibility.ts",
+      "core-typed-interop.ts"
+    ]
+  },
+  "scopeLimits": [
+    "Latest Core middleware policy rules are fixture application code; they do not imply an upstream built-in policy engine.",
+    "BTC/BIP-322 tested on isolated Regtest; no hosted service or app/emulator operated.",
+    "No SDK source was changed and no packages were merged or published."
+  ],
+  "consumerLockSha256": "c74c14adfe1a90a6e026d79c0526ce83f170362ef92130666e9cb527045521fb"
+}

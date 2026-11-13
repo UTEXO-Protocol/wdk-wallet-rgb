@@ -2,22 +2,29 @@
 
 The watch-only engine is shared by the Node pipe worker and the Bare addon. The application owns the seed, transaction review and signer. Native code receives public account keys and an exact signed PSBT after approval.
 
-The build uses unmodified BFA.8 commit `2f7b21d8637baad548504ea870deb2c0d4d0a37d`, tree `5492824f3cf47b4c821dfca8b7a63fed27858486`. Electrum 0.25.2 and Esplora 0.12.3 are registry sources with Cargo checksums. There are no downstream RGB or client source patches. The RGB protocol crates retain the exact source revisions required by BFA.8.
+The build uses unmodified BFA.8 commit `2f7b21d8637baad548504ea870deb2c0d4d0a37d`, tree `5492824f3cf47b4c821dfca8b7a63fed27858486`. Electrum 0.25.2 and Esplora 0.12.3 are registry sources with Cargo checksums. There are no downstream RGB or client source patches. The RGB protocol crates retain the exact source revisions required by BFA.8. The legacy manifest fields `overlayTree` and `integrationTree` now both identify the unmodified upstream tree.
 
 ## Build and test
 
-Use Rust 1.94.0 and an authorized source clone or GitHub credential helper. Consumer installs do not fetch private source or run Rust builds.
+Use a clean, committed repository checkout, Rust 1.94.0, and an authorized source clone or authenticated GitHub CLI (`gh`). Preparation uses `gh auth git-credential` when fetching the private source. Consumer installs do not fetch private source or run Rust builds.
+
+Run from the repository root on the target architecture. Supported Node targets are `darwin-arm64`, `darwin-x64`, `linux-arm64-gnu`, `linux-x64-gnu` and `linux-x64-musl`. macOS requires Xcode command-line tools. Linux requires a C compiler, binutils and build tools; build the musl target inside a musl userland, as the CI workflow does.
 
 ```sh
-python3 scripts/prepare-source.py --bare
-cargo +1.94.0 build --release --locked
-cargo +1.94.0 test --locked
-python3 scripts/check-dev-signet.py
+npm ci --ignore-scripts --no-audit
+python3 native/scripts/prepare-source.py --bare
+
+# Replace the target with your current host and use a new absolute output directory.
+node native/scripts/node-host.mjs build linux-x64-gnu /absolute/path/to/new-build-output
+bash scripts/qualify-desktop.sh node linux-x64-gnu /absolute/path/to/new-build-output
+
+cargo +1.94.0 test --manifest-path native/Cargo.toml --release --locked
+python3 native/scripts/check-dev-signet.py
 ```
 
-The preparation script verifies the exact upstream commit, tree, index, working files and untracked files. It can accept a local Git directory as its final argument. Compilation is independent of package admission: an artifact must still match the source and protocol handshake and its recorded hash. The supported Node and Bare matrix is in [CI](../.github/workflows/build.yml) and the [Bare runbook](bare/README.md).
+The preparation script verifies the exact upstream commit, tree, index, working files and untracked files. It can accept a local Git directory as its final argument. The qualifier packs an archive of the committed source and installs it into a separate consumer, then tests the exact worker, its source/hash admission and lifecycle. The worker, tested package, build receipt and logs remain in the output directory. Supply the worker's absolute path and SHA-256 through `nativeExecutable` and `nativeSha256`; Node workers are distributed separately from the JavaScript package. The supported matrix is in [CI](../.github/workflows/build.yml) and the [Bare runbook](bare/README.md).
 
-Format only owned source with `rustfmt +1.94.0 --edition 2024 src/main.rs`. Do not run formatting across the prepared upstream path dependency.
+Format only owned source with `rustfmt +1.94.0 --edition 2024 native/src/main.rs`. Do not run formatting across the prepared upstream path dependency.
 
 ## Network and operation boundaries
 
@@ -33,7 +40,7 @@ Before an RGB send or burn reaches native `End`, WDK persists its exposed input 
 
 ## Receive cancellation and contract registration
 
-`cancelReceiveInvoice` identifies one expired NIA/CFA receive by batch index and recipient. It verifies the stored invoice, network, schema, expiry and absence of delivery evidence, refreshes the target, invokes stock transactional `fail_transfers`, and rereads the result. Active, BFA, assetless and progressed invoices are excluded. The same already-failed eligible batch can be acknowledged after restart. No transaction is signed or broadcast.
+`cancelReceiveInvoice` identifies one expired NIA/CFA receive by batch index and recipient. It verifies the stored invoice, network, schema, expiry and absence of delivery evidence, refreshes incoming transfers for that asset, then revalidates and invokes stock transactional `fail_transfers` only for the requested batch. The result is reread. Active, BFA, assetless and progressed invoices are excluded. The same already-failed eligible batch can be acknowledged after restart. No transaction is signed or broadcast.
 
 Cancellation uses BFA.8's retention and proxy-loss rules. It does not preserve the removed patch's stronger requirement for authenticated proof of an empty proxy record. Display eligibility is only an observation; the mutation checks current state again.
 

@@ -43,11 +43,43 @@ Stock Electrum reconnects with its bounded retry policy. WDK checks genesis and 
 
 A seed restores Bitcoin keys and discoverable history within the pinned library's HD scan gap. It cannot recreate missing RGB consignments, allocations or the SDK operation journal. Preserve the complete wallet directory for RGB recovery. Stock RGB output enrollment is used; the removed provenance patch is not part of this candidate.
 
+## Tether WDK Core
+
+Core `1.0.0-beta.23` is tested with this candidate on Node and Bare. Install Core in the consuming application. The SDK retains its pinned wallet base `1.0.0-beta.25`; the integration also passes when Core resolves wallet base `1.0.0-beta.26` separately.
+
+Core's TypeScript registration constraint expects a constructor with an optional base configuration. RGB requires `CandidateConfig`. Use this local constructor assertion only at the Core registration boundary, keeping the RGB signature last. It preserves configuration checking and does not make the SDK's runtime configuration optional. Core returns a common account type, so retain the RGB account type when your registered manager and middleware preserve those methods.
+
+```ts
+import WDK, { type WdkAccount } from '@tetherto/wdk'
+import type WalletManager from '@tetherto/wdk-wallet'
+import WalletManagerRgb, {
+  type CandidateConfig, type WalletAccountRgb
+} from '@utexo/wdk-wallet-rgb'
+
+async function readBalance(seed: Uint8Array, config: CandidateConfig) {
+  const core = new WDK(seed)
+  const RgbManagerForCore = WalletManagerRgb as typeof WalletManager & typeof WalletManagerRgb
+  core.registerWallet('rgb', RgbManagerForCore, config)
+
+  let account: (WdkAccount & WalletAccountRgb) | undefined
+  try {
+    account = await core.getAccountByPath('rgb', "0'/0/0") as WdkAccount & WalletAccountRgb
+    return await account.getBalance()
+  } finally {
+    try { await account?.shutdown() } finally { core.dispose() }
+  }
+}
+```
+
+For an application that keeps the wallet open, perform that shutdown sequence when closing or replacing it. Core's `dispose()` is synchronous; awaiting the RGB account first releases its native handle and wallet lock before reuse.
+
+Core `1.0.0-beta.23` uses `registerMiddleware()` to return an account wrapper. It no longer exposes `registerPolicy()`. Application middleware can deny a request before it reaches the SDK, but an allowed request still needs the SDK's `authorize` or `authorizeMessage` approval. Use `toReadOnlyAccount()` for policy reads. The older Core `1.0.0-beta.22` built-in policy integration is separately tested; it is not a beta.23 API.
+
 ## Wallet operations
 
 - `getAddress()` is stable for the opened account. `getNewAddress()` explicitly allocates another address. `getBalance()` and `getTokenBalance()` return exact bigint base units. Display and history interfaces preserve exact decimal strings.
 - `registerAssetContract()` validates its byte envelope but reports `CONTRACT_IMPORT_UNAVAILABLE`; `getCapabilities().contractRegistration` exposes that limitation before calling. `blindReceive()` and `witnessReceive()` use the profile's approved proxy. Read and refresh methods expose assets, transactions, transfers and the outcome of each transfer refresh. `getReceivedMint()` returns the EVM `lockId`, which commits to the mint operation and its Bitcoin transaction, alongside the operation ID `opid`.
-- `cancelReceiveInvoice({ batchTransferIdx, recipientId })` releases one expired receive reservation for a known ordinary RGB asset after the wallet checks for delivery. Use `listTransfers()` to find rows with `receiveCancellationEligible`. That flag is based on local state. The adapter refreshes the exact batch and uses stock `fail_transfers`, then rereads the result. Cancellation follows BFA.8's retention and proxy-loss policy; it does not prove that a pruned proxy never held a transfer. It can fail if delivery evidence appears or a required check is unavailable. BFA and invoices without a known asset stay protected because they may belong to a mint.
+- `cancelReceiveInvoice({ batchTransferIdx, recipientId })` releases one expired receive reservation for a known ordinary RGB asset after the wallet checks for delivery. Use `listTransfers()` to find rows with `receiveCancellationEligible`. That flag is based on local state. The adapter refreshes incoming transfers for the asset, then revalidates and uses stock `fail_transfers` only for the requested batch before rereading the result. Cancellation follows BFA.8's retention and proxy-loss policy; it does not prove that a pruned proxy never held a transfer. It can fail if delivery evidence appears or a required check is unavailable. BFA and invoices without a known asset stay protected because they may belong to a mint.
 - `sendBtc()`, `sendRgbInvoice()`, `createUtxos()` and `burnAsset()` require an application-owned stable operation ID. The caller's authorization receives the exact fee and the reviewed PSBT identity. RGB sends require an admitted invoice network, asset, amount, recipient key and proxy. Witness sends also require an explicit BTC output amount.
 - RGB output setup can be split into `prepareCreateUtxos()`, `commitPreparedCreateUtxos()` and `cancelCreateUtxosPlan()`. Commit and cancel bind both the operation ID and PSBT digest. An abandoned unsigned reservation can be released only when its exact native transaction is found.
 - `recoverSend()`, `recoverCreateUtxos()` and `recoverBurn()` reconcile operations after submission was attempted. `listUnresolvedOperations()` identifies blocked spends. For an interrupted `starting` or `prepared` operation, `recoverUnsubmittedOperation()` compares the durable pre-Begin reservation checkpoint with the native state and releases an exact, uniquely attributable unsigned reservation. The original operation ID stays consumed. `getConsignment()` reads a committed, bounded burn proof. `createBurnPackage()` exports an already validated proof and its V1 destination.

@@ -36,6 +36,7 @@
     "bare-worker": "4.5.3"
   },
   "devDependencies": {
+    "@tetherto/wdk": "1.0.0-beta.23",
     "bare": "1.37.1",
     "bare-pack": "3.0.2",
     "bare-runtime": "1.37.1",

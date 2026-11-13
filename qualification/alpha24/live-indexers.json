@@ -1,0 +1,85 @@
+{
+  "sourceCommit": "b550b504ebde2274b9a3c506a2b935324c481728",
+  "networkOperations": "Read-only indexer checks; no proxy or hosted bridge operations",
+  "results": {
+    "mainnet": {
+      "name": "mainnet",
+      "nativeSha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94",
+      "network": {
+        "network": "mainnet",
+        "height": 975667,
+        "blockHash": "0000000000000000000013b16ac5feedf3461d30ac569f9eb5572683c1bd5957"
+      },
+      "address": "bc1prj7hzlaauhexng3r0v3lgpsyjuuwrjez0v02lfr5n2lvh5prkc9qvjtplf",
+      "elapsedMs": 14980,
+      "checks": [
+        "actual stock indexer connection",
+        "empty wallet balance",
+        "address allocation",
+        "reopen identity"
+      ],
+      "proxyAndBridgeOperated": false,
+      "funded": false
+    },
+    "public": {
+      "name": "public",
+      "nativeSha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94",
+      "network": {
+        "network": "signet",
+        "height": 330661,
+        "blockHash": "00000008eed2bcfb5fd97c63ba7b5b34224049485d4031bc3f70a2d1f3b610ea"
+      },
+      "address": "tb1pl25uc3r6w9ft4emptrtv86hxfmcef40exrg7fv3tqh9de97px88s5mvrr8",
+      "elapsedMs": 19016,
+      "checks": [
+        "actual stock indexer connection",
+        "empty wallet balance",
+        "address allocation",
+        "reopen identity",
+        "issuance reaches output selection on the live chain"
+      ],
+      "proxyAndBridgeOperated": false,
+      "funded": false
+    },
+    "dev": {
+      "name": "dev",
+      "nativeSha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94",
+      "network": {
+        "network": "signet",
+        "height": 786962,
+        "blockHash": "0000008da45344445461aa32d5868499f9559f2f9ce0a60f5c4b97945a4bef83"
+      },
+      "address": "tb1puvzrny8dkyxl4dm7ukmgpagzuzz9g50v2ak8uggd6run9sy897csl56e4p",
+      "elapsedMs": 30892,
+      "checks": [
+        "actual stock indexer connection",
+        "empty wallet balance",
+        "address allocation",
+        "reopen identity",
+        "issuance reaches output selection on the live chain"
+      ],
+      "proxyAndBridgeOperated": false,
+      "funded": false
+    },
+    "staging": {
+      "name": "staging",
+      "nativeSha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94",
+      "network": {
+        "network": "signet",
+        "height": 330661,
+        "blockHash": "00000008eed2bcfb5fd97c63ba7b5b34224049485d4031bc3f70a2d1f3b610ea"
+      },
+      "address": "tb1p7fr7v5pdtkdnutxlq5sjtjuwckd79v0gjy05ps4lu0a9nqpvrqus7jawdp",
+      "elapsedMs": 23369,
+      "checks": [
+        "actual stock indexer connection",
+        "empty wallet balance",
+        "address allocation",
+        "reopen identity",
+        "issuance reaches output selection on the live chain"
+      ],
+      "proxyAndBridgeOperated": false,
+      "funded": false
+    }
+  }
+}
