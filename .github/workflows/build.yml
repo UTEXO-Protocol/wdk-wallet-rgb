@@ -203,7 +203,7 @@ jobs:
       RUST_TARGET: ${{ matrix.rust }}
       ANDROID_ABI: ${{ matrix.abi }}
       BARE_KIT_COMMIT: 9cd80b8ba96e591b222987a80f394012e19d45b0
-      BARE_COMMIT: c0b6b3b91c9ab41cb64804f9e6383ad6f2bc0667
+      BARE_COMMIT: 32aa0ae69da547f0d0cca011f3e8bcbbfc9f44c3
       CARGO_BUILD_JOBS: '2'
       CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
       GIT_TERMINAL_PROMPT: '0'

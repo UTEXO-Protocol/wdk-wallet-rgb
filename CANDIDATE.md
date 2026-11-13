@@ -7,7 +7,8 @@ This private candidate uses unmodified BFA.8 with stock Electrum and Esplora cli
 | Component | Pinned version or source |
 | --- | --- |
 | Tether WDK Wallet | `1.0.0-beta.25` |
-| Android embedded runtime | Bare Kit `3.0.1`, Bare `1.36.2` |
+| Bare runtime minimum and test runtime | `1.37.1` (desktop and embedded mobile) |
+| Android symbol qualification runtime | Bare Kit `3.0.1`, Bare `1.37.1` |
 | Bare C headers | `1.35.0` |
 | RGB library | `v0.3.0-beta.7-upstream-dev-bfa.8`, `2f7b21d8637baad548504ea870deb2c0d4d0a37d` |
 | Native artifacts | [Exact target pins](src/onchain-bare-native.json), qualified separately |

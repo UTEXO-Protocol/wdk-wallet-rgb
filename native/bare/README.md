@@ -11,7 +11,7 @@ The private SDK candidate uses the same watch-only engine for the Node and Bare 
 - RGB BFA.8 tag at `2f7b21d8637baad548504ea870deb2c0d4d0a37d`.
 - The [source preparation script](../scripts/prepare-source.py) verifies the unmodified upstream tree. Stock RGB installs a process-wide logging panic hook. Wallet close drops its logger guard and joins its logging thread; captured hook/logger allocations can accumulate across constructions. No custom hook replacement is performed by this addon.
 - The independent Bare lock enables Electrum and the gated Dev Esplora backend.
-- Build headers `bare-headers@1.35.0` and standalone test CLI `bare@1.36.2`. The macOS CLI run reported runtime `1.36.0`. The Android Bare Kit 3.0.1 worklet reported runtime `1.36.2`. Exact npm tarball integrities are recorded in `package-lock.json`.
+- Build headers `bare-headers@1.35.0`, standalone CLI `bare@1.37.1` and `bare-runtime@1.37.1`. The SDK requires Bare 1.37.1 or newer, including embedded mobile runtimes. Android symbol qualification uses Bare Kit 3.0.1 with Bare source `32aa0ae69da547f0d0cca011f3e8bcbbfc9f44c3` (v1.37.1). Earlier runtime acceptance does not qualify this version. Exact npm tarball integrities are recorded in `package-lock.json`.
 
 The recorded Electrum-only RustSec audit reported zero vulnerable crates and one unmaintained `unsafe-libyaml` dependency in the pinned strict-types graph. Repeat the audit for the actual release graph. The binding's wire format is JSON and the linked addon exposes only Bare's registration symbols. The Electrum resolver requires a server that serves verbose transaction responses, as well as genesis and merkle proof calls. This candidate's isolated funded test uses Fulcrum 2.1.4.
 

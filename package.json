@@ -36,8 +36,9 @@
     "bare-worker": "4.5.3"
   },
   "devDependencies": {
-    "bare": "1.36.2",
+    "bare": "1.37.1",
     "bare-pack": "3.0.2",
+    "bare-runtime": "1.37.1",
     "typescript": "7.0.2"
   },
   "exports": {
@@ -56,7 +57,8 @@
   },
   "private": true,
   "engines": {
-    "node": "^22.21.0 || >=24.9.0"
+    "node": "^22.21.0 || >=24.9.0",
+    "bare": ">=1.37.1"
   },
   "files": [
     "onchain.js",

@@ -14,6 +14,7 @@ assert.equal(options.length, requireNative ? 1 : 0, 'Usage: check-candidate-pack
 const manifest = readJson('package.json')
 assert.equal(manifest.name, '@utexo/wdk-wallet-rgb')
 assert.equal(manifest.private, true, 'The review candidate must remain private')
+assert.equal(manifest.engines?.bare, '>=1.37.1', 'Declare the runtime required by the packed Bare dependency graph')
 const [pack] = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], {
   cwd: root,
   encoding: 'utf8'

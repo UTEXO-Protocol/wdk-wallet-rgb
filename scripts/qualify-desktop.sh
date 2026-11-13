@@ -60,7 +60,7 @@ JS
   node scripts/check-candidate-pack.mjs --require-native
   bare_cli="$(node -p 'require(process.argv[1])("bare")' "$source_root/native/target/bare-toolchain/node_modules/bare-runtime")"
   chmod 0755 "$bare_cli"
-  test "$("$bare_cli" --version)" = v1.36.0
+  test "$("$bare_cli" --version)" = v1.37.1
   test "$("$bare_cli" -e 'console.log(Bare.Addon.host)')" = "$target"
   ulimit -c 0
   mkdir -p native/target/bare-addon
@@ -87,6 +87,10 @@ cp "$smoke" "$consumer/packed-smoke.mjs"
   printf '{"name":"wdk-packed-platform-consumer","private":true}\n' > package.json
   npm install --ignore-scripts --no-audit --no-fund "$archive"
   if [[ "$kind" == bare ]]; then
+    "$bare_cli" ./packed-smoke.mjs "$target" "$hash"
+    # A host that already uses the current shared Bare leaf must work without
+    # consumer overrides or a private copy of an older incompatible graph.
+    npm install --ignore-scripts --no-audit --no-fund --save-exact bare-type@1.6.0
     "$bare_cli" ./packed-smoke.mjs "$target" "$hash"
   else
     node ./packed-smoke.mjs "$target" "$hash" "$binary"
