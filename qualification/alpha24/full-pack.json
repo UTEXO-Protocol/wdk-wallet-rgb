@@ -1,0 +1,299 @@
+{
+  "packageVersion": "2.1.0-alpha.24",
+  "packageSourceCommit": "0f5395bff6fbc4435c78f2d99b2be5df92b68af0",
+  "nativeProducerCommit": "b550b504ebde2274b9a3c506a2b935324c481728",
+  "archive": {
+    "filename": "utexo-wdk-wallet-rgb-2.1.0-alpha.24.tgz",
+    "bytes": 203483933,
+    "sha256": "92890e387e75124d49f032dbea8528502700411fc817f0e2ab13ad14133c2312",
+    "files": 35
+  },
+  "fundedHostArchiveSha256": "c2ecdef68aa785bbad12d6df72b5d96febe8a84595fc658e732fca9a5337ed01",
+  "fundedRuntimeFilesIdentical": true,
+  "fundedDarwinArm64AddonIdentical": true,
+  "changesFromFundedHostPack": [
+    "src/onchain-bare-native.json",
+    "package.json",
+    "CANDIDATE.md",
+    "README.md"
+  ],
+  "addedTargets": [
+    "prebuilds/android-arm/utexo__wdk-wallet-rgb.bare",
+    "prebuilds/android-arm64/utexo__wdk-wallet-rgb.bare",
+    "prebuilds/android-ia32/utexo__wdk-wallet-rgb.bare",
+    "prebuilds/android-x64/utexo__wdk-wallet-rgb.bare",
+    "prebuilds/darwin-x64/utexo__wdk-wallet-rgb.bare",
+    "prebuilds/ios-arm64-simulator/utexo__wdk-wallet-rgb.bare",
+    "prebuilds/ios-arm64/utexo__wdk-wallet-rgb.bare",
+    "prebuilds/ios-x64-simulator/utexo__wdk-wallet-rgb.bare",
+    "prebuilds/linux-arm64/utexo__wdk-wallet-rgb.bare",
+    "prebuilds/linux-x64/utexo__wdk-wallet-rgb.bare"
+  ],
+  "consumerResults": {
+    "node": {
+      "target": "darwin-arm64",
+      "runtime": "v22.23.3",
+      "nativeSha256": "8a248bdfa9c6ab4b7255e0c1a3018c1cb912e4800604ddedbe775e72f8613d94",
+      "checks": [
+        "wrong native hash rejection",
+        "offline Regtest/Mainnet/Public Signet/Dev/staging open, reads and reopen",
+        "NIA/CFA issuance reaches native and rejects offline on all five network profiles",
+        "WebRGB issuance excluded"
+      ]
+    },
+    "bare": {
+      "target": "darwin-arm64",
+      "runtime": "v1.37.1",
+      "nativeSha256": "d94609b3e5c7ffd6046de2cc198cb519f202f0245ad02710697d14498552808f",
+      "checks": [
+        "wrong native hash rejection",
+        "offline Regtest/Mainnet/Public Signet/Dev/staging open, reads and reopen",
+        "NIA/CFA issuance reaches native and rejects offline on all five network profiles",
+        "WebRGB issuance excluded"
+      ]
+    }
+  },
+  "files": {
+    "LICENSE": {
+      "bytes": 10173,
+      "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+    },
+    "prebuilds/android-arm/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 46617080,
+      "sha256": "b2234ace570d8cfa184add8480d824110cd5449c3c7b57d93662648fe25afde8"
+    },
+    "prebuilds/android-arm64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 65875944,
+      "sha256": "138d165ca4823bed87aeee276877ecd2347f29a1added6029d84bf176ab736b6"
+    },
+    "prebuilds/android-ia32/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 65881804,
+      "sha256": "f72f64e2fcdda2e8010f1a92c4979201b145324a3861380d81c5fb86a42cfeda"
+    },
+    "prebuilds/android-x64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 67602008,
+      "sha256": "c54fe8a4fa972268b42bc450ad390f877e6981b98ada8e3431f51aa8480138c9"
+    },
+    "prebuilds/darwin-arm64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 44777952,
+      "sha256": "d94609b3e5c7ffd6046de2cc198cb519f202f0245ad02710697d14498552808f"
+    },
+    "prebuilds/darwin-x64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 48131376,
+      "sha256": "de752adacd1a1af12e9619a3236a14d7ba7904245643c31269dd4dcdaa0b6e55"
+    },
+    "prebuilds/ios-arm64-simulator/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 45518928,
+      "sha256": "442d3b09e3029c3981355e15c92d62f61a6c7e76a292b8ccfb8b4d1c081600d1"
+    },
+    "prebuilds/ios-arm64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 45307960,
+      "sha256": "1b377144731b46d8c24ae2d0861bfc3296aa9f3cc79b5abed9b6c80c342106dc"
+    },
+    "prebuilds/ios-x64-simulator/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 48932408,
+      "sha256": "f9f279229908fe057c59f808a1374a215eafa3a3bd18291103de3e8358c41b84"
+    },
+    "prebuilds/linux-arm64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 53345600,
+      "sha256": "22d80c4ba72e2cfb6a181ef5623d4be0d5b3a99eb2af7ff0e537d17b87a7dda1"
+    },
+    "prebuilds/linux-x64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 56035824,
+      "sha256": "8e40cbdbd766bf5e21efd721e082613e46b64da5b57605fa72f81f03e5ab9643"
+    },
+    "src/onchain-bare-thread.cjs": {
+      "bytes": 413,
+      "sha256": "7fb8fb2ee6f57ec6bebd2c1d1c4bb52a1b6b12837aac9aecb093d6e6948fde54"
+    },
+    "src/burn-destination.js": {
+      "bytes": 5550,
+      "sha256": "bca77983b922ef834a277c66256f656d21348efbefd5843cc96bbb1954ea5412"
+    },
+    "src/onchain-approval.js": {
+      "bytes": 2930,
+      "sha256": "934c1f81472b78d0b6673e52170cc6fd1e8e588546bb12a2a34dbde1c58adfcf"
+    },
+    "src/onchain-bare-worker.js": {
+      "bytes": 6980,
+      "sha256": "3b808b05c3bf0c112508282d5fbc61f3564c2cb94f256d4ab103ef8937494450"
+    },
+    "src/onchain-io-bare.js": {
+      "bytes": 292,
+      "sha256": "364ec06c073b4a4e35904ce9747a1eb386e485d09f5793137104768f856371e5"
+    },
+    "src/onchain-io-node.js": {
+      "bytes": 281,
+      "sha256": "fa20066d63ecd616106bfd3577e02e0d3158380db64e591b9eb5d02206fc47e1"
+    },
+    "src/onchain-journal.js": {
+      "bytes": 5037,
+      "sha256": "02b326031b7309e14e897cdabbe8813623f78078a4a0ea36ecbc44ff5814deed"
+    },
+    "src/onchain-message.js": {
+      "bytes": 6117,
+      "sha256": "e088e97d44ad4f9183c2d1ceaf758a442970e8580f5d59221ea5ab5ca4bdb5da"
+    },
+    "src/onchain-runtime-error.js": {
+      "bytes": 254,
+      "sha256": "2a840f910aab3b08db46a9959d0eecc8d2912544b842becf7924351d4df248ba"
+    },
+    "src/onchain-send.js": {
+      "bytes": 7739,
+      "sha256": "34016fee2d84a9bb5db8434e05fa72ed1aa7d0d9fd53422687829e922834b791"
+    },
+    "src/onchain-signer.js": {
+      "bytes": 19477,
+      "sha256": "a556eaa2fed6efaa8a8b84adffef9325ecaf09e7f819dbf3e3e95da42cec699d"
+    },
+    "src/onchain-wallet.js": {
+      "bytes": 51191,
+      "sha256": "aa94d4720e036f56a6977dac3183bb18e36afc53fd12af8e96c2ebd308d8dc50"
+    },
+    "src/onchain-webrgb-url.js": {
+      "bytes": 181,
+      "sha256": "28882c74c963cc63ed5ca053ea4e4d0bcbc0bac1d0108ebe0ab1511059dd8638"
+    },
+    "src/onchain-webrgb.js": {
+      "bytes": 23645,
+      "sha256": "185ce191aa83ebb4dfc0d26c4384ff45f98eb6e394f8ae6d5ab7d4639297aab7"
+    },
+    "src/onchain-worker.js": {
+      "bytes": 5103,
+      "sha256": "24b75892bd90029e76bc4ce43498843c8de1e839bd07648574e8a9fa63ba6d7f"
+    },
+    "onchain.js": {
+      "bytes": 416,
+      "sha256": "a3b64d9d59278fd170f73dd4246c9e2199f5eb8946a68afa5ee44fb93273786c"
+    },
+    "src/onchain-bare-native.json": {
+      "bytes": 2394,
+      "sha256": "940afe79fe2737ef693e231a8779006490505862c31af67c884207eedd731772"
+    },
+    "src/onchain-dev-services.json": {
+      "bytes": 190,
+      "sha256": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393"
+    },
+    "package.json": {
+      "bytes": 2238,
+      "sha256": "1e965ee2e2e598b05e555d3d0c53321910440fa642155b56e096c5b1daad2ea7"
+    },
+    "CANDIDATE.md": {
+      "bytes": 17133,
+      "sha256": "dca1173f19466c7769f6e49270e0c494fd3ee761b67fa9fe10396117f27a0ba6"
+    },
+    "README.md": {
+      "bytes": 1552,
+      "sha256": "fb44022ef556f7a0b7f834a4c3c1666b3cf167ad881ebf46eb674fdfcadac9c0"
+    },
+    "onchain.d.ts": {
+      "bytes": 14839,
+      "sha256": "b216e6f7bbbb38f14d4d9b17baaa3424a5a59bae2afa3b39813cfa8c1b1702e7"
+    },
+    "webrgb-onchain.d.ts": {
+      "bytes": 5548,
+      "sha256": "d1a22e673ffa1b07cdb291dd0362644aaf8fca5173c50efbb6b8501e8e1e87c2"
+    }
+  },
+  "scope": "Full package installed from tarball. All file hashes matched the installed consumer, Git sources or admitted native pins. No mobile runtime or hosted settlement assertion.",
+  "consumerLockSha256": "f495b99b33fc0f03d231060133d3b87c3d47249aa2da46076b6758f2ea001689",
+  "consumerRuntimeDependencies": {
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "@scure/base": "2.4.0",
+    "@scure/bip32": "2.4.0",
+    "@scure/btc-signer": "2.4.1",
+    "@tetherto/wdk-wallet": "1.0.0-beta.25",
+    "@utexo/wdk-wallet-rgb": "2.1.0-alpha.24",
+    "b4a": "1.9.0",
+    "bare-abort": "2.0.14",
+    "bare-abort-controller": "1.1.2",
+    "bare-addon-resolve": "1.12.0",
+    "bare-ansi-escapes": "2.2.4",
+    "bare-assert": "1.3.0",
+    "bare-async-hooks": "0.1.0",
+    "bare-broadcast-channel": "0.2.1",
+    "bare-buffer": "3.7.2",
+    "bare-bundle": "1.11.0",
+    "bare-channel": "5.3.0",
+    "bare-console": "6.2.0",
+    "bare-crypto": "1.15.4",
+    "bare-debug-log": "2.0.1",
+    "bare-dgram": "1.1.1",
+    "bare-diagnostics-channel": "1.1.1",
+    "bare-dns": "2.3.2",
+    "bare-encoding": "1.0.3",
+    "bare-env": "3.0.1",
+    "bare-events": "2.9.2",
+    "bare-fetch": "3.4.1",
+    "bare-form-data": "1.2.2",
+    "bare-format": "1.0.3",
+    "bare-fs": "4.8.4",
+    "bare-host-parser": "1.0.0",
+    "bare-hrtime": "2.1.2",
+    "bare-http-parser": "2.1.4",
+    "bare-http1": "4.6.3",
+    "bare-https": "3.1.0",
+    "bare-inspect": "3.1.10",
+    "bare-inspector": "6.1.0",
+    "bare-logger": "2.0.6",
+    "bare-mime": "1.0.0",
+    "bare-module": "7.5.2",
+    "bare-module-lexer": "1.7.0",
+    "bare-module-resolve": "1.12.6",
+    "bare-module-traverse": "2.7.6",
+    "bare-net": "2.3.3",
+    "bare-node-runtime": "1.5.4",
+    "bare-os": "3.9.4",
+    "bare-path": "3.1.2",
+    "bare-performance": "2.1.1",
+    "bare-pipe": "4.4.0",
+    "bare-posix": "1.0.1",
+    "bare-process": "4.5.1",
+    "bare-punycode": "0.1.0",
+    "bare-querystring": "1.1.0",
+    "bare-readline": "1.3.1",
+    "bare-realm": "2.1.1",
+    "bare-repl": "7.1.0",
+    "bare-semver": "1.1.0",
+    "bare-signals": "5.0.0",
+    "bare-sleep": "1.0.1",
+    "bare-sqlite": "0.1.6",
+    "bare-stdio": "1.0.3",
+    "bare-stream": "2.13.4",
+    "bare-string-decoder": "1.0.1",
+    "bare-structured-clone": "2.0.1",
+    "bare-stylize": "0.0.1",
+    "bare-subprocess": "6.2.2",
+    "bare-system-logger": "1.0.7",
+    "bare-tcp": "2.6.1",
+    "bare-thread": "1.4.0",
+    "bare-timers": "3.2.4",
+    "bare-tls": "3.2.1",
+    "bare-tty": "5.2.2",
+    "bare-type": "1.6.0",
+    "bare-type-stripper": "0.1.7",
+    "bare-url": "2.5.5",
+    "bare-utils": "1.6.1",
+    "bare-v8": "1.0.2",
+    "bare-vm": "1.0.2",
+    "bare-wasi": "0.1.3",
+    "bare-wasm": "0.1.1",
+    "bare-wasm-abi": "0.1.2",
+    "bare-worker": "4.5.3",
+    "bare-ws": "3.2.0",
+    "bare-zlib": "1.4.1",
+    "bip39": "3.1.0",
+    "bip39/node_modules/@noble/hashes": "1.8.0",
+    "compact-encoding": "3.7.0",
+    "events-universal": "1.0.1",
+    "fast-fifo": "1.3.2",
+    "micro-packed": "0.11.1",
+    "promaphore": "1.0.0",
+    "punycode": "2.3.1",
+    "require-addon": "1.3.0",
+    "streamx": "2.28.1",
+    "teex": "1.0.1",
+    "text-decoder": "1.2.7"
+  }
+}
