@@ -363,4 +363,3 @@ for (const runtime of runtimes) {
     console.log('Passed packed ' + runtime + ' cross-proxy transfers and restart recovery')
   } finally { await peer.stop() }
 }
-

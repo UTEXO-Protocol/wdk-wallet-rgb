@@ -33,6 +33,9 @@ function checkTarget (target) {
 }
 checkTarget(manifest.exports)
 assert.ok(files.has('LICENSE'), 'Missing package license')
+for (const notice of ['THIRD-PARTY-NOTICES.md', 'THIRD-PARTY-LICENSES.txt', 'third-party-dependencies.json', 'DEPENDENCY-POLICY.md']) {
+  assert.ok(files.has(notice), 'Missing release notice: ' + notice)
+}
 assert.ok(files.has('src/onchain-dev-services.json'), 'Missing Dev Signet service policy')
 assert.ok(!files.has('QUALIFICATION.md'), 'Keep deployment qualification evidence outside the package')
 
