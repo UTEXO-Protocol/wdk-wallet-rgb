@@ -91,6 +91,28 @@ The `/webrgb` subpath serves a scoped wallet request. It relies on the applicati
 
 The native lock owner durably writes the spend and invoice journals before releasing the wallet directory. An unresolved spend blocks later spends. Ambiguous reservation state and older records lacking a checkpoint require reconciliation. After submission begins, an absent transaction or a failed reply is insufficient evidence to release the operation.
 
+## Verify a prepared mint before payment
+
+The optional WebRGB method is `getReceivedMint({ invoice })` (`rgb_getReceivedMint` on WalletConnect). Negotiate that method and check `getInfo().receivedMintVerificationVersion === 1` before starting this flow. The recipient wallet must own the exact invoice, including its recipient key and expiry. A pasted invoice belonging to another wallet cannot be verified by this wallet.
+
+```js
+const info = await provider.getInfo()
+if (info.receivedMintVerificationVersion !== 1 || !info.methods.includes('getReceivedMint')) {
+  throw new Error('This wallet cannot verify a prepared mint')
+}
+const mint = await provider.getReceivedMint({ invoice })
+```
+
+`null` means the owned receive has no checked mint yet. A successful result contains `invoice`, `recipientId`, `assetId`, `network`, `txid`, `opid`, `lockId`, `amount`, `beforeBlock`, `evmChainId` and `bridgeContract`. The three integer fields are exact decimal strings. Transaction, operation and LockId hashes are lowercase hex without `0x`; the EVM contract includes `0x`. Internal file paths and raw proofs are not returned.
+
+The SDK refreshes incoming transfers and binds the checked recipient receipt to the committed mint transition, actual contract ID and Bitcoin witness. It does not accept caller-supplied claimed mint fields. An assetless invoice still returns the verified asset ID. A wallet-owned expected asset recorded when creating that invoice is enforced as well.
+
+The payment application must compare every returned commitment with its intended mint, including the net amount, asset, EVM chain and bridge contract. Check `beforeBlock` against the current EVM block. Reverify after token approval and before deposit; a previous result is not continuing payment authorization. Pending, expired, unavailable, mismatched or failed verification must stop payment. Locking, changing accounts or revoking the session invalidates an in-flight result. The SDK does not submit an EVM approval or deposit.
+
+BFA.8 retains a previously checked mint's time-dependent validation so a paid mint can finish. Refreshing and inspecting that receipt does not repeat every historical consensus or issuer reject-list check, and a retained receipt does not prove current EVM RPC availability. This API verifies the invoice and committed mint terms under those upstream rules; it is not a `safeToPay` flag. The payment application must independently check its current EVM chain, contract, deadline and payment identity.
+
+Native applications use `getReceivedMintForInvoice({ invoice, expectedAssetId? })`. The older recipient-only `getReceivedMint(recipientId)` remains available, but it does not provide this invoice-scoped verification contract.
+
 ## Issue RGB assets
 
 NIA and CFA issuance is admitted in every supported RGB environment: Mainnet, Regtest, and Signet with `profile: 'public'`, `'dev'` or `'staging'`. This does not enable RGB in a `mode: 'btc-only'` wallet or add unsupported Bitcoin networks. Use a rebuilt artifact listed in the qualification register; older patched binaries do not implement this adapter.

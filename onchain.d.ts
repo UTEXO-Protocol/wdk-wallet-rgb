@@ -280,7 +280,8 @@ export class WalletAccountRgb {
     lockId: string
     amount: string; beforeBlock: string; evmChainId: string; bridgeContract: string
   } | null>
-  /** Refresh and verify a mint for the exact stored invoice before external payment. */
+  /** Bind the exact stored invoice to its checked mint and proof. Stock BFA.8 retains
+   * prior time-dependent validation; the caller must check current EVM payment terms. */
   getReceivedMintForInvoice(request: { invoice: string; expectedAssetId?: string }): Promise<ReceivedMintForInvoice | null>
   listUnspents(): Promise<unknown[]>
   listTransfers(filter?: { assetId?: string; txid?: string }): Promise<Transfer[]>

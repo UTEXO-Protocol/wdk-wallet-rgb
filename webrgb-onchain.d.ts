@@ -154,5 +154,6 @@ export class WebRgbProvider {
   /** Reconcile a known burn RPC identity with its durable proof. Never reissues a mutation. */
   recoverBurn(args: WebRgbBurnArgs): Promise<WebRgbBurnResult>
   getConsignment(args: WebRgbConsignmentArgs): Promise<Proof>
+  /** Checked mint terms, not continuing payment authorization or fresh issuer-list validation. */
   getReceivedMint(args: WebRgbReceivedMintArgs): Promise<WebRgbReceivedMint | null>
 }

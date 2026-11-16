@@ -2,7 +2,7 @@
 
 This release candidate introduces the on-chain Node/Bare SDK on unmodified BFA.8. Applications own the signer and approve the exact transaction before native submission. It is a breaking replacement for the previous 2.x wrapper and is intended for the `next` distribution tag.
 
-- `getReceivedMint({ invoice })` over WebRGB: refreshes the exact owned receive and returns verified asset, transaction, LockId, amount, EVM chain, bridge contract and deadline before payment. Pending returns `null`; invalid or stale verification fails.
+- `getReceivedMint({ invoice })` over WebRGB: refreshes the exact owned receive and returns checked asset, transaction, LockId, amount, EVM chain, bridge contract and deadline before payment. Pending returns `null`; invoice mismatches, expired invoices and invalid commitment evidence fail. Stock BFA.8 retains prior time-dependent validation; the payment application still checks the current EVM chain, contract and deadline.
 - Durable expected-asset binding for a generic first receive without claiming standalone contract import.
 - BTC send/receive, RGB output setup and NIA/CFA issuance and transfers across all supported RGB profiles.
 - Blinded and witness invoices with optional amounts; exact expired ordinary-invoice cancellation.
