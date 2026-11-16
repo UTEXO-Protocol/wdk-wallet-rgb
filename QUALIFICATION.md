@@ -12,6 +12,8 @@ The new packed Node and Bare hosts pass eight funded cross-proxy NIA/CFA transfe
 
 All 19 jobs of the [RC1 producer run](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109) passed. The [platform receipt](qualification/rc1/platforms.json) admits all sixteen binaries: five Node workers and eleven Bare addons. Nine desktop targets executed packed consumers; the seven mobile targets passed build and ABI checks only. Native artifacts and funded acceptance for this version are recorded separately from alpha.24; its package and binary hashes do not qualify RC1.
 
+The final npm archive was packed from `2b855aa122cc81eecc4b2a7bd4694f39552cfe7c`: 41 files, 203,725,236 bytes, SHA-256 `b48453b18e302a1705f10ce0a902d53f9a9239204d42ce33bc7ba539e906d7b6`. Its runtime and funded host addon match the host archive byte for byte. Fresh Node and Bare consumers of this complete archive pass. Five separate Node worker archives include notices and ABI requirements; every delivery checksum passed. [Delivery manifest](qualification/rc1/delivery-set.json) · [Full-package runtime receipt](qualification/rc1/full-pack-runtime.json).
+
 ## Alpha.24: unmodified BFA.8 adapter
 
 The adapter now compiles against stock BFA.8 `2f7b21d8637baad548504ea870deb2c0d4d0a37d` (tree `5492824f3cf47b4c821dfca8b7a63fed27858486`). All eight historical RGB overlays remain removed, and the separate Electrum and Esplora client patches are removed too. The graph retains the same BFA.8 source and its required protocol revisions. Source preparation no longer requires APIs that only existed in those patches.

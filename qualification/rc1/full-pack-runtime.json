@@ -1,0 +1,113 @@
+{
+  "status": "passed",
+  "at": "2026-11-16T08:19:35.992346+00:00",
+  "packageVersion": "3.0.0-rc.1",
+  "packageSourceCommit": "2b855aa122cc81eecc4b2a7bd4694f39552cfe7c",
+  "nativeProducerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+  "fullArchiveSha256": "b48453b18e302a1705f10ce0a902d53f9a9239204d42ce33bc7ba539e906d7b6",
+  "installedPackage": {
+    "version": "3.0.0-rc.1",
+    "resolved": "file:../full-pack/utexo-wdk-wallet-rgb-3.0.0-rc.1.tgz",
+    "integrity": "sha512-mdZOOHyp2utXq5M3Y9VAsAWyoYxXOu0FK3sg/9BZ8LMWFqk89/kI5xtlADwCJ10J/lMiwExZSpSFExBc0IEMsQ==",
+    "license": "Apache-2.0",
+    "dependencies": {
+      "@noble/curves": "2.4.0",
+      "@noble/hashes": "2.4.0",
+      "@scure/base": "2.4.0",
+      "@scure/bip32": "2.4.0",
+      "@scure/btc-signer": "2.4.1",
+      "@tetherto/wdk-wallet": "1.0.0-beta.25",
+      "bare-fs": "4.8.4",
+      "bare-path": "3.1.2",
+      "bare-timers": "3.2.4",
+      "bare-url": "2.5.5",
+      "bare-worker": "4.5.3"
+    },
+    "engines": {
+      "bare": ">=1.37.1",
+      "node": "^22.21.0 || >=24.9.0"
+    }
+  },
+  "installScriptsRun": false,
+  "bareCliPermissionRepair": {
+    "sha256": "976f098a72022fc6e603478ec335c69209d7c6ad12e0fcc5d784a98df343ec30",
+    "from": "0o644",
+    "to": "0o755",
+    "bytesUnchanged": true
+  },
+  "nodeDeliveryArchive": {
+    "path": "utexo-wdk-wallet-rgb-3.0.0-rc.1-node-darwin-arm64.tar.gz",
+    "sha256": "a6d6342c08ca347de94a40f4a9b27065dd134def2a1ea3028b7e1d3346a14d9c",
+    "nativeSha256": "c390f2a087260baa127dc508a3782e37d011fbbaf1efb049e41473ac587505c5",
+    "receipt": {
+      "binary": {
+        "abi": {
+          "format": "Mach-O",
+          "minimumOS": "11.0",
+          "needed": [
+            "/System/Library/Frameworks/Security.framework/Versions/A/Security",
+            "/System/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration",
+            "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+            "/usr/lib/libiconv.2.dylib",
+            "/usr/lib/libSystem.B.dylib"
+          ]
+        },
+        "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14205947821",
+        "bytes": 44882560,
+        "nativeRuntimeExecuted": true,
+        "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+        "sha256": "c390f2a087260baa127dc508a3782e37d011fbbaf1efb049e41473ac587505c5"
+      },
+      "packageVersion": "3.0.0-rc.1",
+      "source": {
+        "fundedRuntimeEquivalence": "Not evaluated by this artifact verifier; use the separate funded qualification receipt.",
+        "nativeInputsUnchanged": true,
+        "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+        "releaseCommit": "2b855aa122cc81eecc4b2a7bd4694f39552cfe7c",
+        "runtimeFilesChangedSinceProducer": [],
+        "runtimeFilesUnchangedSinceProducer": true
+      },
+      "target": "darwin-arm64"
+    }
+  },
+  "smokeScriptSha256": "d70a2fab730f23fffb9a0b7cb31d9ef97d379e631e2d9b4ec3b6b4ac4395001d",
+  "Node": {
+    "exitCode": 0,
+    "result": {
+      "target": "darwin-arm64",
+      "runtime": "v22.23.3",
+      "nativeSha256": "c390f2a087260baa127dc508a3782e37d011fbbaf1efb049e41473ac587505c5",
+      "checks": [
+        "wrong native hash rejection",
+        "offline Regtest/Mainnet/Public Signet/Dev/staging open, reads and reopen",
+        "NIA/CFA issuance reaches native and rejects offline on all five network profiles",
+        "WebRGB issuance excluded"
+      ]
+    }
+  },
+  "Bare": {
+    "exitCode": 0,
+    "result": {
+      "target": "darwin-arm64",
+      "runtime": "v1.37.1",
+      "nativeSha256": "8939eac871439cb4ee6cb73196accc362fc1614e399ceba6db37d0a3c538b7f3",
+      "checks": [
+        "wrong native hash rejection",
+        "offline Regtest/Mainnet/Public Signet/Dev/staging open, reads and reopen",
+        "NIA/CFA issuance reaches native and rejects offline on all five network profiles",
+        "WebRGB issuance excluded"
+      ]
+    }
+  },
+  "disposableWalletDirectoriesRemoved": true,
+  "fundedQualificationCarriedForward": {
+    "equivalenceReceipt": "full-pack-equivalence.json",
+    "runtimeBytesAndHostAddonIdentical": true,
+    "crossProxyReceipt": "cross-proxy.json",
+    "financialRerunRequired": false
+  },
+  "limitations": [
+    "Offline profile admission checks do not establish live hosted network availability or hosted settlement.",
+    "Fresh packed consumer execution covers Darwin ARM64 Node and Bare; additional platform checks are recorded by the native matrix."
+  ]
+}
