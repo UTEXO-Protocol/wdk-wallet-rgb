@@ -1,6 +1,7 @@
 // Copyright 2026 UTEXO. Licensed under the Apache License, Version 2.0.
 import { Address, NETWORK, OutScript, TEST_NETWORK } from '@scure/btc-signer'
 import { hex } from '@scure/base'
+import { URL } from '#onchain-io'
 import { checkOperationId } from './onchain-journal.js'
 import { WalletRuntimeError } from './onchain-runtime-error.js'
 import { publicPaymentScript } from './onchain-signer.js'
@@ -71,6 +72,22 @@ export function checkFeeBlocks (blocks) {
   return blocks
 }
 
+function recipientProxyAllowed (endpoint, network) {
+  if (typeof endpoint !== 'string' || endpoint.length > 2048 || /[\s\x00-\x1f\x7f\\?#,%]/.test(endpoint) ||
+      !/^rpcs?:\/\/[^/@]+(?:\/|$)/.test(endpoint)) return false
+  try {
+    const url = new URL(endpoint)
+    if (url.username || url.password || url.port === '0') return false
+    if (network === 'regtest') return ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)
+    if (!['mainnet', 'signet'].includes(network) || url.protocol !== 'rpcs:') return false
+    const authority = endpoint.slice('rpcs://'.length).split('/')[0]
+    const { hostname } = new URL('https:' + endpoint.slice('rpcs:'.length))
+    return /^[a-z0-9.:-]+$/i.test(authority) && hostname.length <= 253 &&
+      /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(hostname) &&
+      !['.localhost', '.local', '.internal', '.home.arpa'].some(suffix => hostname.endsWith(suffix))
+  } catch { return false }
+}
+
 export function prepareBtcSend (request, network) {
   const { operationId, address, amount, feeRate } = request
   checkOperationId(operationId)
@@ -91,7 +108,7 @@ export function prepareRgbSend (request, decoded, { network, transportEndpoint }
   if (!decoded || decoded.network !== network || (decoded.assetId !== null && decoded.assetId !== assetId) ||
       typeof decoded.recipientId !== 'string' || !decoded.recipientId ||
       !Array.isArray(decoded.transportEndpoints) || decoded.transportEndpoints.length !== 1 ||
-      decoded.transportEndpoints[0] !== transportEndpoint || !KEY_HEX.test(decoded.publicKey)) {
+      !recipientProxyAllowed(decoded.transportEndpoints[0], network) || !KEY_HEX.test(decoded.publicKey)) {
     throw new TypeError('Invoice network, asset, proxy or recipient key is outside this wallet profile')
   }
   if (decoded.assignment?.any !== true && decoded.assignment?.fungible !== '0' && decoded.assignment?.fungible !== amount) {
@@ -117,6 +134,8 @@ export function prepareRgbSend (request, decoded, { network, transportEndpoint }
     feeRate: positiveDecimal(feeRate, MAX_FEE_RATE, 'Fee rate'),
     minConfirmations,
     expirationTimestamp: String(expirationTimestamp),
+    // The invoice proxy receives the consignment; our configured proxy owns
+    // the ACK and signed transaction. They need not be the same service.
     senderTransportEndpoint: transportEndpoint
   }
   if (decoded.recipientType === 'Witness' && typeof decoded.witnessScriptHex === 'string' &&

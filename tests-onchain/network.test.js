@@ -51,7 +51,7 @@ const DEFAULTS = {
 }
 
 async function managerFor (t, {
-  nativeVersion = 6, nativeAssetIssuance = 2, workerIndexerProtocol, receivedMint = null, substituteProxy,
+  nativeVersion = 7, nativeAssetIssuance = 2, workerIndexerProtocol, receivedMint = null, substituteProxy,
   cancellationResponse, nativeTrees = {
     overlayTree: '5492824f3cf47b4c821dfca8b7a63fed27858486',
     integrationTree: '5492824f3cf47b4c821dfca8b7a63fed27858486'
@@ -391,15 +391,21 @@ test('explicit staging opens a public Signet RGB account with the exact staged s
   assert.equal(account.getInfo().ready, true)
 })
 
-test('staging advertises a V1 burn route only when the exact direct Arbitrum route is configured', async t => {
-  const routes = [{ chainId: 'eip155:42161', dstEid: 0 }]
-  const manager = await managerFor(t, { ...STAGING, startupMode: 'offline', burnDestinationRoutes: routes })
-  const info = (await manager.getAccount()).getInfo()
-  assert.ok(info.methods.includes('burnAsset'))
-  assert.ok(info.methods.includes('getConsignment'))
-  assert.equal(info.burnDestinationVersion, 1)
-  assert.deepEqual(info.burnDestinationRoutes, routes)
-  assert.deepEqual(info.burnRecipientNamespaces, ['eip155'])
+test('staging advertises only explicitly configured and validated V1 payout routes', async t => {
+  for (const routes of [DEV_BURN_ROUTES, [DEV_BURN_ROUTES[1], DEV_BURN_ROUTES[2]], [DEV_BURN_ROUTES[4]]]) {
+    const manager = await managerFor(t, { ...STAGING, startupMode: 'offline', burnDestinationRoutes: routes })
+    const info = (await manager.getAccount()).getInfo()
+    assert.ok(info.methods.includes('burnAsset'))
+    assert.ok(info.methods.includes('getConsignment'))
+    assert.equal(info.burnDestinationVersion, 1)
+    assert.deepEqual(info.burnDestinationRoutes, routes)
+    assert.deepEqual(info.burnRecipientNamespaces, [...new Set(routes.map(route => route.chainId.split(':')[0]))])
+  }
+})
+
+test('cross-proxy sends require the updated native admission rather than an alpha.24 adapter', async t => {
+  const manager = await managerFor(t, { ...STAGING, startupMode: 'offline', nativeVersion: 6 })
+  await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
 })
 
 test('staging rejects unqualified service, profile and payout combinations', () => {
@@ -411,7 +417,9 @@ test('staging rejects unqualified service, profile and payout combinations', () 
     { proxyAuthKeys: {} }, { evmRpcUrls: undefined }, { evmRpcUrls: { 42161: ARBITRUM_RPC + '/' } },
     { evmRpcUrls: { 42161: 'http://arb1.arbitrum.io/rpc' } }, { evmRpcUrls: { 42161: 'https://x@arb1.arbitrum.io/rpc' } },
     { evmRpcUrls: { 42161: ARBITRUM_RPC, 1: ARBITRUM_RPC } }, { evmRpcUrls: { 1: ARBITRUM_RPC } },
-    { burnDestinationRoutes: [{ chainId: 'eip155:1', dstEid: 30101 }] },
+    { burnDestinationRoutes: [{ chainId: 'eip155:1', dstEid: 0 }] },
+    { burnDestinationRoutes: [{ chainId: 'eip155:999', dstEid: 30101 }] },
+    { burnDestinationRoutes: [DIRECT_ARBITRUM, DIRECT_ARBITRUM] },
     { burnDestinationRoutes: [{ chainId: 'eip155:42161', dstEid: 30110 }] }
   ]) {
     assert.throws(() => new WalletManagerRgb(SEED, { ...DEFAULTS, ...STAGING, ...options }), TypeError, JSON.stringify(options))

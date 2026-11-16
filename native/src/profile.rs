@@ -108,7 +108,7 @@ pub(crate) fn version(source: &str, overlay: &str) -> Value {
         "integrationTree": "5492824f3cf47b4c821dfca8b7a63fed27858486",
         "runtime": crate::RUNTIME,
         "indexer": "electrum-and-dev-esplora",
-        "networkChecks": 6,
+        "networkChecks": 7,
         "contractRegistration": 0,
         "exposedInputs": 1,
         "unsignedRecovery": 1,

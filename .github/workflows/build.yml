@@ -38,6 +38,8 @@ jobs:
         run: npm ci --ignore-scripts --no-audit
       - name: Unit tests
         run: npm test
+      - name: Verify release artifact admission regressions
+        run: python3 -I -B -m unittest discover -s scripts/tests -p 'test_prepare_release.py'
       - name: Check public types
         run: npm run check:types
       - name: Bundle WebRGB for Android Bare

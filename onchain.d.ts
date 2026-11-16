@@ -75,7 +75,7 @@ type HostedRgbModeConfig = {
 type StagingRgbModeConfig = HostedRgbModeConfig & {
   profile: 'staging'
   transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
-  burnDestinationRoutes?: readonly [] | readonly [Extract<BurnRoute, { chainId: 'eip155:42161' }>]
+  burnDestinationRoutes?: readonly BurnRoute[]
 }
 type DevRgbModeConfig = HostedRgbModeConfig & {
   /** Hosted access is gated by the reviewed package configuration. */

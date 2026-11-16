@@ -68,18 +68,59 @@ test('RGB send binds a proxy invoice with exact recipient type, amount and expir
   assert.doesNotThrow(() => prepareRgbSend(request, { ...invoice, assignment: { any: true }, assetId: null }, target, 1000))
 })
 
-test('staging send accepts only public Signet invoices on the exact staging proxy', () => {
+test('RGB sends keep the sender proxy when the recipient selects a different proxy', () => {
+  for (const [network, sender, recipient] of [
+    ['regtest', transportEndpoint, 'rpc://127.0.0.1:49091/json-rpc'],
+    ['signet', 'rpcs://staging.rgb-proxy.utexo.com/json-rpc', 'rpcs://recipient.example.com/json-rpc'],
+    ['mainnet', 'rpcs://sender.example.com/json-rpc', 'rpcs://recipient.example.com:8443/json-rpc']
+  ]) {
+    const decoded = { ...invoice, network, transportEndpoints: [recipient] }
+    for (const type of ['Blind', 'Witness']) {
+      const witness = type === 'Witness'
+      const result = prepareRgbSend({ ...request, ...(witness && { witnessAmountSats: '546' }) }, {
+        ...decoded, recipientType: type, witnessScriptHex: witness ? scriptHex : null
+      }, { network, transportEndpoint: sender }, 1000)
+      assert.equal(result.args.senderTransportEndpoint, sender)
+      assert.equal(result.args.invoice, request.invoice)
+      assert.equal(result.args.recipientId, decoded.recipientId)
+    }
+  }
+})
+
+test('Signet recipient proxies require valid TLS URLs and a single endpoint', () => {
   const transportEndpoint = 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
   const staging = { network: 'signet', transportEndpoint }
   const publicInvoice = { ...invoice, network: 'signet', recipientId: 'sb:utxob:fixture', transportEndpoints: [transportEndpoint] }
   assert.equal(prepareRgbSend(request, publicInvoice, staging, 1000).args.recipientId, 'sb:utxob:fixture')
   for (const decoded of [
     { ...publicInvoice, network: 'signetcustom', recipientId: 'sbc:utxob:fixture' },
-    { ...publicInvoice, transportEndpoints: ['rpcs://rgb-proxy.utexo.com/json-rpc'] },
+    ...[
+      'rpc://recipient.example.com/json-rpc', 'https://recipient.example.com/json-rpc',
+      'rpcs://user:secret@recipient.example.com/json-rpc', 'rpcs://recipient.example.com:0/json-rpc',
+      'rpcs://recipient.example.com/json-rpc?', 'rpcs://recipient.example.com/json-rpc#fragment',
+      'rpcs://recipient.example.com/json-rpc,other', 'rpcs://recipient.example.com/%2fjson-rpc',
+      'rpcs://recipient.example.com/white space', 'rpcs://recipient.example.com/line\nfeed',
+      'rpcs://recipient.example.com\\other', 'rpcs://127.0.0.1/json-rpc',
+      'rpcs://0x7f000001/json-rpc', 'rpcs://[::1]/json-rpc', 'rpcs://localhost/json-rpc',
+      'rpcs://proxy.local/json-rpc', 'rpcs://proxy.internal/json-rpc', null, {}
+    ].map(endpoint => ({ ...publicInvoice, transportEndpoints: [endpoint] })),
+    { ...publicInvoice, transportEndpoints: [] },
     { ...publicInvoice, transportEndpoints: [transportEndpoint, invoice.transportEndpoints[0]] }
   ]) {
     assert.throws(() => prepareRgbSend(request, decoded, staging, 1000), /outside this wallet profile/)
   }
+})
+
+test('Regtest recipient proxies stay on loopback even when distinct from the sender', () => {
+  for (const endpoint of [
+    'rpc://127.0.0.1:49091/json-rpc', 'rpc://localhost:49091/json-rpc', 'rpcs://[::1]:49091/json-rpc'
+  ]) assert.doesNotThrow(() => prepareRgbSend(request, { ...invoice, transportEndpoints: [endpoint] }, target, 1000))
+  for (const endpoint of [
+    'rpc://recipient.example.com/json-rpc', 'rpcs://recipient.example.com/json-rpc',
+    'rpc://127.0.0.2:49091/json-rpc', 'rpc://user@127.0.0.1:49091/json-rpc',
+    'rpc://127.0.0.1:49091/json-rpc?', 'rpc://127.0.0.1:49091/json-rpc#fragment',
+    'rpc://127.0.0.1:49091/%2fjson-rpc', 'rpc://127.0.0.1:49091/json-rpc,other'
+  ]) assert.throws(() => prepareRgbSend(request, { ...invoice, transportEndpoints: [endpoint] }, target, 1000), /outside this wallet profile/)
 })
 
 test('send recovery accepts evidence only for the same durable transaction and RGB batch', () => {

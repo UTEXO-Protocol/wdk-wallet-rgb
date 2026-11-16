@@ -79,6 +79,22 @@ fn not_prepared(message: &'static str) -> Fault {
     fault("SEND_NOT_PREPARED", message)
 }
 
+fn validate_recipient_proxy(endpoint: &str, network: BitcoinNetwork) -> Result<()> {
+    if endpoint.contains([',', '%']) {
+        return Err(input(
+            "The recipient proxy must round-trip in an RGB invoice.",
+        ));
+    }
+    if network == BitcoinNetwork::Regtest {
+        validate_proxy(endpoint, true)?;
+        TransportEndpoint::new(endpoint.into())
+            .map_err(|_| input("Invalid recipient RGB proxy."))?;
+        Ok(())
+    } else {
+        validate_public_proxy(endpoint)
+    }
+}
+
 fn safe_preparation_error(err: rgb_lib::Error) -> Fault {
     // These errors precede input reservation. I/O, consistency and unexpected
     // failures remain unresolved because they may occur while committing it.
@@ -206,7 +222,7 @@ impl Session {
                 .as_ref()
                 .is_some_and(|id| id != &p.asset_id)
             || decoded.transport_endpoints.len() != 1
-            || decoded.transport_endpoints[0] != p.sender_transport_endpoint
+            || validate_recipient_proxy(&decoded.transport_endpoints[0], self.network).is_err()
             || !decoded
                 .public_key
                 .as_ref()
@@ -264,6 +280,8 @@ impl Session {
             encryption: decoded.encryption,
             expiration_timestamp: decoded.expiration_timestamp,
         };
+        // Recipient proxies hold consignments. The separately admitted sender
+        // proxy holds ACKs and signed transactions under stock RGB's protocol.
         let plan = self
             .wallet
             .send_begin(
@@ -409,6 +427,63 @@ impl Session {
 mod tests {
     use super::*;
     use rgb_lib::no_wallet::{RgbOperationInfo, RgbOutputInfo, RgbTransitionInfo};
+
+    #[test]
+    fn recipient_proxies_follow_network_policy_independently_of_the_sender() {
+        for endpoint in [
+            "rpc://127.0.0.1:49091/json-rpc",
+            "rpc://localhost:49091/json-rpc",
+            "rpcs://[::1]:49091/json-rpc",
+        ] {
+            assert!(validate_recipient_proxy(endpoint, BitcoinNetwork::Regtest).is_ok());
+            assert!(validate_recipient_proxy(endpoint, BitcoinNetwork::Signet).is_err());
+        }
+        for network in [BitcoinNetwork::Mainnet, BitcoinNetwork::Signet] {
+            for endpoint in [
+                "rpcs://recipient.example.com/json-rpc",
+                "rpcs://recipient.example.com:8443/json-rpc",
+            ] {
+                assert!(validate_recipient_proxy(endpoint, network).is_ok());
+                assert!(validate_recipient_proxy(endpoint, BitcoinNetwork::Regtest).is_err());
+            }
+            for endpoint in [
+                "rpc://recipient.example.com/json-rpc",
+                "https://recipient.example.com/json-rpc",
+                "rpcs://user:secret@recipient.example.com/json-rpc",
+                "rpcs://recipient.example.com:0/json-rpc",
+                "rpcs://recipient.example.com/json-rpc?",
+                "rpcs://recipient.example.com/json-rpc#fragment",
+                "rpcs://recipient.example.com/json-rpc,other",
+                "rpcs://recipient.example.com/%2fjson-rpc",
+                "rpcs://recipient.example.com/white space",
+                "rpcs://recipient.example.com/line\nfeed",
+                "rpcs://recipient.example.com\\other",
+                "rpcs://0x7f000001/json-rpc",
+                "rpcs://localhost/json-rpc",
+                "rpcs://proxy.local/json-rpc",
+                "rpcs://proxy.internal/json-rpc",
+                "",
+            ] {
+                assert!(
+                    validate_recipient_proxy(endpoint, network).is_err(),
+                    "{endpoint}"
+                );
+            }
+        }
+        for endpoint in [
+            "rpc://127.0.0.2:49091/json-rpc",
+            "rpc://user@127.0.0.1:49091/json-rpc",
+            "rpc://127.0.0.1:49091/json-rpc?",
+            "rpc://127.0.0.1:49091/json-rpc#fragment",
+            "rpc://127.0.0.1:49091/%2fjson-rpc",
+            "rpc://127.0.0.1:49091/json-rpc,other",
+        ] {
+            assert!(
+                validate_recipient_proxy(endpoint, BitcoinNetwork::Regtest).is_err(),
+                "{endpoint}"
+            );
+        }
+    }
 
     fn blind_output(recipient_id: &str, amount: u64, is_ours: bool) -> RgbOutputInfo {
         RgbOutputInfo {

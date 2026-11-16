@@ -205,9 +205,6 @@ function configFor (options) {
     }
     // Arbitrum hosts the mint verifier. The V1 destination commits to the
     // payout the bridge will execute and does not grant access to another RPC.
-    if (!dev && routes.some(route => route.chainId !== 'eip155:42161')) {
-      throw new TypeError('The staging profile only admits direct Arbitrum payouts')
-    }
     transportEndpoint = services.proxyEndpoint
     online.evmRpcUrls = { 42161: services.arbitrumRpc }
   } else if (genericRgb) {
@@ -332,7 +329,7 @@ export class WalletAccountRgb {
         config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir, config.iosNativeFrameworkDir
       )
       const version = await worker.request('version')
-      if (version?.protocol !== nativeManifest.protocol || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 6 || version.source !== nativeManifest.source || version.overlayTree !== nativeManifest.overlayTree ||
+      if (version?.protocol !== nativeManifest.protocol || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 7 || version.source !== nativeManifest.source || version.overlayTree !== nativeManifest.overlayTree ||
         version.runtime !== nativeRuntime || version.integrationTree !== nativeManifest.integrationTree || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 2 || version.contractRegistration !== 0 || version.exposedInputs !== 1) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }

@@ -13,7 +13,9 @@ const requireNative = requireAll || options[0] === '--require-native'
 assert.equal(options.length, requireNative ? 1 : 0, 'Usage: check-candidate-pack.mjs [--require-native|--require-all-targets]')
 const manifest = readJson('package.json')
 assert.equal(manifest.name, '@utexo/wdk-wallet-rgb')
-assert.equal(manifest.private, true, 'The review candidate must remain private')
+assert.equal(manifest.private, false, 'The release candidate must be publishable after explicit release approval')
+assert.match(manifest.version, /^3\.0\.0-rc\.[1-9]\d*$/, 'Use a breaking-version release candidate')
+assert.deepEqual(manifest.publishConfig, { access: 'public', tag: 'next' }, 'A release candidate must not replace latest')
 assert.equal(manifest.engines?.bare, '>=1.37.1', 'Declare the runtime required by the packed Bare dependency graph')
 const [pack] = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], {
   cwd: root,

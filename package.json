@@ -1,7 +1,7 @@
 {
   "name": "@utexo/wdk-wallet-rgb",
-  "version": "2.1.0-alpha.24",
-  "description": "Isolated on-chain RGB wallet candidate for WDK.",
+  "version": "3.0.0-rc.1",
+  "description": "On-chain Bitcoin and RGB wallet SDK for Node and Bare.",
   "keywords": [
     "wdk",
     "wallet",
@@ -56,7 +56,11 @@
       "node": "./src/onchain-webrgb.js"
     }
   },
-  "private": true,
+  "private": false,
+  "publishConfig": {
+    "access": "public",
+    "tag": "next"
+  },
   "engines": {
     "node": "^22.21.0 || >=24.9.0",
     "bare": ">=1.37.1"
@@ -67,6 +71,12 @@
     "src/onchain-*.js",
     "src/burn-destination.js",
     "CANDIDATE.md",
+    "MIGRATION.md",
+    "CHANGELOG.md",
+    "THIRD-PARTY-NOTICES.md",
+    "THIRD-PARTY-LICENSES.txt",
+    "third-party-dependencies.json",
+    "DEPENDENCY-POLICY.md",
     "src/onchain-bare-thread.cjs",
     "src/onchain-bare-native.json",
     "src/onchain-dev-services.json",

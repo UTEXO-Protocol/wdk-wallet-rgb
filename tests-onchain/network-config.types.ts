@@ -12,8 +12,10 @@ const routes = [
 ] as const satisfies DevRoutes
 
 const stagingRoutes = [routes[0]] as const satisfies StagingRoutes
-// @ts-expect-error Staging still admits direct Arbitrum only.
 const stagingEthereum = [routes[1]] as const satisfies StagingRoutes
+const stagingAllRoutes = routes satisfies StagingRoutes
+// @ts-expect-error A valid chain cannot be paired with another chain's endpoint.
+const mismatchedStagingRoute = [{ chainId: 'eip155:137', dstEid: 30101 }] as const satisfies StagingRoutes
 // @ts-expect-error Ethereum's LayerZero endpoint cannot be paired with Polygon.
 const mismatchedDevRoute = [{ chainId: 'eip155:137', dstEid: 30101 }] as const satisfies DevRoutes
 

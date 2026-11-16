@@ -5,7 +5,23 @@ All notable changes to `@utexo/wdk-wallet-rgb` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0-alpha.24] — Unreleased
+## [3.0.0-rc.1] — Unreleased
+
+### Breaking changes
+
+- Replace the synchronous 2.x wrapper with the on-chain Node/Bare API, explicit transaction authorization and durable operation IDs.
+- Require a new engine-specific wallet directory; no legacy database or seed-only RGB migration is provided.
+- Use `sendBtc`, `sendRgbInvoice` and BIP-322 methods instead of the legacy send/sign aliases. Await wallet shutdown before disposing Core.
+
+### Release preparation
+
+- Allow an RGB recipient's proxy to differ from the configured sender proxy, retaining independent URL admission and the original send identity.
+- Permit the five exact, explicitly configured V1 payout routes on staging as well as Dev and Regtest.
+- Rebuild the complete five-Node and eleven-Bare target matrix with the new native admission capability.
+- Supply verified Node worker archives, complete Bare package checks and third-party notices.
+- Retain the unmodified upstream TLS/SQLite graph under the documented dependency policy; no audit finding is hidden or represented as repaired.
+
+## [2.1.0-alpha.24] — Private qualification candidate
 
 - Use unmodified BFA.8 and stock Electrum/Esplora clients; remove custom upstream API dependencies from the adapter.
 - Enable NIA/CFA issuance on every supported RGB profile and preserve bridge configuration during consistency rescans.
