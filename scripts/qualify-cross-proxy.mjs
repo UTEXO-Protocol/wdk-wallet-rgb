@@ -78,6 +78,32 @@ async function rpc (method, params = [], wallet) {
 }
 assert.equal((await rpc('getblockchaininfo')).chain, 'regtest')
 
+// Do not fund wallets against a stale VM clock or the zero-retention expiry
+// fixture: BFA.8 requires a full day of sender retention before a recipient ACK.
+const proxyChecks = []
+for (const endpoint of [fixture.transportEndpoint, fixture.recipientTransportEndpoint]) {
+  const response = await fetch('http:' + endpoint.slice('rpc:'.length), {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: null, method: 'server.info' }),
+    redirect: 'error', signal: AbortSignal.timeout(5000)
+  })
+  assert(response.ok, 'Proxy must be reachable before qualification')
+  const info = await response.json()
+  assert.equal(info.jsonrpc, '2.0')
+  assert.equal(info.id, null)
+  assert(!info.error)
+  assert.equal(info.result?.protocol_version, '1.0')
+  const serverTime = Number(info.result.current_time)
+  const retention = Number(info.result.retention_grace_secs)
+  const maxExpiry = Number(info.result.max_expiry_secs)
+  assert(Number.isSafeInteger(serverTime) && Math.abs(serverTime - Date.now() / 1000) < 60,
+    'Proxy VM clock must match the host before creating timed invoices')
+  assert(Number.isSafeInteger(retention) && retention >= 86400, 'Sender proxy must retain ACK data for at least one day')
+  assert(Number.isSafeInteger(maxExpiry) && maxExpiry >= 86400, 'Proxy must admit the 24-hour test invoices')
+  proxyChecks.push({ endpoint, version: info.result.version, protocolVersion: info.result.protocol_version,
+    serverTime, retentionGraceSeconds: retention, maxExpirySeconds: maxExpiry })
+}
+
 async function waitFor (description, condition) {
   for (let attempt = 0; attempt < 90; attempt++) {
     if (await condition()) return
@@ -192,6 +218,7 @@ async function startPeer (runtime) {
   let next = 0
   let pending
   let failure
+  let stopping
   function fail (error) { failure ??= error; pending?.reject(failure); pending = undefined }
   child.once('error', fail)
   child.stdin.on('error', fail)
@@ -220,8 +247,8 @@ async function startPeer (runtime) {
       })
     } finally { clearTimeout(timer) }
   }
-  return { request, call: (name, method, ...args) => request(method, name, args),
-    async stop () {
+  async function stop () {
+    if (!stopping) stopping = (async () => {
       try { if (!failure) await request('stop') }
       finally {
         child.stdin.end()
@@ -230,8 +257,10 @@ async function startPeer (runtime) {
           clearTimeout(timer); lines.close(); await rm(peerFile)
         }
       }
-    }
+    })()
+    return stopping
   }
+  return { request, call: (name, method, ...args) => request(method, name, args), stop }
 }
 
 await mkdir(output, { mode: 0o700 })
@@ -290,7 +319,14 @@ for (const runtime of runtimes) {
     assert.equal(saved.args.invoice, invoice.invoice)
     assert.match(saved.txid, /^[a-f0-9]{64}$/)
     assert(!(await rpc('getrawmempool')).includes(saved.txid), 'No recipient ACK yet: no broadcast')
-    assert.equal((await call(from, 'recoverSend', operationId)).state, 'unresolved')
+    const pendingTransfer = (await call(from, 'listTransfers', { assetId })).filter(row => row.txid === saved.txid && row.kind === 'Send')
+    assert.equal(pendingTransfer.length, 1)
+    assert.equal(pendingTransfer[0].status, 'WaitingCounterparty')
+    // The committed End record is sufficient to recover SDK submission, even
+    // while the counterparty ACK and Bitcoin broadcast remain pending.
+    const pendingRecovery = await call(from, 'recoverSend', operationId)
+    assert.equal(pendingRecovery.state, 'submitted')
+    assert.equal(pendingRecovery.txid, saved.txid)
     await assert.rejects(call(from, 'sendRgbInvoice', request), { code: 'OPERATION_EXISTS' })
     await waitFor('cross-proxy ACK and broadcast', async () => {
       await call(to, 'refresh')
@@ -359,7 +395,7 @@ for (const runtime of runtimes) {
       await balance('B', assetId, '300')
     }
     results[runtime] = { runtime: version.runtime, funding, cases, finalBalances: { A: '700', B: '300' } }
-    await writeFile(evidence, JSON.stringify({ identity, results, completedAt: new Date().toISOString() }, null, 2) + '\n', { mode: 0o600 })
+    await writeFile(evidence, JSON.stringify({ identity, proxyChecks, results, completedAt: new Date().toISOString() }, null, 2) + '\n', { mode: 0o600 })
     console.log('Passed packed ' + runtime + ' cross-proxy transfers and restart recovery')
   } finally { await peer.stop() }
 }
