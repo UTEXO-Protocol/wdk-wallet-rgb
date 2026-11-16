@@ -36,6 +36,8 @@ NIA/CFA issuance and transfers are available on every supported RGB profile: Mai
 | Android Bare | ARM64, ARMv7, x64 and x86 |
 | iOS Bare | ARM64 device; ARM64 and x64 simulators |
 
+The current GNU binaries require glibc 2.34 or newer on x64 and 2.38 or newer on ARM64. macOS binaries require macOS 11 or newer; the selected Node/Bare host runtime can require a newer OS. Linux musl is available for the Node x64 worker only.
+
 Build and ABI verification, packed desktop execution, funded fixture tests and installed application acceptance have separate scopes. The [qualification register](QUALIFICATION.md) records exact versions and evidence. Windows is not supported.
 
 ## Current limits

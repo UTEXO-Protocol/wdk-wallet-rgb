@@ -15,7 +15,7 @@ select the sources required by BFA.8; they are not local source-file patches.
 
 ## Findings retained
 
-The [recorded audit](qualification/alpha24/dependency-audit.json) identifies the
+The [recorded audit](qualification/rc1/dependency-audit.json) identifies the
 following findings in the locked native graph:
 
 | Dependency | Finding | Candidate exposure and disposition |

@@ -1,0 +1,576 @@
+{
+  "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+  "sourceTree": "ab16eefe188fb867369516050cc1e215082ef2b1",
+  "packageVersion": "3.0.0-rc.1",
+  "count": 16,
+  "platforms": {
+    "bare-android-arm": {
+      "bytes": 46615380,
+      "sha256": "f384c65c4cb2ca66e5e7d8f10ad45f41a059a570e5ced49f7089dcaadc1f753d",
+      "artifactId": 14206355628,
+      "zipDigest": "sha256:02733da8e6bebd758d12819bb2c997c7325ae346dea79127bfe76b29ec4bdd31",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": false,
+      "binaryFile": "utexo__wdk-wallet-rgb.bare",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14206355628",
+      "abi": {
+        "format": "ELF",
+        "abi": "armeabi-v7a",
+        "minimumAndroidApi": 26,
+        "qualificationRuntimeApi": 29,
+        "loadAlignments": [
+          16384,
+          16384,
+          16384,
+          16384
+        ],
+        "evidence": "CI inspected the exact addon and matched all Bare imports against the built BareKit runtime; no device execution."
+      }
+    },
+    "bare-android-arm64": {
+      "bytes": 65877832,
+      "sha256": "dc28414af603557fd207294d3a0960ec69355b1aa585407f0f697178a1c1e12f",
+      "artifactId": 14206316371,
+      "zipDigest": "sha256:4bd46140267b062284e67dcbb412aa9e54af0fedc5cb0bb9dac19bb449b63021",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": false,
+      "binaryFile": "utexo__wdk-wallet-rgb.bare",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14206316371",
+      "abi": {
+        "format": "ELF",
+        "abi": "arm64-v8a",
+        "minimumAndroidApi": 26,
+        "qualificationRuntimeApi": 29,
+        "loadAlignments": [
+          16384,
+          16384,
+          16384,
+          16384
+        ],
+        "evidence": "CI inspected the exact addon and matched all Bare imports against the built BareKit runtime; no device execution."
+      }
+    },
+    "bare-android-ia32": {
+      "bytes": 65880796,
+      "sha256": "3063ec2f18690923101b35062afd6a038a3ed98d781d1da5d397151ef4390527",
+      "artifactId": 14205836505,
+      "zipDigest": "sha256:8675ba6884c7b3644a605830dab8a704eca351d700641bb1f68187075d5f1078",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": false,
+      "binaryFile": "utexo__wdk-wallet-rgb.bare",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14205836505",
+      "abi": {
+        "format": "ELF",
+        "abi": "x86",
+        "minimumAndroidApi": 26,
+        "qualificationRuntimeApi": 29,
+        "loadAlignments": [
+          16384,
+          16384,
+          16384,
+          16384
+        ],
+        "evidence": "CI inspected the exact addon and matched all Bare imports against the built BareKit runtime; no device execution."
+      }
+    },
+    "bare-android-x64": {
+      "bytes": 67603928,
+      "sha256": "da2066eb27c164afaf65544b045c950aa1349b741f3fcbeca595e68df8faed15",
+      "artifactId": 14205603730,
+      "zipDigest": "sha256:e5c613a58eaf0479f0fe6c34d14333e1e6a0b458c2ea2a41d6f58c7df8a05cf2",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": false,
+      "binaryFile": "utexo__wdk-wallet-rgb.bare",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14205603730",
+      "abi": {
+        "format": "ELF",
+        "abi": "x86_64",
+        "minimumAndroidApi": 26,
+        "qualificationRuntimeApi": 29,
+        "loadAlignments": [
+          16384,
+          16384,
+          16384,
+          16384
+        ],
+        "evidence": "CI inspected the exact addon and matched all Bare imports against the built BareKit runtime; no device execution."
+      }
+    },
+    "bare-darwin-arm64": {
+      "bytes": 44801376,
+      "sha256": "8939eac871439cb4ee6cb73196accc362fc1614e399ceba6db37d0a3c538b7f3",
+      "artifactId": 14206665180,
+      "zipDigest": "sha256:f55ffc815490ab5e5ada3f623715fbdf748a0dd8bd8d44cf0fd7ef380bee3371",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": true,
+      "binaryFile": "utexo__wdk-wallet-rgb.bare",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14206665180",
+      "abi": {
+        "format": "Mach-O",
+        "minimumOS": "11.0",
+        "buildSDK": "15.5",
+        "platform": "MACOS",
+        "evidence": "LC_BUILD_VERSION parsed directly from the downloaded binary."
+      }
+    },
+    "bare-darwin-x64": {
+      "bytes": 48135984,
+      "sha256": "fe0c89a2e43b84692e571b55b79faebd0985549508d465ec6fac53e9535f1d39",
+      "artifactId": 14207373647,
+      "zipDigest": "sha256:83e442e45086e5b038a7077f7cf154a11a836dad790175a5fa0f5f2171c72b27",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": true,
+      "binaryFile": "utexo__wdk-wallet-rgb.bare",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14207373647",
+      "abi": {
+        "format": "Mach-O",
+        "minimumOS": "11.0",
+        "buildSDK": "15.5",
+        "platform": "MACOS",
+        "evidence": "LC_BUILD_VERSION parsed directly from the downloaded binary."
+      }
+    },
+    "bare-ios-arm64": {
+      "bytes": 45309208,
+      "sha256": "215a9ba8752b239bd5fb0908dc85bb31dea0fca086d7a040ee63816dab51264b",
+      "artifactId": 14206331646,
+      "zipDigest": "sha256:ba6b0de60b75a6f5a9b6fb350762751e595663d6cb0c74f75eb5d0a886a828c8",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": false,
+      "binaryFile": "utexo__wdk-wallet-rgb.bare",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14206331646",
+      "abi": {
+        "format": "Mach-O",
+        "minimumOS": "16.4",
+        "buildSDK": "26.5",
+        "platform": "IOS",
+        "evidence": "LC_BUILD_VERSION parsed directly from the downloaded binary."
+      }
+    },
+    "bare-ios-arm64-simulator": {
+      "bytes": 45536720,
+      "sha256": "31f375ea72374e1a6b8aa98335624ee857016f737530131a05511f36287086b6",
+      "artifactId": 14206500780,
+      "zipDigest": "sha256:bb609a499eb590aeb3347a0f96a74138fcad385a5b2d472c220015df64d29627",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": false,
+      "binaryFile": "utexo__wdk-wallet-rgb.bare",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14206500780",
+      "abi": {
+        "format": "Mach-O",
+        "minimumOS": "16.4",
+        "buildSDK": "26.5",
+        "platform": "IOSSIMULATOR",
+        "evidence": "LC_BUILD_VERSION parsed directly from the downloaded binary."
+      }
+    },
+    "bare-ios-x64-simulator": {
+      "bytes": 48937640,
+      "sha256": "f24258f3e68480162a51eabd7c68b394b90ae018522658b5599b5d2e0b4c89a4",
+      "artifactId": 14206221636,
+      "zipDigest": "sha256:649930e1412296213763d44cd83613c11848b1981ea7b49e68cf4cbe28d41a57",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": false,
+      "binaryFile": "utexo__wdk-wallet-rgb.bare",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14206221636",
+      "abi": {
+        "format": "Mach-O",
+        "minimumOS": "16.4",
+        "buildSDK": "26.5",
+        "platform": "IOSSIMULATOR",
+        "evidence": "LC_BUILD_VERSION parsed directly from the downloaded binary."
+      }
+    },
+    "bare-linux-arm64": {
+      "bytes": 53346440,
+      "sha256": "fe76fa1d0b572e9b8229df0c5783a61939ba33802e518e8c66bbfd17f2824c85",
+      "artifactId": 14205657527,
+      "zipDigest": "sha256:7e4ba1f158477c95ac81d39f679497f6dca03e0adfb29af14bb6726c3104d211",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": true,
+      "binaryFile": "utexo__wdk-wallet-rgb.bare",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14205657527",
+      "abi": {
+        "format": "ELF",
+        "glibcVersions": [
+          "2.17",
+          "2.18",
+          "2.25",
+          "2.27",
+          "2.28",
+          "2.29",
+          "2.30",
+          "2.32",
+          "2.33",
+          "2.34",
+          "2.38"
+        ],
+        "minimumGlibc": "2.38",
+        "needed": [
+          "ld-linux-aarch64.so.1",
+          "libc.so.6",
+          "libgcc_s.so.1",
+          "libm.so.6"
+        ],
+        "evidence": "Downloaded binary dynamic entries and symbol versions match CI ABI receipt."
+      }
+    },
+    "bare-linux-x64": {
+      "bytes": 56044272,
+      "sha256": "a549995768221b4fcbbcbd8b2a254812258d268d89fb29473e4187463465cf58",
+      "artifactId": 14205846338,
+      "zipDigest": "sha256:5d5de038cba25c8adf465ecd96a24c52171f771002aeb0502ab9338676a80bc6",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": true,
+      "binaryFile": "utexo__wdk-wallet-rgb.bare",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14205846338",
+      "abi": {
+        "format": "ELF",
+        "glibcVersions": [
+          "2.2.5",
+          "2.3",
+          "2.3.2",
+          "2.3.4",
+          "2.4",
+          "2.5",
+          "2.7",
+          "2.9",
+          "2.14",
+          "2.16",
+          "2.17",
+          "2.18",
+          "2.25",
+          "2.27",
+          "2.28",
+          "2.29",
+          "2.30",
+          "2.32",
+          "2.33",
+          "2.34"
+        ],
+        "minimumGlibc": "2.34",
+        "needed": [
+          "ld-linux-x86-64.so.2",
+          "libc.so.6",
+          "libgcc_s.so.1",
+          "libm.so.6"
+        ],
+        "evidence": "Downloaded binary dynamic entries and symbol versions match CI ABI receipt."
+      }
+    },
+    "node-darwin-arm64": {
+      "bytes": 44882560,
+      "sha256": "c390f2a087260baa127dc508a3782e37d011fbbaf1efb049e41473ac587505c5",
+      "artifactId": 14205947821,
+      "zipDigest": "sha256:11acc0d2637c51f9342335bc89f993118cc343ce1b4e5e2a908f4aae49674540",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": true,
+      "binaryFile": "utexo-rgb-native",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14205947821",
+      "abi": {
+        "format": "Mach-O",
+        "minimumOS": "11.0",
+        "needed": [
+          "/System/Library/Frameworks/Security.framework/Versions/A/Security",
+          "/System/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration",
+          "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+          "/usr/lib/libiconv.2.dylib",
+          "/usr/lib/libSystem.B.dylib"
+        ]
+      }
+    },
+    "node-darwin-x64": {
+      "bytes": 48250452,
+      "sha256": "b792ca911c2c78576146706b401bb1547d48a4e66f9322b412096e10c96bfc53",
+      "artifactId": 14207885329,
+      "zipDigest": "sha256:288100448ae4131bbfb5bfcff725b7778037e7d408586de072dee129d0776577",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": true,
+      "binaryFile": "utexo-rgb-native",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14207885329",
+      "abi": {
+        "format": "Mach-O",
+        "minimumOS": "11.0",
+        "needed": [
+          "/System/Library/Frameworks/Security.framework/Versions/A/Security",
+          "/System/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration",
+          "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+          "/usr/lib/libiconv.2.dylib",
+          "/usr/lib/libSystem.B.dylib"
+        ]
+      }
+    },
+    "node-linux-arm64-gnu": {
+      "bytes": 48516112,
+      "sha256": "6625f358a32f39482744e8915634743121c61ba10ebd8a0530f10bd0cb8c2fc2",
+      "artifactId": 14206505818,
+      "zipDigest": "sha256:bafe1b0f6ea471ae36f11e164a30f9ddb7bb1e0971906d0d22c1fec75ec71a74",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": true,
+      "binaryFile": "utexo-rgb-native",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14206505818",
+      "abi": {
+        "format": "ELF",
+        "interpreter": "/lib/ld-linux-aarch64.so.1",
+        "needed": [
+          "libgcc_s.so.1",
+          "libm.so.6",
+          "libc.so.6",
+          "ld-linux-aarch64.so.1"
+        ],
+        "glibcVersions": [
+          "2.17",
+          "2.18",
+          "2.25",
+          "2.27",
+          "2.28",
+          "2.29",
+          "2.30",
+          "2.32",
+          "2.33",
+          "2.34",
+          "2.38"
+        ],
+        "minimumGlibc": "2.38"
+      }
+    },
+    "node-linux-x64-gnu": {
+      "bytes": 55257248,
+      "sha256": "ed62a493a298b82b0e379d915e3964f22bc788241b05fb4c7dec985c5a678589",
+      "artifactId": 14205378769,
+      "zipDigest": "sha256:11f59fddb6411dd033a0d9685ed63aed6763c7233f1ebb2b2e08ce51c7507886",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": true,
+      "binaryFile": "utexo-rgb-native",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14205378769",
+      "abi": {
+        "format": "ELF",
+        "interpreter": "/lib64/ld-linux-x86-64.so.2",
+        "needed": [
+          "libgcc_s.so.1",
+          "libm.so.6",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ],
+        "glibcVersions": [
+          "2.14",
+          "2.16",
+          "2.17",
+          "2.18",
+          "2.2.5",
+          "2.25",
+          "2.27",
+          "2.28",
+          "2.29",
+          "2.3",
+          "2.3.2",
+          "2.3.4",
+          "2.30",
+          "2.32",
+          "2.33",
+          "2.34",
+          "2.4",
+          "2.5",
+          "2.7",
+          "2.9"
+        ],
+        "minimumGlibc": "2.34"
+      }
+    },
+    "node-linux-x64-musl": {
+      "bytes": 51392576,
+      "sha256": "3188344c56d7a0978ee21b6dc1d403342a7e58ddbdd256db63e344c1e0c1891d",
+      "artifactId": 14207225206,
+      "zipDigest": "sha256:d67f86991dacd01eb9c475da2fe58f17ec1e9c1abadd98021c170b5c9263d8a8",
+      "sourceCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "receiptMatchedBinary": true,
+      "nativeRuntimeExecuted": true,
+      "binaryFile": "utexo-rgb-native",
+      "artifactUrl": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109/artifacts/14207225206",
+      "abi": {
+        "format": "ELF",
+        "interpreter": null,
+        "needed": [],
+        "glibcVersions": []
+      }
+    }
+  },
+  "ciRun": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109",
+  "ciResult": {
+    "jobsPassed": 19,
+    "jobsTotal": 19
+  },
+  "nativeIdentity": {
+    "source": "2f7b21d8637baad548504ea870deb2c0d4d0a37d",
+    "overlayTree": "5492824f3cf47b4c821dfca8b7a63fed27858486",
+    "integrationTree": "5492824f3cf47b4c821dfca8b7a63fed27858486",
+    "protocol": 2,
+    "networkChecks": 7
+  },
+  "packedBareTargets": {
+    "android-arm": {
+      "pin": {
+        "byteLength": 46615380,
+        "sha256": "f384c65c4cb2ca66e5e7d8f10ad45f41a059a570e5ced49f7089dcaadc1f753d",
+        "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.1.so"
+      },
+      "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "origin": {
+        "kind": "github-actions",
+        "artifactId": 14206355628,
+        "zipDigest": "sha256:02733da8e6bebd758d12819bb2c997c7325ae346dea79127bfe76b29ec4bdd31"
+      }
+    },
+    "android-arm64": {
+      "pin": {
+        "byteLength": 65877832,
+        "sha256": "dc28414af603557fd207294d3a0960ec69355b1aa585407f0f697178a1c1e12f",
+        "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.1.so"
+      },
+      "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "origin": {
+        "kind": "github-actions",
+        "artifactId": 14206316371,
+        "zipDigest": "sha256:4bd46140267b062284e67dcbb412aa9e54af0fedc5cb0bb9dac19bb449b63021"
+      }
+    },
+    "android-ia32": {
+      "pin": {
+        "byteLength": 65880796,
+        "sha256": "3063ec2f18690923101b35062afd6a038a3ed98d781d1da5d397151ef4390527",
+        "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.1.so"
+      },
+      "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "origin": {
+        "kind": "github-actions",
+        "artifactId": 14205836505,
+        "zipDigest": "sha256:8675ba6884c7b3644a605830dab8a704eca351d700641bb1f68187075d5f1078"
+      }
+    },
+    "android-x64": {
+      "pin": {
+        "byteLength": 67603928,
+        "sha256": "da2066eb27c164afaf65544b045c950aa1349b741f3fcbeca595e68df8faed15",
+        "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.1.so"
+      },
+      "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "origin": {
+        "kind": "github-actions",
+        "artifactId": 14205603730,
+        "zipDigest": "sha256:e5c613a58eaf0479f0fe6c34d14333e1e6a0b458c2ea2a41d6f58c7df8a05cf2"
+      }
+    },
+    "darwin-arm64": {
+      "pin": {
+        "byteLength": 44801376,
+        "sha256": "8939eac871439cb4ee6cb73196accc362fc1614e399ceba6db37d0a3c538b7f3"
+      },
+      "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "origin": {
+        "kind": "github-actions",
+        "artifactId": 14206665180,
+        "zipDigest": "sha256:f55ffc815490ab5e5ada3f623715fbdf748a0dd8bd8d44cf0fd7ef380bee3371"
+      }
+    },
+    "darwin-x64": {
+      "pin": {
+        "byteLength": 48135984,
+        "sha256": "fe0c89a2e43b84692e571b55b79faebd0985549508d465ec6fac53e9535f1d39"
+      },
+      "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "origin": {
+        "kind": "github-actions",
+        "artifactId": 14207373647,
+        "zipDigest": "sha256:83e442e45086e5b038a7077f7cf154a11a836dad790175a5fa0f5f2171c72b27"
+      }
+    },
+    "ios-arm64": {
+      "pin": {
+        "byteLength": 45309208,
+        "sha256": "215a9ba8752b239bd5fb0908dc85bb31dea0fca086d7a040ee63816dab51264b",
+        "linkedName": "utexo__wdk-wallet-rgb.3.0.0-rc.1.framework/utexo__wdk-wallet-rgb.3.0.0-rc.1"
+      },
+      "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "origin": {
+        "kind": "github-actions",
+        "artifactId": 14206331646,
+        "zipDigest": "sha256:ba6b0de60b75a6f5a9b6fb350762751e595663d6cb0c74f75eb5d0a886a828c8"
+      }
+    },
+    "ios-arm64-simulator": {
+      "pin": {
+        "byteLength": 45536720,
+        "sha256": "31f375ea72374e1a6b8aa98335624ee857016f737530131a05511f36287086b6",
+        "linkedName": "utexo__wdk-wallet-rgb.3.0.0-rc.1.framework/utexo__wdk-wallet-rgb.3.0.0-rc.1"
+      },
+      "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "origin": {
+        "kind": "github-actions",
+        "artifactId": 14206500780,
+        "zipDigest": "sha256:bb609a499eb590aeb3347a0f96a74138fcad385a5b2d472c220015df64d29627"
+      }
+    },
+    "ios-x64-simulator": {
+      "pin": {
+        "byteLength": 48937640,
+        "sha256": "f24258f3e68480162a51eabd7c68b394b90ae018522658b5599b5d2e0b4c89a4",
+        "linkedName": "utexo__wdk-wallet-rgb.3.0.0-rc.1.framework/utexo__wdk-wallet-rgb.3.0.0-rc.1"
+      },
+      "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "origin": {
+        "kind": "github-actions",
+        "artifactId": 14206221636,
+        "zipDigest": "sha256:649930e1412296213763d44cd83613c11848b1981ea7b49e68cf4cbe28d41a57"
+      }
+    },
+    "linux-arm64": {
+      "pin": {
+        "byteLength": 53346440,
+        "sha256": "fe76fa1d0b572e9b8229df0c5783a61939ba33802e518e8c66bbfd17f2824c85"
+      },
+      "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "origin": {
+        "kind": "github-actions",
+        "artifactId": 14205657527,
+        "zipDigest": "sha256:7e4ba1f158477c95ac81d39f679497f6dca03e0adfb29af14bb6726c3104d211"
+      }
+    },
+    "linux-x64": {
+      "pin": {
+        "byteLength": 56044272,
+        "sha256": "a549995768221b4fcbbcbd8b2a254812258d268d89fb29473e4187463465cf58"
+      },
+      "producerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+      "origin": {
+        "kind": "github-actions",
+        "artifactId": 14205846338,
+        "zipDigest": "sha256:5d5de038cba25c8adf465ecd96a24c52171f771002aeb0502ab9338676a80bc6"
+      }
+    }
+  },
+  "scope": "All sixteen binaries rebuilt from the exact producer and independently admitted by GitHub ZIP digest, all archive-entry hashes, binary hashes, source/lock receipts and target ABI. Nine desktop target jobs executed packed runtime tests; seven mobile targets have build/ABI acceptance only.",
+  "producerInputHashes": {
+    "native/Cargo.lock": "fb3683817ff79f58fb7475065804433dd7dbf3b7eaff62a51cc111eaa93e23f8",
+    "native/bare/Cargo.lock": "fdc48289868bc51ad9772a764fe79970782fd97b35f11f91d30b8c3bbfedb830",
+    "native/scripts/prepare-source.py": "f7ecb133e6bea269bc9e8b8562b880534c6c8bc911c57b4400294a0bfcc63e60",
+    "native/src/profile.rs": "be5a5c708514bdaaed055f90bd6824137b1c2cfde12ddabae5f858784f890c0f",
+    "native/src/send.rs": "5340812277549b2aa60179e918ec9e062189dff16c244428abe33b41d69036ff",
+    "src/onchain-dev-services.json": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393",
+    ".github/workflows/build.yml": "d582bbdb7dcceda267b3455ab9f7101eebf063789763bb1affb1cf631c18305b"
+  }
+}

@@ -120,6 +120,12 @@ def verify_platforms(evidence, artifacts, version, native):
         results[name] = {**identity, "producerCommit": reviewed["sourceCommit"],
                          "nativeRuntimeExecuted": reviewed["nativeRuntimeExecuted"],
                          "artifactUrl": reviewed["artifactUrl"]}
+        if name.startswith("node-"):
+            abi = reviewed.get("abi")
+            require(isinstance(abi, dict) and abi.get("format") in ("Mach-O", "ELF"), "Missing reviewed Node ABI requirements")
+            results[name]["abi"] = abi
+        elif "abi" in reviewed:
+            results[name]["abi"] = reviewed["abi"]
     for name in BARE_TARGETS:
         admitted = evidence["packedBareTargets"][name]
         require(admitted["pin"] == native["targets"][name], "Packed Bare pin differs from reviewed qualification")
@@ -215,6 +221,9 @@ def assemble(output, archive, artifacts, evidence, report, head):
                 "Install the matching SDK package separately. Extract this archive into an application-owned directory.\n"
                 "Pass the absolute path of utexo-rgb-native as nativeExecutable and this SHA-256 as nativeSha256:\n"
                 f"{reviewed['sha256']}\n\n"
+                "ABI requirements are recorded in release-receipt.json under binary.abi.\n"
+                "For GNU/Linux, the host must provide every recorded GLIBC symbol version; ARM64 and x64 have different minimums.\n"
+                "Use the separate musl worker on musl systems. macOS must satisfy minimumOS as well as the Node runtime requirement.\n\n"
                 "The SDK verifies the hash and protocol before opening the wallet. Do not select an executable via PATH.\n"
                 "Keep this file and the third-party notices with redistributed copies. No install scripts or downloads run.\n"
             ).encode()

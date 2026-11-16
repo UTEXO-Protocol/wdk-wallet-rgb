@@ -1,6 +1,6 @@
 # On-chain RGB SDK qualification register
 
-The candidate is a private on-chain SDK for Node and Bare. Mainnet and Public Signet admit Bitcoin and ordinary RGB under the network policies in the [candidate guide](CANDIDATE.md). Regtest, Dev and staging have separate service and bridge policies. This register contains deployment-specific test evidence and stays in the repository outside the package.
+The candidate is an on-chain SDK for Node and Bare. Mainnet and Public Signet admit Bitcoin and ordinary RGB under the network policies in the [candidate guide](CANDIDATE.md). Regtest, Dev and staging have separate service and bridge policies. This register contains deployment-specific test evidence and stays in the repository outside the package.
 
 ## 3.0.0-rc.1 release preparation
 
@@ -8,7 +8,9 @@ Version 3 declares the API and directory-format break from 2.x. It retains unmod
 
 The WDK adapter now allows a recipient proxy distinct from the sender proxy and advertises the same five explicitly configured V1 route pairs on staging as on Dev. JavaScript and native endpoint admission, chain checks, exact invoice/request identity, approval and exposed-input reservations remain in force. `networkChecks: 7` rejects older adapters that lack recipient endpoint admission.
 
-Native artifacts and funded acceptance for this version are recorded separately from alpha.24. Do not use the alpha.24 package or binary hashes for this version. The release procedure requires the complete new matrix before assembly.
+The new packed Node and Bare hosts pass eight funded cross-proxy NIA/CFA transfers with lost-result and full-process restart recovery, two BFA mints and ten V1 burns across the five supported routes, plus Core beta.23 BTC and BIP-322 checks. Results are recorded in [qualification/rc1](qualification/rc1/README.md). The two normal-retention proxies passed protocol, time and retention checks before funds were sent. The independent compatible BFA.7 fixture issuer/proof verifier is separate from the unmodified BFA.8 SDK under test.
+
+All 19 jobs of the [RC1 producer run](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43823521109) passed. The [platform receipt](qualification/rc1/platforms.json) admits all sixteen binaries: five Node workers and eleven Bare addons. Nine desktop targets executed packed consumers; the seven mobile targets passed build and ABI checks only. Native artifacts and funded acceptance for this version are recorded separately from alpha.24; its package and binary hashes do not qualify RC1.
 
 ## Alpha.24: unmodified BFA.8 adapter
 

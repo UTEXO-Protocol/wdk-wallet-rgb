@@ -1,0 +1,68 @@
+{
+  "date": "2026-11-16",
+  "disposition": "Stock upstream findings retained by release owner decision; no source patches or audit suppressions.",
+  "nativeLockSha256": "fb3683817ff79f58fb7475065804433dd7dbf3b7eaff62a51cc111eaa93e23f8",
+  "bareLockSha256": "fdc48289868bc51ad9772a764fe79970782fd97b35f11f91d30b8c3bbfedb830",
+  "rustAuditDatabase": {
+    "advisory-count": 1509,
+    "last-commit": "02e2517f457a359fc6d3440ea4560c8ea188fee8",
+    "last-updated": "2026-11-15T10:59:21+01:00"
+  },
+  "findings": [
+    {
+      "id": "RUSTSEC-2026-0459",
+      "package": "libsqlite3-sys",
+      "version": "0.37.0",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-119375"
+    },
+    {
+      "id": "RUSTSEC-2026-0346",
+      "package": "rustls",
+      "version": "0.21.12",
+      "url": "https://github.com/rustls/rustls/pull/3299"
+    },
+    {
+      "id": "RUSTSEC-2026-0349",
+      "package": "rustls",
+      "version": "0.21.12",
+      "url": "https://github.com/rustls/rustls/pull/3355"
+    },
+    {
+      "id": "RUSTSEC-2026-0104",
+      "package": "rustls-webpki",
+      "version": "0.101.7",
+      "url": null
+    },
+    {
+      "id": "RUSTSEC-2026-0098",
+      "package": "rustls-webpki",
+      "version": "0.101.7",
+      "url": null
+    },
+    {
+      "id": "RUSTSEC-2026-0099",
+      "package": "rustls-webpki",
+      "version": "0.101.7",
+      "url": null
+    },
+    {
+      "id": "RUSTSEC-2026-0382",
+      "package": "rustls-webpki",
+      "version": "0.101.7",
+      "url": "https://github.com/rustls/webpki/pull/546"
+    },
+    {
+      "id": "RUSTSEC-2026-0381",
+      "package": "webpki-roots",
+      "version": "0.25.4",
+      "url": "https://github.com/rustls/webpki-roots/pull/133"
+    }
+  ],
+  "warnings": [
+    {
+      "id": "RUSTSEC-2024-0449",
+      "package": "unsafe-libyaml",
+      "version": "0.2.11"
+    }
+  ]
+}

@@ -89,6 +89,9 @@ class ReleasePreparationTests(unittest.TestCase):
             "receiptMatchedBinary": True, "nativeRuntimeExecuted": name.startswith("node-"),
             "binaryFile": filename, "artifactUrl": "https://example.invalid/artifact",
         }
+        if name.startswith("node-"):
+            self.evidence["platforms"][name]["abi"] = ({"format": "Mach-O", "minimumOS": "11.0"}
+                if "darwin" in name else {"format": "ELF", "glibcVersions": ["2.17", "2.34"]})
 
     def verify_pack(self):
         return release.verify_pack(self.archive, self.head, self.package, self.native)
@@ -113,6 +116,13 @@ class ReleasePreparationTests(unittest.TestCase):
     def test_wrong_mobile_linked_name_is_rejected(self):
         self.native["targets"]["android-arm64"]["linkedName"] = "libold-sdk.so"
         with self.assertRaisesRegex(ValueError, "linked name differs"):
+            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native)
+
+    def test_node_abi_requirements_are_required_and_preserved(self):
+        results = release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native)
+        self.assertEqual(results["node-linux-x64-gnu"]["abi"]["glibcVersions"], ["2.17", "2.34"])
+        del self.evidence["platforms"]["node-linux-x64-gnu"]["abi"]
+        with self.assertRaisesRegex(ValueError, "Missing reviewed Node ABI"):
             release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native)
 
     def test_symlink_worker_is_rejected(self):

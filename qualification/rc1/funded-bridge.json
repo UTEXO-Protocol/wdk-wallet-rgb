@@ -1,0 +1,257 @@
+{
+  "version": "3.0.0-rc.1",
+  "packageSourceCommit": "095cadbc337fc090545080dfc3e53dba3e665547",
+  "nativeProducerCommit": "a6706783b3d232c190853cbe4a5221763aec8455",
+  "rgbSource": "2f7b21d8637baad548504ea870deb2c0d4d0a37d",
+  "packSha256": "5d89a8b80ab521b8a8c8d77592acdd809ce2c791058a1646663366c491f4ad02",
+  "packedFilesChecked": 31,
+  "nativeNodeSha256": "c390f2a087260baa127dc508a3782e37d011fbbaf1efb049e41473ac587505c5",
+  "nativeBareSha256": "8939eac871439cb4ee6cb73196accc362fc1614e399ceba6db37d0a3c538b7f3",
+  "sdkWalletJsSha256": "b4120b5980187e0ddb14a13011ef6a299e372c0ea5b1bec9ed12b396a74b5e2b",
+  "hostPlatform": "darwin-arm64",
+  "node": "22.23.3",
+  "bare": "1.37.1",
+  "issuerAndProofValidatorSource": "9ec49c08be2e68f08521281e3efbd760ec989cb9",
+  "issuerAndProofValidatorRole": "Independent compatible BFA.7 fixture; not the WDK runtime",
+  "fixture": "isolated regtest plus local Anvil EVM",
+  "proxyProtocol": "1.0",
+  "proxyVersion": "0.4.0",
+  "fixtureClockOffsetSecondsAtAdmission": 0,
+  "contractPreregistration": "CONTRACT_IMPORT_UNAVAILABLE checked before first generic receive",
+  "mints": [
+    {
+      "runtime": "bare",
+      "assetId": "rgb:KPYZhUwV-DtN6t74-d408sfo-R7ctumZ-biNa1C6-8bGj5mc",
+      "txid": "8894bd74033ced33d38fae6aef37e7bbfe5a067f58b9d1924d5aa515637c0337",
+      "confirmations": 3,
+      "firstReceive": "generic-blinded-no-preregistration"
+    },
+    {
+      "runtime": "node",
+      "assetId": "rgb:KPYZhUwV-DtN6t74-d408sfo-R7ctumZ-biNa1C6-8bGj5mc",
+      "txid": "f4cd5547a94ff843a70118c2b8cd5c813067a3e3d249fe7ca156f5bdfdfd18fc",
+      "confirmations": 3,
+      "firstReceive": "generic-blinded-no-preregistration"
+    }
+  ],
+  "burns": [
+    {
+      "route": "Polygon",
+      "runtime": "bare",
+      "payout": {
+        "version": 1,
+        "destinationChainId": 137,
+        "dstEid": 30109,
+        "recipient": "0x2222222222222222222222222222222222222222"
+      },
+      "commitment": "0xa37aee7d1440eef325ef2b3ca5a85721463b4cad8174214d32d7f4f56bb3cf80",
+      "txid": "ed1b8391e51ce4bf8406e44a2433dbdfd6b36bb81dac372e7cdfad0856e60e1a",
+      "confirmations": 6,
+      "proofBytes": 1865,
+      "proofSha256": "6d52b83ee7accf1890c97c3aa505918689e584fe09fe8011386addc2b1d979ad",
+      "processRestarts": 1,
+      "exactRequestRecoveredWithoutNativeReplay": true,
+      "foreignTopicProofDenied": true,
+      "localOnly": true,
+      "independentProofValidation": true,
+      "wrongEndpointRejectedBeforeApproval": true
+    },
+    {
+      "route": "Ethereum",
+      "runtime": "bare",
+      "payout": {
+        "version": 1,
+        "destinationChainId": 1,
+        "dstEid": 30101,
+        "recipient": "0x2222222222222222222222222222222222222222"
+      },
+      "commitment": "0x9274beba7130d3f8a4ef95c5c4c555616718050c688f8478e23f8131762a9537",
+      "txid": "6356a1dacc8972b5d741ffb769ae1b85d154136da354704b8a5a340e6775c62c",
+      "confirmations": 6,
+      "proofBytes": 2536,
+      "proofSha256": "f2c3814b23b30ff6b938387f42caf4b656fb7c12624cd81e0fbd2c9601912548",
+      "processRestarts": 2,
+      "exactRequestRecoveredWithoutNativeReplay": true,
+      "foreignTopicProofDenied": true,
+      "localOnly": true,
+      "independentProofValidation": true,
+      "wrongEndpointRejectedBeforeApproval": true
+    },
+    {
+      "route": "Arbitrum",
+      "runtime": "bare",
+      "payout": {
+        "version": 1,
+        "destinationChainId": 42161,
+        "dstEid": 0,
+        "recipient": "0x2222222222222222222222222222222222222222"
+      },
+      "commitment": "0x610f4b627466e94905912b02207cc75dee89781a974de04c9d5422be1540e39f",
+      "txid": "d2600a7a903e109fc62791cae37ccc16447015630591eca2d8b68ac223c355b2",
+      "confirmations": 6,
+      "proofBytes": 3193,
+      "proofSha256": "36005ace64cf87a4f5eeab930e5b5be34639bbbdab80f01ad6e87506a4444de3",
+      "processRestarts": 3,
+      "exactRequestRecoveredWithoutNativeReplay": true,
+      "foreignTopicProofDenied": true,
+      "localOnly": true,
+      "independentProofValidation": true,
+      "wrongEndpointRejectedBeforeApproval": true
+    },
+    {
+      "route": "Plasma",
+      "runtime": "bare",
+      "payout": {
+        "version": 1,
+        "destinationChainId": 9745,
+        "dstEid": 30383,
+        "recipient": "0x2222222222222222222222222222222222222222"
+      },
+      "commitment": "0xf32c3a9fda81984217f0f0c6f222aff38d62184c3b1deb3cdf55c5466c9adb79",
+      "txid": "8ca49be8623b720fb807df696e8111ed8493928de2c6a55b2ae4a07621b1a63c",
+      "confirmations": 6,
+      "proofBytes": 3864,
+      "proofSha256": "eb23beed0704ccf4d21c0beadc8720325b38ced5b941a0ffb03d300441dc0caf",
+      "processRestarts": 4,
+      "exactRequestRecoveredWithoutNativeReplay": true,
+      "foreignTopicProofDenied": true,
+      "localOnly": true,
+      "independentProofValidation": true,
+      "wrongEndpointRejectedBeforeApproval": true
+    },
+    {
+      "route": "Tron",
+      "runtime": "bare",
+      "payout": {
+        "version": 1,
+        "destinationChainId": 728126428,
+        "dstEid": 30420,
+        "recipient": "0x413333333333333333333333333333333333333333"
+      },
+      "commitment": "0x60c369ce30870783c2a8cee9e6018e78650ad4787c2e898c05c35cb85179eac0",
+      "txid": "1371bb4141c3259312e9904684cfb63f5f159a2fbfa27d738c5a92decb0f4202",
+      "confirmations": 6,
+      "proofBytes": 4535,
+      "proofSha256": "b37b2fea138408fe8c865b7b94b233f571b2d5dcf38c62269fe10ef09e3376c0",
+      "processRestarts": 5,
+      "exactRequestRecoveredWithoutNativeReplay": true,
+      "foreignTopicProofDenied": true,
+      "localOnly": true,
+      "independentProofValidation": true,
+      "wrongEndpointRejectedBeforeApproval": true
+    },
+    {
+      "route": "Polygon",
+      "runtime": "node",
+      "payout": {
+        "version": 1,
+        "destinationChainId": 137,
+        "dstEid": 30109,
+        "recipient": "0x2222222222222222222222222222222222222222"
+      },
+      "commitment": "0xa37aee7d1440eef325ef2b3ca5a85721463b4cad8174214d32d7f4f56bb3cf80",
+      "txid": "80e01bb6e9f54329fc88554f2f378834810d6eb07be500cac4a8dd2860991a82",
+      "confirmations": 6,
+      "proofBytes": 1865,
+      "proofSha256": "f64bfef5e552f0015f8ae8aadfeb3fe9a3e8ddaed834fa8d725ee152af66bf12",
+      "processRestarts": 1,
+      "exactRequestRecoveredWithoutNativeReplay": true,
+      "foreignTopicProofDenied": true,
+      "localOnly": true,
+      "independentProofValidation": true,
+      "wrongEndpointRejectedBeforeApproval": true
+    },
+    {
+      "route": "Ethereum",
+      "runtime": "node",
+      "payout": {
+        "version": 1,
+        "destinationChainId": 1,
+        "dstEid": 30101,
+        "recipient": "0x2222222222222222222222222222222222222222"
+      },
+      "commitment": "0x9274beba7130d3f8a4ef95c5c4c555616718050c688f8478e23f8131762a9537",
+      "txid": "6e484befe47a583872af670f1e60c4b5ab3c66b3969c02af2f9e27965c7a6951",
+      "confirmations": 6,
+      "proofBytes": 2536,
+      "proofSha256": "c8fc9cf68a82d328d1e459061ad757e1ad6f63d6ec73158d527fc2fb543a326d",
+      "processRestarts": 2,
+      "exactRequestRecoveredWithoutNativeReplay": true,
+      "foreignTopicProofDenied": true,
+      "localOnly": true,
+      "independentProofValidation": true,
+      "wrongEndpointRejectedBeforeApproval": true
+    },
+    {
+      "route": "Arbitrum",
+      "runtime": "node",
+      "payout": {
+        "version": 1,
+        "destinationChainId": 42161,
+        "dstEid": 0,
+        "recipient": "0x2222222222222222222222222222222222222222"
+      },
+      "commitment": "0x610f4b627466e94905912b02207cc75dee89781a974de04c9d5422be1540e39f",
+      "txid": "b75cd7c94cac51a02bc336df9af1105ba81eebcb9c33f12eb5a5d2ff360986ef",
+      "confirmations": 6,
+      "proofBytes": 3193,
+      "proofSha256": "ec46211a8cec03046da3b2607993b0a43e31a8e42168aa59c7c9047318bf93c9",
+      "processRestarts": 3,
+      "exactRequestRecoveredWithoutNativeReplay": true,
+      "foreignTopicProofDenied": true,
+      "localOnly": true,
+      "independentProofValidation": true,
+      "wrongEndpointRejectedBeforeApproval": true
+    },
+    {
+      "route": "Plasma",
+      "runtime": "node",
+      "payout": {
+        "version": 1,
+        "destinationChainId": 9745,
+        "dstEid": 30383,
+        "recipient": "0x2222222222222222222222222222222222222222"
+      },
+      "commitment": "0xf32c3a9fda81984217f0f0c6f222aff38d62184c3b1deb3cdf55c5466c9adb79",
+      "txid": "f4ba62dbf9ea236764b1a5fb83176dfed7369af9b644716d512d401bd34a4263",
+      "confirmations": 6,
+      "proofBytes": 3864,
+      "proofSha256": "e4816d8813734405cf40015921ddfcd7e6fe0d5ed654c2bf26f6ae3d40de3bbd",
+      "processRestarts": 4,
+      "exactRequestRecoveredWithoutNativeReplay": true,
+      "foreignTopicProofDenied": true,
+      "localOnly": true,
+      "independentProofValidation": true,
+      "wrongEndpointRejectedBeforeApproval": true
+    },
+    {
+      "route": "Tron",
+      "runtime": "node",
+      "payout": {
+        "version": 1,
+        "destinationChainId": 728126428,
+        "dstEid": 30420,
+        "recipient": "0x413333333333333333333333333333333333333333"
+      },
+      "commitment": "0x60c369ce30870783c2a8cee9e6018e78650ad4787c2e898c05c35cb85179eac0",
+      "txid": "12bf35b388c307a464020a6c795ec17b7cf777569a9e735ae0b628eff4f6104e",
+      "confirmations": 6,
+      "proofBytes": 4535,
+      "proofSha256": "6a256e25af05b88385746bef14e17829c5aa1811e92f84c6976d6dd0793c7e6b",
+      "processRestarts": 5,
+      "exactRequestRecoveredWithoutNativeReplay": true,
+      "foreignTopicProofDenied": true,
+      "localOnly": true,
+      "independentProofValidation": true,
+      "wrongEndpointRejectedBeforeApproval": true
+    }
+  ],
+  "processRestartsPerHost": 5,
+  "result": "passed",
+  "hostedBridgeOperated": false,
+  "hostedPayoutSettlementQualified": false,
+  "harnessSha256": {
+    "qualify-packed-routes.mjs": "f3d5bfc1d87eebe6386358c2f77b3c0db45b010b96fbadc834ae4680dbfbacd5",
+    "bridge-rpc-peer.mjs": "88dab17b185782b4c1ad83b6ce354de61759b5af533546faaefd390fc3203bf8"
+  }
+}

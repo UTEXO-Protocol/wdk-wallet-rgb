@@ -6,14 +6,16 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { createHash, randomBytes } from 'node:crypto'
-import { mkdir, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
+import { constants } from 'node:fs'
+import { access, mkdir, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { createConnection } from 'node:net'
 import { join, resolve } from 'node:path'
 import { createInterface } from 'node:readline'
 
-const [consumerArg, workerArg, fixtureArg, resultArg] = process.argv.slice(2)
+const [consumerArg, workerArg, fixtureArg, resultArg, runtimeSelection = 'both'] = process.argv.slice(2)
 assert(consumerArg && workerArg && fixtureArg && resultArg,
   'Pass installed tarball consumer, Node worker, local fixture JSON, fresh result directory, with two independent proxy endpoints')
+assert(['node', 'bare', 'both'].includes(runtimeSelection), 'Optional runtime selector must be node, bare or both')
 const consumer = await realpath(consumerArg)
 const worker = await realpath(workerArg)
 const fixture = JSON.parse(await readFile(fixtureArg, 'utf8'))
@@ -47,9 +49,14 @@ assert.notEqual(fixture.transportEndpoint, fixture.recipientTransportEndpoint)
 assert.notEqual(new URL(fixture.transportEndpoint).port, new URL(fixture.recipientTransportEndpoint).port)
 const digest = async path => createHash('sha256').update(await readFile(path)).digest('hex')
 const nodeSha256 = await digest(worker)
-const runtimes = ['node']
+await access(worker, constants.X_OK)
+const runtimes = runtimeSelection === 'bare' ? [] : ['node']
 let bareSha256
-if (fixture.bareExecutable) {
+let bareRuntimeSha256
+if (runtimeSelection !== 'node') {
+  assert(fixture.bareExecutable, 'A qualified Bare executable is required')
+  await access(fixture.bareExecutable, constants.X_OK)
+  bareRuntimeSha256 = await digest(fixture.bareExecutable)
   assert.match(fixture.bareTarget, /^(darwin|linux)-(arm64|x64)$/)
   const addon = join(pkg, 'prebuilds', fixture.bareTarget, 'utexo__wdk-wallet-rgb.bare')
   bareSha256 = await digest(addon)
@@ -57,7 +64,7 @@ if (fixture.bareExecutable) {
   runtimes.push('bare')
 }
 const identity = { version: metadata.version, integrity: installed.integrity,
-  source: manifest.source, tree: manifest.overlayTree, nodeSha256, ...(bareSha256 && { bareSha256 }) }
+  source: manifest.source, tree: manifest.overlayTree, nodeSha256, ...(bareSha256 && { bareSha256, bareRuntimeSha256 }) }
 const evidence = join(output, 'cross-proxy-transfers.json')
 const privateState = join(output, 'private-state.json')
 
@@ -249,11 +256,15 @@ async function startPeer (runtime) {
   }
   async function stop () {
     if (!stopping) stopping = (async () => {
+      const priorFailure = failure
       try { if (!failure) await request('stop') }
       finally {
         child.stdin.end()
         const timer = setTimeout(() => child.kill('SIGKILL'), 5000)
-        try { assert.equal(await exited, 0) } finally {
+        try {
+          const code = await exited
+          if (code !== 0) throw priorFailure ?? new Error('Qualification peer exited: ' + code)
+        } finally {
           clearTimeout(timer); lines.close(); await rm(peerFile)
         }
       }
