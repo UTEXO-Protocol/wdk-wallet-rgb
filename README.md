@@ -2,14 +2,14 @@
 
 An on-chain Bitcoin and RGB wallet SDK for Node and Bare. The application owns the signer and approves transactions; the native engine receives public account data and reviewed signed PSBTs. There is no Lightning dependency.
 
-Version `3.0.0-rc.1` is the release candidate for the new API. It uses unmodified `rgb-lib-bfa` BFA.8. See the [upgrade guide](MIGRATION.md) before replacing a 2.x integration: the API and wallet directory format change.
+Version `3.0.0-rc.2` is the release candidate for the new API. It uses unmodified `rgb-lib-bfa` BFA.8. See the [upgrade guide](MIGRATION.md) before replacing a 2.x integration: the API and wallet directory format change.
 
 ## Installation
 
 Install the reviewed package archive in your application:
 
 ```sh
-npm install ./utexo-wdk-wallet-rgb-3.0.0-rc.1.tgz
+npm install ./utexo-wdk-wallet-rgb-3.0.0-rc.2.tgz
 ```
 
 Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedded mobile runtimes. The archive contains the eleven Bare addons. Node applications also need the matching native worker archive for their platform and its recorded SHA-256. There are no native downloads or compilation hooks during installation.
@@ -22,6 +22,7 @@ The [integration guide](CANDIDATE.md) covers Node worker configuration, Bare and
 - NIA/CFA issuance, optional-amount blinded and witness invoices, RGB receive/send, balances and history.
 - RGB output preparation, approval, creation and recovery; exact expired ordinary-invoice cancellation.
 - BIP-322 message signing and verification with separate application approval.
+- Invoice-scoped prepared-mint verification before payment, including a verified asset ID for assetless receives.
 - BFA receive/mint validation, explicit V1 burn destinations, scoped proof export and recovery on the bridge profiles.
 - Tether Core registration and explicit awaited shutdown.
 

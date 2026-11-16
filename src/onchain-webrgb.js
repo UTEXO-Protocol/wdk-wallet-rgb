@@ -15,7 +15,7 @@ const MAX_U64 = 0xffffffffffffffffn
 const PROOF_MAGIC = [82, 71, 66, 0, 84, 70, 82]
 const METHODS = Object.freeze([
   'enable', 'getInfo', 'getAddress', 'blindReceive', 'witnessReceive', 'listAssets',
-  'getAssetBalance', 'listTransfers', 'getTransferStatus', 'decodeRgbInvoice', 'burnAsset', 'getConsignment'
+  'getAssetBalance', 'listTransfers', 'getTransferStatus', 'decodeRgbInvoice', 'getReceivedMint', 'burnAsset', 'getConsignment'
 ])
 const MESSAGES = Object.freeze({
   INVALID_PARAMS: 'Invalid WebRGB request',
@@ -246,6 +246,10 @@ export class WebRgbProvider {
     if (method === 'blindReceive' || method === 'witnessReceive') {
       return typeof this.#wallet.receiveWebRgbInvoice === 'function' && Array.isArray(info.methods) && info.methods.includes(method)
     }
+    if (method === 'getReceivedMint') {
+      return typeof this.#wallet.getReceivedMintForInvoice === 'function' && typeof this.#wallet.decodeRgbInvoice === 'function' &&
+        info.receivedMintVerificationVersion === 1 && Array.isArray(info.methods) && info.methods.includes(method)
+    }
     if (typeof this.#wallet[method] !== 'function') return false
     if (method === 'getConsignment' || method === 'burnAsset') {
       if (!this.#burnAssets.size || !Array.isArray(info.methods) || !info.methods.includes(method)) return false
@@ -282,6 +286,7 @@ export class WebRgbProvider {
       const routes = methods.includes('burnAsset') ? this.#burnRoutes(info) : []
       return {
         ready: info.ready === true, network: this.#network, protocol: 'RGB_L1', methods,
+        ...(methods.includes('getReceivedMint') && { receivedMintVerificationVersion: 1 }),
         ...(routes.length && {
           burnDestinationVersion: 1,
           burnDestinationRoutes: routes,
@@ -405,6 +410,40 @@ export class WebRgbProvider {
         ...(result.expirationTimestamp != null && { expirationTimestamp: nativeNumber(result.expirationTimestamp) }),
         network: result.network,
         transportEndpoints: result.transportEndpoints.map(value => text(value, 2048, 'INTERNAL_ERROR'))
+      }
+    })
+  }
+
+  /** Fresh, invoice-scoped verification. No transaction is signed or replayed. */
+  getReceivedMint (args) {
+    return this.#call('getReceivedMint', async info => {
+      this.#assertSupported('getReceivedMint', info)
+      const invoice = text(record(args, ['invoice']).invoice, 8192)
+      if (!invoice.startsWith('rgb:') || /\s/.test(invoice)) fail()
+      const decoded = await this.#native('decodeRgbInvoice', invoice)
+      if (decoded?.network !== this.#network) fail()
+      const recipientId = text(decoded.recipientId, 1024, 'INTERNAL_ERROR')
+      const expiry = decoded.expirationTimestamp == null ? undefined : nativeNumber(decoded.expirationTimestamp)
+      if (expiry !== undefined && expiry <= Math.floor(Date.now() / 1000)) fail()
+      const expectedAssetId = decoded.assetId == null ? undefined : this.#asset(decoded.assetId)
+      const result = await this.#native('getReceivedMintForInvoice', {
+        invoice, ...(expectedAssetId !== undefined && { expectedAssetId })
+      })
+      // A successful old response cannot be reused after its invoice expires.
+      if (expiry !== undefined && expiry <= Math.floor(Date.now() / 1000)) fail()
+      if (result === null) return null
+      if (!result || result.invoice !== invoice || result.recipientId !== recipientId || result.network !== this.#network ||
+          !['txid', 'opid', 'lockId'].every(key => typeof result[key] === 'string' && KEY.test(result[key])) ||
+          typeof result.bridgeContract !== 'string' || !/^0x[a-f0-9]{40}$/.test(result.bridgeContract)) fail('INTERNAL_ERROR')
+      const assetId = this.#asset(result.assetId)
+      if (expectedAssetId !== undefined && assetId !== expectedAssetId) fail('INTERNAL_ERROR')
+      const amount = exactAmount(result.amount, { code: 'INTERNAL_ERROR' })
+      if (decoded.assignment?.fungible !== undefined && decoded.assignment.fungible !== '0' && decoded.assignment.fungible !== amount) fail('INTERNAL_ERROR')
+      return {
+        invoice, recipientId, assetId, network: this.#network, txid: result.txid,
+        opid: result.opid, lockId: result.lockId, amount,
+        beforeBlock: exactAmount(result.beforeBlock, { code: 'INTERNAL_ERROR' }),
+        evmChainId: exactAmount(result.evmChainId, { code: 'INTERNAL_ERROR' }), bridgeContract: result.bridgeContract
       }
     })
   }

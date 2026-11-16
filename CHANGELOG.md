@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.0-rc.2
+
+- Add invoice-scoped prepared-mint verification using stock BFA.8's checked receipt and public consignment inspection, including independently committed asset identity.
+- Expose optional WebRGB `getReceivedMint({ invoice })`; bind results to the exact invoice, authenticated wallet, asset policy and current authorization.
+- Persist expected asset identity on first-receive invoices and retain their exact original allocation across retries and restart.
+- Qualify Android ABI against BareKit 3.1.0 / Bare 1.37.1.
+
+
 All notable changes to `@utexo/wdk-wallet-rgb` are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),

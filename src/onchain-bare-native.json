@@ -3,58 +3,6 @@
   "source": "2f7b21d8637baad548504ea870deb2c0d4d0a37d",
   "overlayTree": "5492824f3cf47b4c821dfca8b7a63fed27858486",
   "protocol": 2,
-  "targets": {
-    "android-arm": {
-      "byteLength": 46615380,
-      "sha256": "f384c65c4cb2ca66e5e7d8f10ad45f41a059a570e5ced49f7089dcaadc1f753d",
-      "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.1.so"
-    },
-    "android-arm64": {
-      "byteLength": 65877832,
-      "sha256": "dc28414af603557fd207294d3a0960ec69355b1aa585407f0f697178a1c1e12f",
-      "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.1.so"
-    },
-    "android-ia32": {
-      "byteLength": 65880796,
-      "sha256": "3063ec2f18690923101b35062afd6a038a3ed98d781d1da5d397151ef4390527",
-      "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.1.so"
-    },
-    "android-x64": {
-      "byteLength": 67603928,
-      "sha256": "da2066eb27c164afaf65544b045c950aa1349b741f3fcbeca595e68df8faed15",
-      "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.1.so"
-    },
-    "darwin-arm64": {
-      "byteLength": 44801376,
-      "sha256": "8939eac871439cb4ee6cb73196accc362fc1614e399ceba6db37d0a3c538b7f3"
-    },
-    "darwin-x64": {
-      "byteLength": 48135984,
-      "sha256": "fe0c89a2e43b84692e571b55b79faebd0985549508d465ec6fac53e9535f1d39"
-    },
-    "ios-arm64": {
-      "byteLength": 45309208,
-      "sha256": "215a9ba8752b239bd5fb0908dc85bb31dea0fca086d7a040ee63816dab51264b",
-      "linkedName": "utexo__wdk-wallet-rgb.3.0.0-rc.1.framework/utexo__wdk-wallet-rgb.3.0.0-rc.1"
-    },
-    "ios-arm64-simulator": {
-      "byteLength": 45536720,
-      "sha256": "31f375ea72374e1a6b8aa98335624ee857016f737530131a05511f36287086b6",
-      "linkedName": "utexo__wdk-wallet-rgb.3.0.0-rc.1.framework/utexo__wdk-wallet-rgb.3.0.0-rc.1"
-    },
-    "ios-x64-simulator": {
-      "byteLength": 48937640,
-      "sha256": "f24258f3e68480162a51eabd7c68b394b90ae018522658b5599b5d2e0b4c89a4",
-      "linkedName": "utexo__wdk-wallet-rgb.3.0.0-rc.1.framework/utexo__wdk-wallet-rgb.3.0.0-rc.1"
-    },
-    "linux-arm64": {
-      "byteLength": 53346440,
-      "sha256": "fe76fa1d0b572e9b8229df0c5783a61939ba33802e518e8c66bbfd17f2824c85"
-    },
-    "linux-x64": {
-      "byteLength": 56044272,
-      "sha256": "a549995768221b4fcbbcbd8b2a254812258d268d89fb29473e4187463465cf58"
-    }
-  },
+  "targets": {},
   "releaseHold": false
 }

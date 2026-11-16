@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "scope": "Union of the locked Node/Bare Cargo resolve graphs (including build and target-conditional packages), plus npm production dependencies. This is an attribution inventory, not a claim every listed package is linked into every target.",
   "inputSha256": {
-    "package-lock.json": "85bd062070cef89318f91cab7c05214177d18f10777b6835556db7f4ef4aee3c",
+    "package-lock.json": "a1e7597b4733a3c1a1ea9f95742dfc3fb8ba8d50788a918cbc361c0a6c63277a",
     "native/Cargo.lock": "fb3683817ff79f58fb7475065804433dd7dbf3b7eaff62a51cc111eaa93e23f8",
     "native/bare/Cargo.lock": "fdc48289868bc51ad9772a764fe79970782fd97b35f11f91d30b8c3bbfedb830"
   },

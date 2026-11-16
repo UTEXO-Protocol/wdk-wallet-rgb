@@ -1,6 +1,6 @@
 # Releasing the on-chain SDK
 
-The prepared version is `3.0.0-rc.1`. Version 3 makes the API and wallet-directory break explicit. The npm distribution tag is `next`, not `latest`. This procedure does not authorize publication, merging, tags or a GitHub Release; those require the release owner's instruction.
+The prepared version is `3.0.0-rc.2`. Version 3 makes the API and wallet-directory break explicit. The npm distribution tag is `next`, not `latest`. This procedure does not authorize publication, merging, tags or a GitHub Release; those require the release owner's instruction.
 
 ## What is being released
 
@@ -19,8 +19,8 @@ All binaries use the unmodified BFA.8 commit and locked dependency graph recorde
 
 ```sh
 python3 scripts/prepare-release.py \
-  --qualification qualification/rc1/platforms.json \
-  --archive /absolute/path/utexo-wdk-wallet-rgb-3.0.0-rc.1.tgz \
+  --qualification qualification/rc2/platforms.json \
+  --archive /absolute/path/utexo-wdk-wallet-rgb-3.0.0-rc.2.tgz \
   --artifacts /absolute/path/native-artifacts \
   --output /absolute/path/new-release-directory
 ```

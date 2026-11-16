@@ -220,7 +220,7 @@ test('WebRGB invoice retries disclose only the exact still-authorized allocation
       allocations++
       if (loseReply) throw new WalletRuntimeError('NATIVE_TIMEOUT', 'Response lost')
       authorized = false
-      return { invoice: 'rgb:invoice-' + allocations, recipientId: 'recipient-' + allocations,
+      return { invoice: 'rgb:invoice-' + allocations, recipientId: 'recipient-' + allocations, batchTransferIdx: allocations,
         expirationTimestamp: params.expirationTimestamp }
     },
     close () {}

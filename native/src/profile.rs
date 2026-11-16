@@ -110,6 +110,7 @@ pub(crate) fn version(source: &str, overlay: &str) -> Value {
         "indexer": "electrum-and-dev-esplora",
         "networkChecks": 7,
         "contractRegistration": 0,
+        "receivedMintVerification": 1,
         "exposedInputs": 1,
         "unsignedRecovery": 1,
         "journalWrites": 1,

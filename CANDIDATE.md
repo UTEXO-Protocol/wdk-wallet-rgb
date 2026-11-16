@@ -2,7 +2,7 @@
 
 This release candidate uses unmodified BFA.8 with stock Electrum and Esplora clients. See the [qualification register](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/QUALIFICATION.md) for the exact rebuilt artifacts, tests and outstanding acceptance.
 
-`@utexo/wdk-wallet-rgb@3.0.0-rc.1` introduces the version 3 API. It is a breaking change from the published wrapper; see [MIGRATION.md](MIGRATION.md). The native protocol is version 2 and requires network checks, unsigned-operation recovery, journal writes and ordinary RGB asset issuance. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
+`@utexo/wdk-wallet-rgb@3.0.0-rc.2` introduces the version 3 API. It is a breaking change from the published wrapper; see [MIGRATION.md](MIGRATION.md). The native protocol is version 2 and requires network checks, unsigned-operation recovery, journal writes and ordinary RGB asset issuance. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
 
 | Component | Pinned version or source |
 | --- | --- |

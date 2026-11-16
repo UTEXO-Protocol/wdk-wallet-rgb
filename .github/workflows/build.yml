@@ -204,7 +204,7 @@ jobs:
       BARE_TARGET: ${{ matrix.target }}
       RUST_TARGET: ${{ matrix.rust }}
       ANDROID_ABI: ${{ matrix.abi }}
-      BARE_KIT_COMMIT: 9cd80b8ba96e591b222987a80f394012e19d45b0
+      BARE_KIT_COMMIT: 42ddd7310f11061a735fdd74c88d896376be9efa
       BARE_COMMIT: 32aa0ae69da547f0d0cca011f3e8bcbbfc9f44c3
       CARGO_BUILD_JOBS: '2'
       CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
@@ -258,6 +258,28 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release -DANDROID_PLATFORM=android-29 -DANDROID_STL=c++_static \
             -DANDROID_ABI="$ANDROID_ABI"
           cmake --build "$RUNNER_TEMP/bare-kit-build" --target bare_kit_shared --parallel 2
+          runtime_output="$RUNNER_TEMP/bare-kit-runtime"
+          mkdir "$runtime_output"
+          cp "$RUNNER_TEMP/bare-kit-build/src/libbare-kit.so" "$runtime_output/libbare-kit.so"
+          jq -n --arg producer "$(git rev-parse HEAD)" --arg runId "$GITHUB_RUN_ID" \
+            --arg target "$BARE_TARGET" --arg abi "$ANDROID_ABI" \
+            --arg bareKitCommit "$BARE_KIT_COMMIT" --arg bareCommit "$BARE_COMMIT" \
+            --arg bareKitTree "$(git -C "$RUNNER_TEMP/bare-kit" rev-parse 'HEAD^{tree}')" \
+            --arg bareTree "$(git -C "$RUNNER_TEMP/bare" rev-parse 'HEAD^{tree}')" \
+            --arg node "$(node --version)" --arg npm "$(npm --version)" \
+            --arg cmake "$(cmake --version | head -n 1)" --arg ninja "$(ninja --version)" \
+            --arg sha256 "$(sha256sum "$runtime_output/libbare-kit.so" | cut -d ' ' -f 1)" \
+            --argjson byteLength "$(stat -c %s "$runtime_output/libbare-kit.so")" \
+            '{producer:$producer,runId:$runId,target:$target,abi:$abi,bareKitVersion:"3.1.0",bareRuntime:"1.37.1",bareKitCommit:$bareKitCommit,bareCommit:$bareCommit,bareKitTree:$bareKitTree,bareTree:$bareTree,ndk:"28.2.13676358",androidApi:29,stl:"c++_static",node:$node,npm:$npm,cmake:$cmake,ninja:$ninja,sha256:$sha256,byteLength:$byteLength,nativeRuntimeExecuted:false}' \
+            > "$runtime_output/runtime-provenance.json"
+          (cd "$runtime_output" && sha256sum libbare-kit.so runtime-provenance.json > SHA256SUMS)
+      - name: Upload the runtime for application qualification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: bare-kit-3.1.0-${{ matrix.target }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/bare-kit-runtime/*
+          if-no-files-found: error
+          retention-days: 14
       - name: Build and verify the addon ELF
         run: |
           version="$(node -p 'require("./package.json").version')"

@@ -207,6 +207,20 @@ export type BurnRequest = {
   burnRecipient: BurnRecipient
   burnDestination: BurnDestination
 }
+export type ReceivedMintForInvoice = {
+  invoice: string
+  recipientId: string
+  assetId: string
+  network: CandidateNetwork
+  txid: string
+  opid: string
+  lockId: string
+  amount: string
+  beforeBlock: string
+  evmChainId: string
+  bridgeContract: string
+}
+
 export class WalletAccountRgb {
   private constructor()
   readonly disposed: boolean
@@ -227,6 +241,7 @@ export class WalletAccountRgb {
     network: CandidateNetwork
     protocol: 'RGB_L1'
     methods: string[]
+    receivedMintVerificationVersion?: 1
     burnDestinationVersion?: 1
     burnDestinationRoutes?: BurnRoute[]
     burnRecipientNamespaces?: string[]
@@ -238,7 +253,7 @@ export class WalletAccountRgb {
   }
   getAddress(): Promise<string>
   getNewAddress(): Promise<string>
-  getCapabilities(): { contractRegistration: { status: 'unavailable'; reason: string }; bip322: { signing: true; verification: true; protocol: 'bip322-simple'; specVersion: '2.0.0'; addressTypes: readonly string[]; verificationAddressTypes: readonly string[] } | { status: 'unavailable'; reason: string } }
+  getCapabilities(): { contractRegistration: { status: 'unavailable'; reason: string }; receivedMintVerification: { status: 'available' } | { status: 'unavailable'; reason: string }; bip322: { signing: true; verification: true; protocol: 'bip322-simple'; specVersion: '2.0.0'; addressTypes: readonly string[]; verificationAddressTypes: readonly string[] } | { status: 'unavailable'; reason: string } }
   getMessageSigningAddress(): Promise<string>
   signMessageBip322(message: string, address: string): Promise<string>
   verifyMessageBip322(message: string, address: string, signature: string): Promise<boolean>
@@ -265,6 +280,8 @@ export class WalletAccountRgb {
     lockId: string
     amount: string; beforeBlock: string; evmChainId: string; bridgeContract: string
   } | null>
+  /** Refresh and verify a mint for the exact stored invoice before external payment. */
+  getReceivedMintForInvoice(request: { invoice: string; expectedAssetId?: string }): Promise<ReceivedMintForInvoice | null>
   listUnspents(): Promise<unknown[]>
   listTransfers(filter?: { assetId?: string; txid?: string }): Promise<Transfer[]>
   refresh(assetId?: string): Promise<RefreshResult>
@@ -285,8 +302,10 @@ export class WalletAccountRgb {
   /** Trusted transport entry point. approve() must reject if the user declines. */
   receiveWebRgbInvoice(request: {
     method: 'blindReceive' | 'witnessReceive'; operationId: string; requestKey: string;
+    /** Host expectation retained outside the invoice when its asset is not registered yet. */
+    expectedAssetId?: string;
     options: ReceiveRequest; assertAuthorized(): void; approve(): Promise<void>
-  }): Promise<Pick<ReceiveInvoice, 'invoice' | 'recipientId' | 'expirationTimestamp'>>
+  }): Promise<Pick<ReceiveInvoice, 'invoice' | 'recipientId' | 'expirationTimestamp' | 'batchTransferIdx'>>
   getInvoiceStatus(recipientId: string): Promise<Transfer | null>
   createUtxos(options: OutputRequest): Promise<Operation>
   prepareCreateUtxos(options: OutputRequest): Promise<Review>

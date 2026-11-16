@@ -1,7 +1,7 @@
 // Copyright 2026 UTEXO. Licensed under the Apache License, Version 2.0.
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { lstat, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { registerHooks } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -51,7 +51,7 @@ const DEFAULTS = {
 }
 
 async function managerFor (t, {
-  nativeVersion = 7, nativeAssetIssuance = 2, workerIndexerProtocol, receivedMint = null, substituteProxy,
+  nativeVersion = 7, nativeAssetIssuance = 2, receivedMintVerification = 1, workerIndexerProtocol, receivedMint = null, verifiedMint = null, substituteProxy,
   cancellationResponse, nativeTrees = {
     overlayTree: '5492824f3cf47b4c821dfca8b7a63fed27858486',
     integrationTree: '5492824f3cf47b4c821dfca8b7a63fed27858486'
@@ -65,17 +65,19 @@ async function managerFor (t, {
   const openProxy = mode === 'rgb' && (network === 'mainnet' || options.profile === 'public') ? proxy : undefined
   const protocol = workerIndexerProtocol ?? (options.profile === 'dev' ? 'Esplora' : 'Electrum')
   const dir = await realpath(await mkdtemp(join(tmpdir(), 'wdk-network-')))
+  await mkdir(join(dir, '.wdk-onchain-invoices-v1'), { mode: 0o700 })
   const worker = join(dir, 'fixture-worker')
   const source = `#!${process.execPath}
 const assert = require('node:assert/strict')
 const readline = require('node:readline')
 let connectionAttempts = 0
 let tipReads = 0
+let mintReads = 0
 readline.createInterface({ input: process.stdin }).on('line', line => {
   const { id, method, params } = JSON.parse(line)
   const reply = result => process.stdout.write(JSON.stringify({ id, result }) + '\\n')
   if (method === 'version') return reply({
-    protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance}, contractRegistration: 0, exposedInputs: 1,
+    protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance}, contractRegistration: 0, receivedMintVerification: ${receivedMintVerification}, exposedInputs: 1,
     indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
     source: '2f7b21d8637baad548504ea870deb2c0d4d0a37d',
     ...${JSON.stringify(nativeTrees)}
@@ -108,6 +110,10 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     return reply({ vanilla: { spendable: '42' } })
   }
   if (method === 'getReceivedMint') return reply(${JSON.stringify(receivedMint)})
+  if (method === 'getReceivedMintForInvoice') {
+    const responses = ${JSON.stringify(Array.isArray(verifiedMint) ? verifiedMint : [verifiedMint])}
+    return reply(responses[Math.min(mintReads++, responses.length - 1)])
+  }
   if (method === 'cancelReceiveInvoice') {
     assert.equal(connectionAttempts, 2)
     assert.deepEqual(params, { batchTransferIdx: 42, recipientId: 'fixture-receive' })
@@ -277,6 +283,59 @@ test('received mints carry a distinct EVM lock identifier and reject a missing l
   assert.deepEqual(await (await valid.getAccount()).getReceivedMint('fixture-recipient'), mint)
   const invalid = await managerFor(t, { startupMode: 'offline', receivedMint: { ...mint, lockId: undefined } })
   await assert.rejects((await invalid.getAccount()).getReceivedMint('fixture-recipient'), { code: 'NATIVE_PROTOCOL' })
+})
+
+test('verified mint reads require current native capability and a connected bridge profile', async t => {
+  const stale = await managerFor(t, { startupMode: 'offline', receivedMintVerification: 0 })
+  await assert.rejects(stale.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
+  const manager = await managerFor(t, { startupMode: 'offline' })
+  const account = await manager.getAccount()
+  assert.deepEqual(account.getCapabilities().receivedMintVerification, { status: 'available' })
+  assert.ok(account.getInfo().methods.includes('getReceivedMint'))
+  await assert.rejects(account.getReceivedMintForInvoice({ invoice: 'rgb:fixture' }), { code: 'WALLET_OFFLINE' })
+  for (const config of ORDINARY_RGB) {
+    const ordinary = await managerFor(t, { ...config, startupMode: 'offline' })
+    const ordinaryAccount = await ordinary.getAccount()
+    assert.equal(ordinaryAccount.getCapabilities().receivedMintVerification.status, 'unavailable')
+    assert.equal(ordinaryAccount.getInfo().methods.includes('getReceivedMint'), false)
+  }
+})
+
+const VERIFIED_MINT = {
+  invoice: 'rgb:verified-invoice', recipientId: 'fixture-recipient', assetId: 'rgb:fixture-asset',
+  network: 'regtest', txid: 'ab'.repeat(32), opid: '12'.repeat(32), lockId: '34'.repeat(32),
+  amount: '1000', beforeBlock: '180', evmChainId: '31337', bridgeContract: '0x' + '56'.repeat(20)
+}
+
+async function connectedMintAccount (t, verifiedMint) {
+  const manager = await managerFor(t, { startupMode: 'offline', verifiedMint })
+  const account = await manager.getAccount()
+  await assert.rejects(account.connect(), { code: 'INVALID_INDEXER' })
+  await account.connect()
+  return account
+}
+
+test('verified mint returns exact decimal fields and rereads native rather than caching success', async t => {
+  const account = await connectedMintAccount(t, [VERIFIED_MINT, null])
+  const request = { invoice: VERIFIED_MINT.invoice, expectedAssetId: VERIFIED_MINT.assetId }
+  assert.deepEqual(await account.getReceivedMintForInvoice(request), VERIFIED_MINT)
+  assert.equal(await account.getReceivedMintForInvoice(request), null)
+})
+
+test('verified mint rejects mismatched identities and malformed native payment fields', async t => {
+  const invalid = [
+    { invoice: 'rgb:another-invoice' }, { recipientId: '' }, { assetId: 'rgb:different' },
+    { network: 'signet' }, { txid: 'ab' }, { opid: '0x' + VERIFIED_MINT.opid }, { lockId: undefined },
+    { amount: '0' }, { amount: 1000 }, { amount: '18446744073709551616' },
+    { beforeBlock: '0180' }, { beforeBlock: '-1' }, { evmChainId: '0' },
+    { evmChainId: 31337 }, { bridgeContract: '56'.repeat(20) }, { extra: true }
+  ]
+  for (const changes of invalid) {
+    const account = await connectedMintAccount(t, { ...VERIFIED_MINT, ...changes })
+    await assert.rejects(account.getReceivedMintForInvoice({
+      invoice: VERIFIED_MINT.invoice, expectedAssetId: VERIFIED_MINT.assetId
+    }), { code: 'NATIVE_PROTOCOL' })
+  }
 })
 
 test('public Signet uses the pinned TLS endpoint and enables only Bitcoin operations', async t => {

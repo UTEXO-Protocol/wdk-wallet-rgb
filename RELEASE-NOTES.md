@@ -1,7 +1,9 @@
-# @utexo/wdk-wallet-rgb 3.0.0-rc.1
+# @utexo/wdk-wallet-rgb 3.0.0-rc.2
 
 This release candidate introduces the on-chain Node/Bare SDK on unmodified BFA.8. Applications own the signer and approve the exact transaction before native submission. It is a breaking replacement for the previous 2.x wrapper and is intended for the `next` distribution tag.
 
+- `getReceivedMint({ invoice })` over WebRGB: refreshes the exact owned receive and returns verified asset, transaction, LockId, amount, EVM chain, bridge contract and deadline before payment. Pending returns `null`; invalid or stale verification fails.
+- Durable expected-asset binding for a generic first receive without claiming standalone contract import.
 - BTC send/receive, RGB output setup and NIA/CFA issuance and transfers across all supported RGB profiles.
 - Blinded and witness invoices with optional amounts; exact expired ordinary-invoice cancellation.
 - BFA mint validation and V1 burns with scoped proof retrieval and restart recovery. Arbitrum, Ethereum, Polygon, Plasma and Tron routes must be explicitly configured.

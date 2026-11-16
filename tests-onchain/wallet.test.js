@@ -79,6 +79,68 @@ test('journal preserves unknown submission across reopen and refuses cross-walle
   await assert.rejects(reopened.get('../../tmp/bad-file'), /stable, unique operation ID/)
 })
 
+test('assetless receive retains its expected asset and exact invoice across inventory changes and restart', async t => {
+  const dir = await scratch(t)
+  const expectedAssetId = 'rgb:expected-asset'
+  const operationId = 'manual-bridge-receive-001'
+  let allocations = 0
+  let verificationReads = 0
+  let returnedAsset = expectedAssetId
+  const calls = []
+  async function reopen () {
+    const spends = new OnchainJournal(dir)
+    const invoices = new OnchainJournal(dir, { invoices: true })
+    await spends.bind('wallet-a')
+    await invoices.bind('wallet-a')
+    const worker = {
+      available: true,
+      request (method, params) {
+        calls.push(method)
+        if (method === 'goOnline') return {}
+        if (method === 'blindReceive') {
+          allocations++
+          assert.equal(params.assetId, undefined)
+          return { invoice: 'rgb:original-invoice', recipientId: 'original-recipient',
+            batchTransferIdx: 7, expirationTimestamp: params.expirationTimestamp }
+        }
+        if (method === 'getReceivedMintForInvoice') {
+          verificationReads++
+          assert.deepEqual(params, { invoice: 'rgb:original-invoice', expectedAssetId })
+          return { invoice: params.invoice, recipientId: 'original-recipient', assetId: returnedAsset,
+            network: 'regtest', txid: 'ab'.repeat(32), opid: '12'.repeat(32), lockId: '34'.repeat(32),
+            amount: '100', beforeBlock: '180', evmChainId: '31337', bridgeContract: '0x' + '56'.repeat(20) }
+        }
+        assert.fail('Unexpected native mutation: ' + method)
+      },
+      close () {}
+    }
+    const account = new WalletAccountRgb(worker, { destroy () {} }, {
+      network: 'regtest', transportEndpoint: 'rpc://127.0.0.1:3000/json-rpc'
+    }, spends, invoices)
+    await account.connect()
+    return { account, invoices }
+  }
+  const first = await reopen()
+  const request = { method: 'blindReceive', operationId, requestKey: '11'.repeat(32), expectedAssetId,
+    options: { amount: '100', expirationSeconds: 86400 }, assertAuthorized () {}, approve: async () => {} }
+  const original = await first.account.receiveWebRgbInvoice(request)
+  assert.equal(original.batchTransferIdx, 7)
+  assert.equal((await first.invoices.get(operationId)).expectedAssetId, expectedAssetId)
+  assert.deepEqual(await first.account.receiveWebRgbInvoice({ ...request,
+    options: { ...request.options, assetId: expectedAssetId } }), original)
+  await assert.rejects(first.account.receiveWebRgbInvoice({ ...request, expectedAssetId: 'rgb:other-asset' }), { code: 'INVALID_PARAMS' })
+  await first.account.shutdown()
+  const second = await reopen()
+  t.after(() => second.account.shutdown())
+  assert.equal((await second.account.getReceivedMintForInvoice({ invoice: original.invoice })).assetId, expectedAssetId)
+  await assert.rejects(second.account.getReceivedMintForInvoice({ invoice: original.invoice, expectedAssetId: 'rgb:other-asset' }), { code: 'INVALID_PARAMS' })
+  assert.equal(verificationReads, 1)
+  returnedAsset = 'rgb:wrong-native-asset'
+  await assert.rejects(second.account.getReceivedMintForInvoice({ invoice: original.invoice }), { code: 'NATIVE_PROTOCOL' })
+  assert.equal(allocations, 1)
+  assert.deepEqual(calls, ['goOnline', 'blindReceive', 'goOnline', 'getReceivedMintForInvoice', 'getReceivedMintForInvoice'])
+})
+
 test('worker rejects unpinned binaries and mismatched response identifiers', async t => {
   const dir = await scratch(t)
   const file = join(dir, 'worker')

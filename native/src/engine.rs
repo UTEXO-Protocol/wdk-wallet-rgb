@@ -46,6 +46,9 @@ mod send;
 #[path = "cancellation.rs"]
 mod cancellation;
 
+#[path = "received_mint.rs"]
+mod received_mint;
+
 #[path = "input_reservations.rs"]
 mod input_reservations;
 
@@ -1401,6 +1404,7 @@ impl Session {
                     | "importContract"
                     | "getConsignment"
                     | "getReceivedMint"
+                    | "getReceivedMintForInvoice"
                     | "issueAsset"
                     | "cancelReceiveInvoice"
             )
@@ -1410,7 +1414,11 @@ impl Session {
         if self.transport_endpoint.is_some()
             && matches!(
                 method,
-                "burnBegin" | "burnEnd" | "getConsignment" | "getReceivedMint"
+                "burnBegin"
+                    | "burnEnd"
+                    | "getConsignment"
+                    | "getReceivedMint"
+                    | "getReceivedMintForInvoice"
             )
         {
             return Err(bridge_unavailable());
@@ -1614,6 +1622,7 @@ impl Session {
             "getConsignment" => self.proof(decode(params)?),
             "importContract" => self.import_contract(decode(params)?),
             "issueAsset" => self.issue_asset(params),
+            "getReceivedMintForInvoice" => self.received_mint_for_invoice(params),
             "getReceivedMint" => {
                 let p: RecipientId = decode(params)?;
                 if p.recipient_id.len() > 512 || RecipientInfo::new(p.recipient_id.clone()).is_err()
@@ -2022,6 +2031,7 @@ mod tests {
             "sendRgbBegin",
             "burnBegin",
             "issueAsset",
+            "getReceivedMintForInvoice",
         ] {
             assert_eq!(
                 worker.dispatch(method, json!({})).unwrap_err().code,
@@ -2120,7 +2130,13 @@ mod tests {
                     "INVALID_PARAMS"
                 );
             }
-            for method in ["burnBegin", "burnEnd", "getConsignment", "getReceivedMint"] {
+            for method in [
+                "burnBegin",
+                "burnEnd",
+                "getConsignment",
+                "getReceivedMint",
+                "getReceivedMintForInvoice",
+            ] {
                 assert_eq!(
                     worker.dispatch(method, json!({})).unwrap_err().code,
                     "BRIDGE_MODE_UNAVAILABLE"

@@ -9,7 +9,7 @@ export const MAX_BURN_PROOF_BYTES: number
 export type WebRgbMethod =
   | 'enable' | 'getInfo' | 'getAddress' | 'blindReceive' | 'witnessReceive'
   | 'listAssets' | 'getAssetBalance' | 'listTransfers' | 'getTransferStatus'
-  | 'decodeRgbInvoice' | 'burnAsset' | 'getConsignment'
+  | 'decodeRgbInvoice' | 'getReceivedMint' | 'burnAsset' | 'getConsignment'
 
 export type WebRgbErrorCode =
   | 'USER_REJECTED' | 'NOT_ENABLED' | 'METHOD_NOT_SUPPORTED'
@@ -77,6 +77,13 @@ export type WebRgbBurnResult = Omit<WebRgbBurnArgs, 'network' | 'feeRate' | 'min
 }
 
 export type WebRgbConsignmentArgs = Readonly<{ assetId: string; txid: string }>
+export type WebRgbReceivedMintArgs = Readonly<{ invoice: string }>
+/** Null means the owned invoice has no validated prepared mint yet. */
+export type WebRgbReceivedMint = Readonly<{
+  invoice: string; recipientId: string; assetId: string; network: WebRgbNetwork
+  txid: string; opid: string; lockId: string
+  amount: string; beforeBlock: string; evmChainId: string; bridgeContract: string
+}>
 export type WebRgbApproval = Readonly<{ origin: string } & (
   | { method: 'blindReceive' | 'witnessReceive'; params: Readonly<WebRgbReceiveArgs> }
   | { method: 'burnAsset'; params: WebRgbBurnArgs }
@@ -95,7 +102,7 @@ export type WebRgbTransfer = {
 
 export type WebRgbWallet = {
   readonly disposed: boolean
-  getInfo(): { ready: boolean; network: WebRgbNetwork; protocol: string; methods: readonly string[] }
+  getInfo(): { ready: boolean; network: WebRgbNetwork; protocol: string; methods: readonly string[]; receivedMintVerificationVersion?: 1 }
   getAddress(): Promise<string>
   listAssets(): Promise<Pick<AssetView, 'assetId' | 'name' | 'ticker' | 'precision' | 'schema'>[]>
   getAssetBalance(assetId: string): Promise<{ spendable: string | number }>
@@ -104,7 +111,7 @@ export type WebRgbWallet = {
   refreshTransfers(filter: { assetId: string }): Promise<unknown>
   decodeRgbInvoice(invoice: string): Promise<Pick<DecodedInvoice,
     'assetId' | 'assignment' | 'recipientId' | 'expirationTimestamp' | 'network' | 'transportEndpoints'>>
-} & Partial<Pick<WalletAccountRgb, 'receiveWebRgbInvoice' | 'burnAsset' | 'getConsignment' | 'getOperation' | 'recoverBurn'>>
+} & Partial<Pick<WalletAccountRgb, 'receiveWebRgbInvoice' | 'burnAsset' | 'getConsignment' | 'getOperation' | 'recoverBurn' | 'getReceivedMintForInvoice'>>
 
 /** An already-authorized, host-only facade. Create one per authenticated RPC. */
 export class WebRgbProvider {
@@ -119,6 +126,7 @@ export class WebRgbProvider {
     network: WebRgbNetwork
     protocol: 'RGB_L1'
     methods: WebRgbMethod[]
+    receivedMintVerificationVersion?: 1
     burnDestinationVersion?: 1
     burnDestinationRoutes?: BurnDestinationRoute[]
     burnRecipientNamespaces?: string[]
@@ -146,4 +154,5 @@ export class WebRgbProvider {
   /** Reconcile a known burn RPC identity with its durable proof. Never reissues a mutation. */
   recoverBurn(args: WebRgbBurnArgs): Promise<WebRgbBurnResult>
   getConsignment(args: WebRgbConsignmentArgs): Promise<Proof>
+  getReceivedMint(args: WebRgbReceivedMintArgs): Promise<WebRgbReceivedMint | null>
 }

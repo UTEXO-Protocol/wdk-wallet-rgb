@@ -330,7 +330,7 @@ export class WalletAccountRgb {
       )
       const version = await worker.request('version')
       if (version?.protocol !== nativeManifest.protocol || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 7 || version.source !== nativeManifest.source || version.overlayTree !== nativeManifest.overlayTree ||
-        version.runtime !== nativeRuntime || version.integrationTree !== nativeManifest.integrationTree || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 2 || version.contractRegistration !== 0 || version.exposedInputs !== 1) {
+        version.runtime !== nativeRuntime || version.integrationTree !== nativeManifest.integrationTree || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 2 || version.contractRegistration !== 0 || version.receivedMintVerification !== 1 || version.exposedInputs !== 1) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
       const identity = signer.identity
@@ -495,12 +495,14 @@ export class WalletAccountRgb {
     }
     const burnDestinationRoutes = [...this.#config.routes]
     const methods = ['getInfo', 'getAddress', 'listAssets', 'getAssetBalance', 'listTransfers', 'blindReceive', 'witnessReceive', 'decodeRgbInvoice']
+    if (!this.#config.genericRgb) methods.push('getReceivedMint')
     if (burnDestinationRoutes.length) methods.push('burnAsset', 'getConsignment')
     return {
       ready,
       network: this.#config.network,
       protocol: 'RGB_L1',
       methods,
+      ...(!this.#config.genericRgb && { receivedMintVerificationVersion: 1 }),
       ...(burnDestinationRoutes.length && {
         burnDestinationVersion: 1,
         burnDestinationRoutes,
@@ -528,6 +530,9 @@ export class WalletAccountRgb {
     this.#assertOpen()
     return Object.freeze({
       contractRegistration: Object.freeze({ status: 'unavailable', reason: 'BFA.8 has no public standalone contract import API' }),
+      receivedMintVerification: Object.freeze(this.#config.mode === 'btc-only' || this.#config.genericRgb
+        ? { status: 'unavailable', reason: 'Mint verification requires a bridge RGB profile' }
+        : { status: 'available' }),
       bip322: this.#config.authorizeMessage
         ? BIP322_CAPABILITIES
         : Object.freeze({ status: 'unavailable', reason: 'Message authorization is not configured' })
@@ -665,6 +670,52 @@ export class WalletAccountRgb {
     })
   }
 
+  getReceivedMintForInvoice ({ invoice, expectedAssetId } = {}) {
+    invoice = checkRgbInvoice(invoice)
+    if (expectedAssetId !== undefined) expectedAssetId = checkAsset(expectedAssetId)
+    return this.#run(async () => {
+      this.#assertRgbMode()
+      this.#assertConnected()
+      const recorded = (await this.#invoices.records()).filter(record =>
+        record.kind === 'rgb-receive' && record.stage === 'submitted' && record.result?.invoice === invoice)
+      this.#assertOpen()
+      if (recorded.length > 1) throw new WalletRuntimeError('JOURNAL_CORRUPT', 'Multiple receive records identify the same invoice')
+      const persistedAsset = recorded[0]?.expectedAssetId
+      if (persistedAsset !== undefined) {
+        try { checkAsset(persistedAsset) } catch {
+          throw new WalletRuntimeError('JOURNAL_CORRUPT', 'The receive asset expectation is invalid')
+        }
+        if (expectedAssetId !== undefined && expectedAssetId !== persistedAsset) {
+          throw new WalletRuntimeError('INVALID_PARAMS', 'The receive asset expectation does not match')
+        }
+      }
+      const expected = persistedAsset ?? expectedAssetId
+      const mint = await this.#worker.request('getReceivedMintForInvoice', {
+        invoice, ...(expected !== undefined && { expectedAssetId: expected })
+      })
+      this.#assertOpen()
+      if (mint === null) return null
+      try {
+        if (!mint || Object.keys(mint).length !== 11 || mint.invoice !== invoice ||
+            mint.network !== this.#config.network || typeof mint.recipientId !== 'string' ||
+            !mint.recipientId || mint.recipientId.length > 512 ||
+            typeof mint.opid !== 'string' || !HEX_32.test(mint.opid) ||
+            typeof mint.lockId !== 'string' || !HEX_32.test(mint.lockId) ||
+            typeof mint.txid !== 'string' || !HEX_32.test(mint.txid) ||
+            typeof mint.bridgeContract !== 'string' || !/^0x[a-f0-9]{40}$/.test(mint.bridgeContract) ||
+            (expected !== undefined && mint.assetId !== expected)) throw new Error()
+        checkAsset(mint.assetId)
+        for (const key of ['amount', 'beforeBlock', 'evmChainId']) {
+          if (typeof mint[key] !== 'string') throw new Error()
+          u64(mint[key], key)
+        }
+      } catch {
+        throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid verified mint response')
+      }
+      return { ...mint }
+    })
+  }
+
   listUnspents () { return this.#read('listUnspents') }
 
   listTransfers ({ assetId, txid } = {}) {
@@ -766,13 +817,17 @@ export class WalletAccountRgb {
 
   // Host-only entry point. A lost response can disclose the exact previously
   // authorized invoice to that same request. It can never allocate another one.
-  receiveWebRgbInvoice ({ method, operationId, requestKey, options, assertAuthorized, approve }) {
+  receiveWebRgbInvoice ({ method, operationId, requestKey, options, expectedAssetId, assertAuthorized, approve }) {
     if (!['blindReceive', 'witnessReceive'].includes(method) || typeof requestKey !== 'string' || !HEX_32.test(requestKey) ||
         typeof assertAuthorized !== 'function' || typeof approve !== 'function') {
       throw new TypeError('Invalid trusted receive request')
     }
     checkOperationId(operationId)
+    if (expectedAssetId !== undefined) expectedAssetId = checkAsset(expectedAssetId)
     const params = this.#receiveParams(options)
+    if (expectedAssetId !== undefined && params.assetId !== undefined && expectedAssetId !== params.assetId) {
+      throw new WalletRuntimeError('INVALID_PARAMS', 'The invoice asset expectation does not match')
+    }
     return this.#run(async () => {
       this.#assertRgbMode()
       this.#assertConnected()
@@ -781,7 +836,8 @@ export class WalletAccountRgb {
       this.#assertOpen()
       assertMutationAuthorized(assertAuthorized)
       if (existing !== undefined) {
-        if (existing.kind !== 'rgb-receive' || existing.method !== method || existing.requestKey !== requestKey) {
+        if (existing.kind !== 'rgb-receive' || existing.method !== method || existing.requestKey !== requestKey ||
+            existing.expectedAssetId !== expectedAssetId) {
           throw new WalletRuntimeError('INVALID_PARAMS', 'Receive request identity does not match')
         }
         if (existing.stage === 'submitted' && typeof existing.result?.expirationTimestamp === 'string' &&
@@ -792,17 +848,20 @@ export class WalletAccountRgb {
       await approve()
       this.#assertOpen()
       assertMutationAuthorized(assertAuthorized)
-      const entry = { id: operationId, kind: 'rgb-receive', stage: 'starting', method, requestKey }
+      const entry = { id: operationId, kind: 'rgb-receive', stage: 'starting', method, requestKey,
+        ...(expectedAssetId !== undefined && { expectedAssetId }) }
       await this.#saveRecord(entry, this.#invoices)
       this.#assertOpen()
       assertMutationAuthorized(assertAuthorized)
       const result = await this.#worker.request(method, params)
       if (typeof result?.invoice !== 'string' || result.invoice.length > 8192 || !result.invoice.startsWith('rgb:') ||
           typeof result.recipientId !== 'string' || !result.recipientId || result.recipientId.length > 1024 ||
+          !Number.isSafeInteger(result.batchTransferIdx) || result.batchTransferIdx <= 0 || result.batchTransferIdx > 0x7fffffff ||
           result.expirationTimestamp !== params.expirationTimestamp) {
         throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid receive invoice response')
       }
-      const invoice = { invoice: result.invoice, recipientId: result.recipientId, expirationTimestamp: result.expirationTimestamp }
+      const invoice = { invoice: result.invoice, recipientId: result.recipientId,
+        batchTransferIdx: result.batchTransferIdx, expirationTimestamp: result.expirationTimestamp }
       await this.#saveRecord({ ...entry, stage: 'submitted', result: invoice }, this.#invoices)
       this.#assertOpen()
       assertMutationAuthorized(assertAuthorized)
