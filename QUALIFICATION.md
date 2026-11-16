@@ -2,7 +2,19 @@
 
 The candidate is an on-chain SDK for Node and Bare. Mainnet and Public Signet admit Bitcoin and ordinary RGB under the network policies in the [candidate guide](CANDIDATE.md). Regtest, Dev and staging have separate service and bridge policies. This register contains deployment-specific test evidence and stays in the repository outside the package.
 
-## 3.0.0-rc.1 release preparation
+## 3.0.0-rc.2: invoice-scoped mint verification
+
+The complete RC2 package is packed from `2e53b9f65ac7a40573311408bb0ab850e626d133`, with native producer `49a19de14046f778241a89a3e16483521fd393cc`. Its 41 files include all eleven Bare addons; the five Node workers are separate artifacts. Archive size is 203,881,548 bytes and SHA-256 is `2c6c74ddbffb33af0bbe8ca87ac6f3aceb0e25823a334309d5531b3f1d4c95ff`. The installed consumer matched every package file and native pin. Later qualification-only commits do not change that package identity.
+
+All 19 jobs of the [RC2 native producer run](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/43849403538) passed. [Platform admission](qualification/rc2/platforms.json) covers all sixteen binaries; nine desktop targets executed packed consumers and seven mobile targets passed build/ABI checks. Source verification passed 74 JavaScript tests, 51 Rust tests, public types and dependency-notice checks.
+
+The actual full archive and CI-built Darwin ARM64 workers passed funded tests on Node 22.23.3 and Bare 1.37.1: six BFA mint receives, ten V1 burns across the five configured routes, and exact-request proof recovery after full process restart. Four of those mints cover blinded and witness verification before EVM payment, including restart before payment and rejection of foreign or modified invoices. Eight generic invoice cases retain an optional amount while asset and schema remain absent. Eight native proof-failure cases reject corrupt, unrelated, oversized or symlinked proofs; restoring the original proof succeeds without a cached successful response. [Public host evidence](qualification/rc2/funded-host.json) · [Scope and identities](qualification/rc2/README.md).
+
+The tests use isolated Regtest and Anvil with an independent compatible BFA.7 issuer/proof validator. The SDK remains on unmodified BFA.8. These are funded host tests, not Android/iOS application acceptance, hosted Dev tests or external-network payout settlement. RC1's ordinary RGB, Core/BTC and BIP-322 evidence below remains historical; those funded scopes were not rerun under RC2.
+
+`getReceivedMintForInvoice()` and WebRGB `getReceivedMint({ invoice })` re-read the owned invoice, retained checked mint and proof binding. Stock BFA.8 retains its initial semantic validation; these calls do not promise a fresh issuer reject-list check. The payment caller must compare the returned exclusive `beforeBlock` with the current EVM block. Expired invoices are rejected for new payment verification; existing incoming transfer completion follows the native transfer status.
+
+## 3.0.0-rc.1 release preparation (historical)
 
 Version 3 declares the API and directory-format break from 2.x. It retains unmodified BFA.8 and its locked dependencies. The release owner's November 16 direction accepts the upstream TLS/SQLite graph for this candidate without patches; those findings remain disclosed in [DEPENDENCY-POLICY.md](DEPENDENCY-POLICY.md) and are not asserted to be repaired. Contract import remains a separate missing API, not a dependency-audit decision.
 
