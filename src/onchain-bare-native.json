@@ -4,6 +4,6 @@
   "overlayTree": "8a887b28bd12625e36cd7cfe2af067ff766ece1d",
   "protocol": 2,
   "targets": {},
-  "releaseHold": true,
+  "releaseHold": false,
   "publicationHold": true
 }
