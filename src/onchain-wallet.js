@@ -309,6 +309,7 @@ export class WalletAccountRgb {
   #closed = false
   #closing
   #journalWrite
+  #submissionAdmission
   #releaseDirectory
   #connected = false
   #address
@@ -390,9 +391,9 @@ export class WalletAccountRgb {
     this.#signer.destroy()
     this.#prepared = undefined
     // The native worker owns the directory lock. Keep it alive through an
-    // admitted journal write, while closing admission to any later writes.
-    // A user approval or pending native request must never delay shutdown.
-    this.#closing = (this.#journalWrite ?? Promise.resolve()).catch(() => {})
+    // admitted journal write or a vanilla submission's pre-dispatch cleanup.
+    // Neither user approval nor a dispatched End request delays shutdown.
+    this.#closing = (this.#submissionAdmission?.promise ?? this.#journalWrite ?? Promise.resolve()).catch(() => {})
       .then(() => this.#worker.close()).finally(this.#releaseDirectory)
     return this.#closing
   }
@@ -420,6 +421,37 @@ export class WalletAccountRgb {
     const pending = Promise.resolve(journal.save(record))
     this.#journalWrite = pending
     return pending.finally(() => { this.#journalWrite = undefined })
+  }
+
+  #holdSubmissionAdmission () {
+    let resolve
+    const admission = { active: true, promise: new Promise(done => { resolve = done }) }
+    admission.release = () => {
+      if (!admission.active) return
+      admission.active = false
+      if (this.#submissionAdmission === admission) this.#submissionAdmission = undefined
+      resolve()
+    }
+    this.#submissionAdmission = admission
+    return admission
+  }
+
+  async #discardUnsentVanilla (record, admission) {
+    // Only this worker's exact live prepared guard can prove End was not
+    // entered. The guard is consumed before End, including failed broadcasts.
+    // Never infer non-submission from an error, an absent transaction or a
+    // reopened worker. RGB/BFA cleanup has additional online requirements.
+    if (!this.#worker.available || (!admission?.active && this.#closed)) return
+    const owned = admission?.active ? admission : this.#holdSubmissionAdmission()
+    try {
+      const result = await this.#worker.request('discardPrepared', { txid: record.txid })
+      if (result === null || typeof result !== 'object' || Array.isArray(result) || Object.keys(result).length !== 0) return
+      // The admission keeps the directory and worker alive even if dispose
+      // closed public access. A successful abort alone is not a durable result.
+      await this.#journal.save({ ...record, stage: 'declined' })
+    } finally {
+      if (owned !== admission) owned.release()
+    }
   }
 
   async #run (callback) {
@@ -1093,26 +1125,37 @@ export class WalletAccountRgb {
       throw error
     }
     this.#prepared = undefined
-    await this.#saveRecord({ ...record, stage: 'submitting' })
-    this.#assertOpen()
+    const vanilla = record.kind === 'rgb-output' || record.kind === 'btc-send'
+    const admission = vanilla ? this.#holdSubmissionAdmission() : undefined
     try {
-      assertMutationAuthorized(burn?.assertAuthorized)
+      await this.#saveRecord({ ...record, stage: 'submitting' })
+      this.#assertOpen()
+      try {
+        assertMutationAuthorized(burn?.assertAuthorized)
+      } catch (error) {
+        if (!vanilla) await this.#discard(prepared)
+        throw error
+      }
+      const pending = this.#worker.request(method + 'End', { signedPsbt })
+      admission?.release()
+      const result = await pending
+      if (result?.txid !== record.txid) throw new WalletRuntimeError('TXID_MISMATCH', 'Submitted transaction did not match the reviewed transaction')
+      await this.#saveRecord({ ...record, stage: 'submitted' })
+      return {
+        ...result,
+        ...(burn && {
+          assetId: record.args.assetId,
+          amount: record.args.amount,
+          minConfirmations: record.args.minConfirmations,
+          burnDestination: burn.destination,
+          burnRecipient: { ...burn.recipient }
+        })
+      }
     } catch (error) {
-      await this.#discard(prepared)
+      if (vanilla) await this.#discardUnsentVanilla(record, admission).catch(() => {})
       throw error
-    }
-    const result = await this.#worker.request(method + 'End', { signedPsbt })
-    if (result?.txid !== record.txid) throw new WalletRuntimeError('TXID_MISMATCH', 'Submitted transaction did not match the reviewed transaction')
-    await this.#saveRecord({ ...record, stage: 'submitted' })
-    return {
-      ...result,
-      ...(burn && {
-        assetId: record.args.assetId,
-        amount: record.args.amount,
-        minConfirmations: record.args.minConfirmations,
-        burnDestination: burn.destination,
-        burnRecipient: { ...burn.recipient }
-      })
+    } finally {
+      admission?.release()
     }
   }
 

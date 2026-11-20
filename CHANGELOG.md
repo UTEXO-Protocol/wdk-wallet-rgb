@@ -6,8 +6,9 @@
 - Use SQLx `0.9.1` and bundled SQLite `3.54.1` for Node and Bare; retain and document the upstream Esplora TLS findings.
 - Give this engine a separate wallet directory identity.
 - Expose immutable public account xpubs and fingerprint through `getPublicKeys()`, including while offline.
+- Reconcile a failed Bitcoin/output submission only when its exact live native guard proves End was never entered; retain unknown outcomes after consumed guards or lost acknowledgements. Keep this cleanup inside the wallet directory lifetime during shutdown.
 - Align the WebRGB facade with `0.1.7`: one native burn destination, assetless first invoices, a separately persisted asset expectation, and actionable receive-output errors.
-- Rebuild Android targets and the qualification host. Other platform artifacts require a separate rebuild before SDK publication.
+- Rebuild and admit all five Node and eleven Bare targets from the same reviewed native source; retain publication hold pending final application acceptance.
 
 ## 3.0.0-rc.2
 
