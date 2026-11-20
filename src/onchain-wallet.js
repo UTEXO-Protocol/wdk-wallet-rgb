@@ -27,7 +27,7 @@ const MAX_CONTRACT_BYTES = 1024 * 1024
 const MAINNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50003'
 const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
 const STAGING_SERVICES = {
-  proxyEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc',
+  proxyEndpoint: 'rpcs://sandbox.rgb-proxy.utexo.com/json-rpc',
   arbitrumRpc: 'https://arb1.arbitrum.io/rpc'
 }
 const DEV_SERVICES = Object.freeze(devServices)

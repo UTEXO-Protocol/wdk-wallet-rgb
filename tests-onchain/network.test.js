@@ -18,7 +18,7 @@ const INDEXER = 'tcp://127.0.0.1:50001'
 const MAINNET_INDEXER = 'ssl://electrum.iriswallet.com:50003'
 const SIGNET_INDEXER = 'ssl://electrum.iriswallet.com:50033'
 const PROXY = 'rpc://127.0.0.1:3003/json-rpc'
-const STAGING_PROXY = 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
+const STAGING_PROXY = 'rpcs://sandbox.rgb-proxy.utexo.com/json-rpc'
 const ARBITRUM_RPC = 'https://arb1.arbitrum.io/rpc'
 const STAGING = {
   network: 'signet', mode: 'rgb', profile: 'staging', indexerUrl: SIGNET_INDEXER,
@@ -472,6 +472,9 @@ test('staging rejects unqualified service, profile and payout combinations', () 
     { profile: undefined }, { profile: 'dev' }, { network: 'regtest' }, { network: 'utexo' }, { mode: 'btc-only' },
     { indexerUrl: INDEXER }, { transportEndpoint: PROXY }, { transportEndpoint: STAGING_PROXY + '?' },
     { transportEndpoint: 'rpcs://rgb-proxy.utexo.com/json-rpc' },
+    { transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc' },
+    { transportEndpoint: 'rpcs://rgb-proxy.staging.utexo.com/json-rpc' },
+    { transportEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc' },
     { transportEndpoint: 'rpcs://x@staging.rgb-proxy.utexo.com/json-rpc' },
     { proxyAuthKeys: {} }, { evmRpcUrls: undefined }, { evmRpcUrls: { 42161: ARBITRUM_RPC + '/' } },
     { evmRpcUrls: { 42161: 'http://arb1.arbitrum.io/rpc' } }, { evmRpcUrls: { 42161: 'https://x@arb1.arbitrum.io/rpc' } },

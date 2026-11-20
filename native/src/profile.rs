@@ -17,7 +17,7 @@ pub(crate) struct SignetServices {
 }
 
 const STAGING_SERVICES: SignetServices = SignetServices {
-    proxy: "rpcs://staging.rgb-proxy.utexo.com/json-rpc",
+    proxy: "rpcs://sandbox.rgb-proxy.utexo.com/json-rpc",
     arbitrum_rpc: "https://arb1.arbitrum.io/rpc",
 };
 #[derive(Deserialize)]
@@ -184,6 +184,24 @@ pub(crate) fn after_wallet_new() {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn staging_uses_sandbox_services_with_the_public_signet_checkpoint() {
+        let services = Profile::Staging.bridge_services().unwrap().unwrap();
+        assert_eq!(
+            services.proxy,
+            "rpcs://sandbox.rgb-proxy.utexo.com/json-rpc"
+        );
+        assert_eq!(services.arbitrum_rpc, "https://arb1.arbitrum.io/rpc");
+        assert_eq!(
+            signet_checkpoint(Some(Profile::Staging)).block_one(),
+            "00000086d6b2636cb2a392d45edc4ec544a10024d30141c9adf4bfd9de533b53"
+        );
+        assert_ne!(
+            signet_checkpoint(Some(Profile::Staging)).block_one(),
+            signet_checkpoint(Some(Profile::Dev)).block_one()
+        );
+    }
 
     #[test]
     fn admits_only_electrum_with_plain_tcp_restricted_to_regtest() {

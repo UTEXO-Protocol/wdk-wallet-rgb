@@ -37,7 +37,7 @@ const configurations = {
   staging: {
     network: 'signet', mode: 'rgb', profile: 'staging',
     indexerUrl: 'ssl://electrum.iriswallet.com:50033',
-    transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc',
+    transportEndpoint: 'rpcs://sandbox.rgb-proxy.utexo.com/json-rpc',
     evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }
   }
 }

@@ -1698,7 +1698,10 @@ mod tests {
     fn missing_receive_allocation_has_a_public_actionable_error() {
         let error = native(rgb_lib::Error::InsufficientAllocationSlots);
         assert_eq!(error.code, "NO_AVAILABLE_UTXOS");
-        assert_eq!(error.message, "No RGB output is available for this receive.");
+        assert_eq!(
+            error.message,
+            "No RGB output is available for this receive."
+        );
     }
 
     fn open_params(root: &Path, name: &str) -> Value {

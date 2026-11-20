@@ -71,7 +71,7 @@ test('RGB send binds a proxy invoice with exact recipient type, amount and expir
 test('RGB sends keep the sender proxy when the recipient selects a different proxy', () => {
   for (const [network, sender, recipient] of [
     ['regtest', transportEndpoint, 'rpc://127.0.0.1:49091/json-rpc'],
-    ['signet', 'rpcs://staging.rgb-proxy.utexo.com/json-rpc', 'rpcs://recipient.example.com/json-rpc'],
+    ['signet', 'rpcs://sandbox.rgb-proxy.utexo.com/json-rpc', 'rpcs://recipient.example.com/json-rpc'],
     ['mainnet', 'rpcs://sender.example.com/json-rpc', 'rpcs://recipient.example.com:8443/json-rpc']
   ]) {
     const decoded = { ...invoice, network, transportEndpoints: [recipient] }
@@ -88,7 +88,7 @@ test('RGB sends keep the sender proxy when the recipient selects a different pro
 })
 
 test('Signet recipient proxies require valid TLS URLs and a single endpoint', () => {
-  const transportEndpoint = 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'
+  const transportEndpoint = 'rpcs://sandbox.rgb-proxy.utexo.com/json-rpc'
   const staging = { network: 'signet', transportEndpoint }
   const publicInvoice = { ...invoice, network: 'signet', recipientId: 'sb:utxob:fixture', transportEndpoints: [transportEndpoint] }
   assert.equal(prepareRgbSend(request, publicInvoice, staging, 1000).args.recipientId, 'sb:utxob:fixture')

@@ -9,6 +9,7 @@
 - Reconcile a failed Bitcoin/output submission only when its exact live native guard proves End was never entered; retain unknown outcomes after consumed guards or lost acknowledgements. Keep this cleanup inside the wallet directory lifetime during shutdown.
 - Retry one unavailable indexer response for a closed set of pure getters without reopening the account or replaying mutations; preserve chain checks, account ownership and shutdown boundaries.
 - Align the WebRGB facade with `0.1.7`: one native burn destination, assetless first invoices, a separately persisted asset expectation, and actionable receive-output errors.
+- Update the Public Signet bridge profile to the Sandbox proxy hostname, retaining the public chain checkpoint and exact service admission.
 - Rebuild and admit all five Node and eleven Bare targets from the same reviewed native source; retain publication hold pending final application acceptance.
 
 ## 3.0.0-rc.2
