@@ -7,6 +7,7 @@
 - Give this engine a separate wallet directory identity.
 - Expose immutable public account xpubs and fingerprint through `getPublicKeys()`, including while offline.
 - Reconcile a failed Bitcoin/output submission only when its exact live native guard proves End was never entered; retain unknown outcomes after consumed guards or lost acknowledgements. Keep this cleanup inside the wallet directory lifetime during shutdown.
+- Retry one unavailable indexer response for a closed set of pure getters without reopening the account or replaying mutations; preserve chain checks, account ownership and shutdown boundaries.
 - Align the WebRGB facade with `0.1.7`: one native burn destination, assetless first invoices, a separately persisted asset expectation, and actionable receive-output errors.
 - Rebuild and admit all five Node and eleven Bare targets from the same reviewed native source; retain publication hold pending final application acceptance.
 

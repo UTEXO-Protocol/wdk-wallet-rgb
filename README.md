@@ -28,6 +28,8 @@ The [integration guide](CANDIDATE.md) covers Node worker configuration, Bare and
 
 NIA/CFA issuance and transfers are available on every supported RGB profile: Mainnet, Public Signet, Dev, staging and Regtest. BTC-only mode omits RGB. Bridge profiles advertise only the exact payout routes the application configures. The SDK ships no USDT contract export or asset metadata.
 
+Balance, history, asset, output, fee and chain getters retry one `INDEXER_UNAVAILABLE` response on the same account; each native attempt repeats its chain checks. BTC-only `sync()` inherits the balance getter's retry. RGB `sync()`/`refresh()`, invoice allocation, issuance, transfer submission and recovery are never automatically retried.
+
 ## Platforms
 
 | Runtime | Targets |

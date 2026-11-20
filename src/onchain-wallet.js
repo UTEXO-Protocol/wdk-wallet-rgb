@@ -34,6 +34,10 @@ const DEV_SERVICES = Object.freeze(devServices)
 const PROOF_MAGIC = [82, 71, 66, 0, 84, 70, 82]
 const SPEND_KINDS = new Set(['rgb-output', 'btc-send', 'rgb-send', 'rgb-burn'])
 const OPEN_WALLET_DIRECTORIES = new Set()
+const RETRYABLE_INDEXER_READS = new Set([
+  'getNetworkInfo', 'getBtcBalance', 'getAssetBalance', 'listAssets',
+  'listTransactions', 'listUnspents', 'listTransfers', 'getFeeRate'
+])
 
 function sha256 (bytes) { return hex.encode(hashSha256(bytes)) }
 
@@ -462,7 +466,26 @@ export class WalletAccountRgb {
   }
 
   #read (method, params) {
-    return this.#run(() => this.#worker.request(method, params))
+    return this.#run(() => this.#requestRead(method, params))
+  }
+
+  async #requestRead (method, params) {
+    if (!RETRYABLE_INDEXER_READS.has(method)) return this.#worker.request(method, params)
+    const request = params === undefined ? undefined : Object.freeze({ ...params })
+    const once = async () => {
+      this.#assertOpen()
+      const result = await this.#worker.request(method, request)
+      this.#assertOpen()
+      return result
+    }
+    try {
+      return await once()
+    } catch (error) {
+      if (error?.code !== 'INDEXER_UNAVAILABLE') throw error
+      // Keep the same worker, request and account ownership. Native getters
+      // repeat their chain checks; mutations and ambiguous failures never retry.
+      return once()
+    }
   }
 
   getConnectionStatus () {
@@ -486,7 +509,7 @@ export class WalletAccountRgb {
   getNetworkInfo () {
     return this.#run(async () => {
       this.#assertConnected()
-      const result = await this.#worker.request('getNetworkInfo')
+      const result = await this.#requestRead('getNetworkInfo')
       this.#assertOpen()
       if (result?.network !== this.#config.network || !Number.isSafeInteger(result.height) ||
           result.height < 0 || result.height > 0xffffffff || typeof result.blockHash !== 'string' ||
