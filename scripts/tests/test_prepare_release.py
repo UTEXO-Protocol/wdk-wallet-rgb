@@ -152,6 +152,13 @@ class ReleasePreparationTests(unittest.TestCase):
         self.assertFalse(result["runtimeFilesUnchangedSinceProducer"])
         self.assertEqual(result["runtimeFilesChangedSinceProducer"], ["onchain.js"])
 
+    def test_functional_qualification_pack_is_not_publishable(self):
+        with self.assertRaisesRegex(ValueError, "publication is on hold"):
+            release.verify_native_admission({"releaseHold": False, "publicationHold": True})
+        release.verify_native_admission({"releaseHold": False})
+        with self.assertRaisesRegex(ValueError, "artifact admission is on hold"):
+            release.verify_native_admission({"releaseHold": True})
+
     def test_version_change_requires_new_admitted_binaries(self):
         self.package["version"] = "3.0.0-rc.2"
         self.write("package.json", json.dumps(self.package).encode())

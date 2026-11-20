@@ -22,6 +22,7 @@ const MESSAGES = Object.freeze({
   NOT_ENABLED: 'Wallet session is no longer authorized',
   METHOD_NOT_SUPPORTED: 'WebRGB method is unavailable for this wallet session',
   ASSET_NOT_FOUND: 'The approved asset is not registered in this wallet',
+  NO_AVAILABLE_UTXOS: 'No RGB output is available for this receive',
   USER_REJECTED: 'The wallet approval was declined',
   INTERNAL_ERROR: 'The wallet could not complete this request'
 })
@@ -227,7 +228,7 @@ export class WebRgbProvider {
       const code = error?.code
       if (code === 'AUTHORIZATION_DECLINED') fail('USER_REJECTED')
       if (code === 'WALLET_CLOSED' || code === 'NOT_ENABLED') fail('NOT_ENABLED')
-      if (['ASSET_NOT_FOUND', 'INVALID_PARAMS', 'METHOD_NOT_SUPPORTED'].includes(code)) fail(code)
+      if (['ASSET_NOT_FOUND', 'NO_AVAILABLE_UTXOS', 'INVALID_PARAMS', 'METHOD_NOT_SUPPORTED'].includes(code)) fail(code)
       fail('INTERNAL_ERROR')
     }
   }
@@ -307,9 +308,9 @@ export class WebRgbProvider {
     return this.#call(method, async info => {
       this.#assertSupported(method, info)
       const input = record(args, ['assetId', 'amount', 'durationSeconds', 'minConfirmations'])
-      const { assetId = this.#assets.size === 1 ? [...this.#assets][0] : undefined,
-        durationSeconds = 7200, minConfirmations: minimum = 3 } = input
-      this.#asset(assetId)
+      const { assetId, durationSeconds = 7200, minConfirmations: minimum = 3 } = input
+      if (assetId !== undefined) this.#asset(assetId)
+      const expectedAssetId = assetId ?? (this.#assets.size === 1 ? [...this.#assets][0] : undefined)
       const amount = input.amount === undefined ? undefined : integer(input.amount, 1, Number.MAX_SAFE_INTEGER)
       integer(durationSeconds, 3600, 604800)
       const minConfirmations = Math.max(3, integer(minimum, 0, 255))
@@ -318,6 +319,7 @@ export class WebRgbProvider {
       const requestKey = hash([this.#identity.fingerprint, method, request])
       const result = await this.#native('receiveWebRgbInvoice', {
         method, operationId, requestKey,
+        ...(expectedAssetId !== undefined && { expectedAssetId }),
         options: { assetId, ...(amount !== undefined && { amount: String(amount) }), expirationSeconds: durationSeconds, minConfirmations },
         assertAuthorized: () => this.#guard(),
         approve: () => this.#approve(method, request)
@@ -449,18 +451,19 @@ export class WebRgbProvider {
   }
 
   #burnRequest (args, info) {
-    const input = record(args, ['network', 'assetId', 'amount', 'feeRate', 'minConfirmations', 'burnRecipient', 'burnDestination'])
+    const input = record(args, ['network', 'assetId', 'amount', 'feeRate', 'minConfirmations', 'burnDestination'])
     if (input.network !== this.#network) fail()
     const assetId = this.#asset(input.assetId, true)
     const amount = exactAmount(input.amount)
     const { feeRate = this.#defaultFeeRate, minConfirmations: minimum = 6 } = input
     integer(feeRate, 1, 1000)
     const minConfirmations = Math.max(6, integer(minimum, 1, 255))
-    const { chainId, address } = record(input.burnRecipient, ['chainId', 'address'])
+    const { version, chainId, address, dstEid } = record(input.burnDestination, ['version', 'chainId', 'address', 'dstEid'])
     let destination
     try {
+      if (version !== 1) fail()
       destination = burnDestinationFor({ chainId, address }, this.#burnRoutes(info))
-      if (burnDestinationHash(destination) !== burnDestinationHash(validateBurnDestination(input.burnDestination))) fail()
+      if (dstEid !== destination.dstEid) fail()
     } catch { fail() }
     const recipient = Object.freeze({ chainId, address: chainId.startsWith('eip155:') ? address.toLowerCase() : address })
     const request = Object.freeze({ network: input.network, assetId, amount, feeRate, minConfirmations,
@@ -468,6 +471,13 @@ export class WebRgbProvider {
     const operationId = 'webrgb-burn-' + hash(['utexo-webrgb-rpc-v1', this.#scopeKey, this.#identity.id])
     const binding = Object.freeze({ scopeKey: this.#scopeKey, requestKey: hash([this.#identity.fingerprint, request]) })
     return { request, operationId, binding }
+  }
+
+  #publicBurnRequest (request) {
+    const { network, assetId, amount, feeRate, minConfirmations, burnRecipient, burnDestination } = request
+    return Object.freeze({ network, assetId, amount, feeRate, minConfirmations,
+      burnDestination: Object.freeze({ version: 1, chainId: burnRecipient.chainId,
+        address: burnRecipient.address, dstEid: burnDestination.dstEid }) })
   }
 
   #sameBurn (saved, { operationId, binding, request }) {
@@ -482,7 +492,7 @@ export class WebRgbProvider {
   #burnResponse (request, txid) {
     if (typeof txid !== 'string' || !KEY.test(txid)) fail('INTERNAL_ERROR')
     return { transferId: txid, txid, assetId: request.assetId, amount: request.amount,
-      burnRecipient: request.burnRecipient, burnDestination: request.burnDestination,
+      burnDestination: this.#publicBurnRequest(request).burnDestination,
       status: 'WaitingConfirmations', minConfirmations: request.minConfirmations }
   }
 
@@ -495,7 +505,7 @@ export class WebRgbProvider {
         this.#sameBurn(saved, { operationId, binding, request })
         fail('INTERNAL_ERROR')
       }
-      await this.#approve('burnAsset', request)
+      await this.#approve('burnAsset', this.#publicBurnRequest(request))
       const result = await this.#native('burnAsset', {
         operationId, assetId: request.assetId, amount: request.amount, feeRate: String(request.feeRate),
         minConfirmations: request.minConfirmations, burnRecipient: request.burnRecipient, burnDestination: request.burnDestination,

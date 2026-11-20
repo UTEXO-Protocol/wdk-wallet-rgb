@@ -38,6 +38,11 @@ def require(condition, message):
         raise ValueError(message)
 
 
+def verify_native_admission(native):
+    require(native["releaseHold"] is False, "Native artifact admission is on hold")
+    require(native.get("publicationHold") is not True, "This artifact is limited to qualification; publication is on hold")
+
+
 def git(*args):
     return subprocess.check_output(["git", *args], cwd=ROOT)
 
@@ -258,7 +263,7 @@ def main():
     require(package["name"] == "@utexo/wdk-wallet-rgb", "Wrong package name")
     require(re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", package["version"]), "Unexpected package version")
     native = committed_json(head, "src/onchain-bare-native.json")
-    require(native["releaseHold"] is False, "Native artifact admission is on hold")
+    verify_native_admission(native)
     require(native["overlayTree"] == native["integrationTree"], "Source overlays are not admitted for this release")
     evidence = committed_json(head, args.qualification)
     source = verify_source(evidence["producerCommit"], head)

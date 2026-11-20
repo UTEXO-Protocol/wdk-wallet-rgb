@@ -53,16 +53,16 @@ jobs:
         run: node scripts/check-candidate-pack.mjs
 
   native-admission:
-    name: Private native source admission
+    name: Public native source admission
     if: github.repository == 'UTEXO-Protocol/wdk-wallet-rgb' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-24.04
     outputs:
       enabled: ${{ steps.admit.outputs.enabled }}
     steps:
-      - name: Check source access without exposing credentials to build tools
+      - name: Verify the pinned public source
         id: admit
         env:
-          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           REQUIRE_NATIVE: ${{ inputs.enable_native == true }}
           MANUAL_RUN: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
@@ -71,17 +71,8 @@ jobs:
             printf '%s\n' 'Native matrix was not requested for this manual run.' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          if test -z "$GH_TOKEN"; then
-            printf 'enabled=false\n' >> "$GITHUB_OUTPUT"
-            printf '%s\n' 'Native matrix did not run: ORG_READ_TOKEN must have read access to rgb-lib-bfa.' >> "$GITHUB_STEP_SUMMARY"
-            if test "$REQUIRE_NATIVE" = true; then
-              printf '%s\n' '::error::The requested native build needs ORG_READ_TOKEN with rgb-lib-bfa read access.'
-              exit 1
-            fi
-            exit 0
-          fi
-          revision=2f7b21d8637baad548504ea870deb2c0d4d0a37d
-          test "$(gh api "repos/UTEXO-Protocol/rgb-lib-bfa/git/commits/$revision" --jq .sha)" = "$revision"
+          revision=567e5b8308f70a6242137475394be5a82fc15c95
+          test "$(gh api "repos/RGB-Tools/rgb-lib/git/commits/$revision" --jq .sha)" = "$revision"
           printf 'enabled=true\n' >> "$GITHUB_OUTPUT"
 
   desktop:
@@ -117,9 +108,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - name: Verify the unmodified BFA.8 source
-        env:
-          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN }}
+      - name: Verify the unmodified public RGB source
         run: |
           python3 -I -B native/scripts/prepare-source.py --bare
           printf 'NATIVE_RESULT=%s\n' "$RUNNER_TEMP/wdk-native-result" >> "$GITHUB_ENV"
@@ -170,7 +159,7 @@ jobs:
               /tmp/rustup-init -y --no-modify-path --profile minimal --default-host x86_64-unknown-linux-musl --default-toolchain 1.94.0
               export PATH="/root/.cargo/bin:$PATH"
               git config --global --add safe.directory /wdk
-              git config --global --add safe.directory /wdk/native/.sources/rgb-lib-bfa-clean
+              git config --global --add safe.directory /wdk/native/.sources/rgb-lib-upstream
               npm ci --ignore-scripts --no-audit --no-fund
               node native/scripts/node-host.mjs build linux-x64-musl /output/native-result
               cargo +1.94.0 test --locked --release --manifest-path native/Cargo.toml -- --test-threads=1
@@ -221,9 +210,7 @@ jobs:
         with:
           node-version: '22.23.4'
           package-manager-cache: false
-      - name: Verify the unmodified BFA.8 source
-        env:
-          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN }}
+      - name: Verify the unmodified public RGB source
         run: |
           python3 -I -B native/scripts/prepare-source.py --bare
           printf 'UTEXO_BARE_OUTPUT_DIR=%s\n' "$RUNNER_TEMP/android-output" >> "$GITHUB_ENV"
@@ -340,9 +327,7 @@ jobs:
           package-manager-cache: false
       - name: Install the pinned Rust target
         run: rustup toolchain install 1.94.0 --profile minimal --target "$RUST_TARGET"
-      - name: Verify the unmodified BFA.8 source
-        env:
-          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN }}
+      - name: Verify the unmodified public RGB source
         run: |
           python3 -I -B native/scripts/prepare-source.py --bare
           printf 'UTEXO_BARE_OUTPUT_DIR=%s\n' "$RUNNER_TEMP/ios-output" >> "$GITHUB_ENV"

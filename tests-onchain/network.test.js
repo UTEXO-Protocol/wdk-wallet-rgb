@@ -53,8 +53,8 @@ const DEFAULTS = {
 async function managerFor (t, {
   nativeVersion = 7, nativeAssetIssuance = 2, receivedMintVerification = 1, workerIndexerProtocol, receivedMint = null, verifiedMint = null, substituteProxy,
   cancellationResponse, nativeTrees = {
-    overlayTree: '5492824f3cf47b4c821dfca8b7a63fed27858486',
-    integrationTree: '5492824f3cf47b4c821dfca8b7a63fed27858486'
+    overlayTree: '8a887b28bd12625e36cd7cfe2af067ff766ece1d',
+    integrationTree: '8a887b28bd12625e36cd7cfe2af067ff766ece1d'
   }, ...options
 } = {}) {
   const network = options.network ?? DEFAULTS.network
@@ -79,7 +79,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   if (method === 'version') return reply({
     protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance}, contractRegistration: 0, receivedMintVerification: ${receivedMintVerification}, exposedInputs: 1,
     indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
-    source: '2f7b21d8637baad548504ea870deb2c0d4d0a37d',
+    source: '567e5b8308f70a6242137475394be5a82fc15c95',
     ...${JSON.stringify(nativeTrees)}
   })
   if (method === 'open') {

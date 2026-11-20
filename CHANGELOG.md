@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.0-rc.3 — Unreleased qualification candidate
+
+- Pin unmodified public RGB-Tools rgb-lib `0.3.0-beta.8` and the locked RGB `0.11.2-rc.2` graph without source overlays.
+- Give this engine a separate wallet directory identity.
+- Align the WebRGB facade with `0.1.7`: one native burn destination, assetless first invoices, a separately persisted asset expectation, and actionable receive-output errors.
+- Rebuild Android targets and the qualification host. Other platform artifacts require a separate rebuild before SDK publication.
+
 ## 3.0.0-rc.2
 
 - Add invoice-scoped prepared-mint verification using stock BFA.8's checked receipt and public consignment inspection, including independently committed asset identity.

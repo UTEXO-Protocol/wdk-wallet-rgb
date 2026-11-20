@@ -53,6 +53,7 @@ const receipt = {
     : run('otool', ['-hvL', path])
 }
 native.targets = { [target]: pin }
+native.releaseHold = false
 writeFileSync(manifest, JSON.stringify(native, null, 2) + '\n')
 writeFileSync(join(out, 'build-receipt.json'), JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' })
 JS
@@ -71,6 +72,15 @@ else
   binary="$out/utexo-rgb-native"
   node -e 'if (require(process.argv[1]).nativeIdentity.assetIssuance !== 2) process.exitCode = 1' "$out/build-receipt.json"
   node scripts/check-candidate-pack.mjs
+  # Only the temporary qualification copy is admitted after this worker's
+  # source and binary receipt have been checked. Publication stays on hold.
+  node --input-type=module - <<'JS'
+import { readFileSync, writeFileSync } from 'node:fs'
+const path = 'src/onchain-bare-native.json'
+const manifest = JSON.parse(readFileSync(path, 'utf8'))
+manifest.releaseHold = false
+writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n')
+JS
 fi
 
 sha256() {

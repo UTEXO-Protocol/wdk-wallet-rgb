@@ -41,7 +41,7 @@ fn verify_chain(
 ) -> Result<()> {
     if genesis != genesis_block(bitcoin_chain(network)).block_hash()
         || (network == BitcoinNetwork::Signet
-            && !block_one.is_some_and(|hash| hash.to_string() == checkpoint.block_one()))
+            && block_one.is_none_or(|hash| hash.to_string() != checkpoint.block_one()))
     {
         return Err(invalid_indexer());
     }

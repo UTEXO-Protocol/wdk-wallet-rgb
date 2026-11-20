@@ -61,7 +61,7 @@ def generate(npm_root=ROOT):
     notices = {}
     packages = {}
     native_source = read_json(ROOT / "src/onchain-bare-native.json")["source"]
-    rgb_root = ROOT / "native/.sources/rgb-lib-bfa-clean"
+    rgb_root = ROOT / "native/.sources/rgb-lib-upstream"
     actual_rgb_head = command(["git", "rev-parse", "HEAD"], rgb_root)
     if actual_rgb_head != native_source:
         raise ValueError("Prepared RGB source does not match the native manifest")

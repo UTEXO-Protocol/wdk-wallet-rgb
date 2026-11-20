@@ -1,6 +1,6 @@
 {
   "name": "@utexo/wdk-wallet-rgb",
-  "version": "3.0.0-rc.2",
+  "version": "3.0.0-rc.3",
   "description": "On-chain Bitcoin and RGB wallet SDK for Node and Bare.",
   "keywords": [
     "wdk",

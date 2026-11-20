@@ -2,11 +2,11 @@
 
 The watch-only engine is shared by the Node pipe worker and the Bare addon. The application owns the seed, transaction review and signer. Native code receives public account keys and an exact signed PSBT after approval.
 
-The build uses unmodified BFA.8 commit `2f7b21d8637baad548504ea870deb2c0d4d0a37d`, tree `5492824f3cf47b4c821dfca8b7a63fed27858486`. Electrum 0.25.2 and Esplora 0.12.3 are registry sources with Cargo checksums. There are no downstream RGB or client source patches. The RGB protocol crates retain the exact source revisions required by BFA.8. The legacy manifest fields `overlayTree` and `integrationTree` now both identify the unmodified upstream tree.
+The build uses unmodified RGB-Tools rgb-lib `0.3.0-beta.8`, commit `567e5b8308f70a6242137475394be5a82fc15c95`, tree `8a887b28bd12625e36cd7cfe2af067ff766ece1d`. Electrum 0.25.2 and Esplora 0.12.3 are registry sources with Cargo checksums. There are no downstream RGB or client source patches. The RGB protocol crates use the locked registry `0.11.2-rc.2` graph. The `rgb_fs_store_migration` feature retains upstream decoding for earlier RGB file formats; it does not convert an earlier WDK wallet directory. The legacy manifest fields `overlayTree` and `integrationTree` now both identify the unmodified upstream tree.
 
 ## Build and test
 
-Use a clean, committed repository checkout, Rust 1.94.0, and an authorized source clone or authenticated GitHub CLI (`gh`). Preparation uses `gh auth git-credential` when fetching the private source. Consumer installs do not fetch private source or run Rust builds.
+Use a clean, committed repository checkout, Rust 1.94.0, and Git. The upstream source is public. Preparation verifies the exact source tree; consumer installs do not fetch sources or run Rust builds.
 
 Run from the repository root on the target architecture. Supported Node targets are `darwin-arm64`, `darwin-x64`, `linux-arm64-gnu`, `linux-x64-gnu` and `linux-x64-musl`. macOS requires Xcode command-line tools. Linux requires a C compiler, binutils and build tools; build the musl target inside a musl userland, as the CI workflow does.
 
@@ -42,9 +42,9 @@ Before an RGB send or burn reaches native `End`, WDK persists its exposed input 
 
 `cancelReceiveInvoice` identifies one expired NIA/CFA receive by batch index and recipient. It verifies the stored invoice, network, schema, expiry and absence of delivery evidence, refreshes incoming transfers for that asset, then revalidates and invokes stock transactional `fail_transfers` only for the requested batch. The result is reread. Active, BFA, assetless and progressed invoices are excluded. The same already-failed eligible batch can be acknowledged after restart. No transaction is signed or broadcast.
 
-Cancellation uses BFA.8's retention and proxy-loss rules. It does not preserve the removed patch's stronger requirement for authenticated proof of an empty proxy record. Display eligibility is only an observation; the mutation checks current state again.
+Cancellation uses upstream retention and proxy-loss rules. It does not preserve the removed patch's stronger requirement for authenticated proof of an empty proxy record. Display eligibility is only an observation; the mutation checks current state again.
 
-Stock BFA.8 has no public standalone contract registration API. `importContract` checks its bounded byte envelope and SHA-256, then returns `CONTRACT_IMPORT_UNAVAILABLE` without changing RGB state. No fake transfer, outpoint or private database write substitutes for it. This affects preregistering Iris's USDT contract, not wallet opening, NIA/CFA issuance or receipt through a real transfer. Track [RGB-Tools #103](https://github.com/RGB-Tools/rgb-lib/pull/103) and a BFA-compatible port separately.
+The pinned upstream library has no public standalone contract registration API. `importContract` checks its bounded byte envelope and SHA-256, then returns `CONTRACT_IMPORT_UNAVAILABLE` without changing RGB state. No fake transfer, outpoint or private database write substitutes for it. This affects preregistering Iris's USDT contract, not wallet opening, NIA/CFA issuance or receipt through a real transfer. Track [RGB-Tools #103](https://github.com/RGB-Tools/rgb-lib/pull/103) separately.
 
 ## Recovery and qualification
 

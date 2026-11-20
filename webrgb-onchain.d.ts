@@ -13,7 +13,7 @@ export type WebRgbMethod =
 
 export type WebRgbErrorCode =
   | 'USER_REJECTED' | 'NOT_ENABLED' | 'METHOD_NOT_SUPPORTED'
-  | 'INVALID_PARAMS' | 'ASSET_NOT_FOUND' | 'INTERNAL_ERROR'
+  | 'INVALID_PARAMS' | 'ASSET_NOT_FOUND' | 'NO_AVAILABLE_UTXOS' | 'INTERNAL_ERROR'
 
 export class WebRgbError extends Error {
   constructor(code: WebRgbErrorCode, message?: string)
@@ -59,12 +59,19 @@ export type WebRgbReceiveResult = {
   minConfirmations: number
 }
 
+/** WebRGB 0.1.7's single chain-native destination, before commitment encoding. */
+export type WebRgbBurnDestination = Readonly<{
+  version: 1
+  chainId: string
+  address: string
+  dstEid: number
+}>
+
 export type WebRgbBurnArgs = Readonly<{
   network: WebRgbNetwork
   assetId: string
   amount: string
-  burnRecipient: Readonly<BurnRecipient>
-  burnDestination: BurnDestination
+  burnDestination: WebRgbBurnDestination
   feeRate?: number
   minConfirmations?: number
 }>

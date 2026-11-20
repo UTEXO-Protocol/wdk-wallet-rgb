@@ -17,7 +17,8 @@ const ROUTE = { chainId: 'eip155:42161', dstEid: 0 }
 const OTHER_ROUTE = { chainId: 'eip155:1', dstEid: 30101 }
 const RECIPIENT = { chainId: ROUTE.chainId, address: '0x' + '11'.repeat(20) }
 const DESTINATION = burnDestinationFor(RECIPIENT, [ROUTE])
-const REQUEST = { network: 'regtest', assetId: ASSET, amount: '123', burnRecipient: RECIPIENT, burnDestination: DESTINATION }
+const WIRE_DESTINATION = { version: 1, ...RECIPIENT, dstEid: ROUTE.dstEid }
+const REQUEST = { network: 'regtest', assetId: ASSET, amount: '123', burnDestination: WIRE_DESTINATION }
 const METHODS = ['enable', 'getInfo', 'getAddress', 'blindReceive', 'witnessReceive', 'listAssets', 'getAssetBalance',
   'listTransfers', 'getTransferStatus', 'decodeRgbInvoice', 'burnAsset', 'getConsignment']
 const INFO = { ready: true, protocol: 'RGB_L1', network: 'regtest', methods: ['burnAsset', 'getConsignment'],
@@ -100,12 +101,12 @@ test('blocks request ID reuse with changed amount or fingerprint and recovers th
   const instance = provider(wallet, 'burnAsset', { confirm: approval => {
     approvals++
     assert.equal(approval.origin, 'https://bridge.example')
-    assert.deepEqual(approval.params.burnDestination, DESTINATION)
+    assert.deepEqual(approval.params.burnDestination, WIRE_DESTINATION)
     assert.equal(approval.params.minConfirmations, 6)
     assert.ok(Object.isFrozen(approval.params))
     return true
   } })
-  await assert.rejects(instance.burnAsset({ ...REQUEST, burnDestination: { ...DESTINATION, dstEid: 1 } }), { code: 'INVALID_PARAMS' })
+  await assert.rejects(instance.burnAsset({ ...REQUEST, burnDestination: { ...WIRE_DESTINATION, dstEid: 1 } }), { code: 'INVALID_PARAMS' })
   assert.equal(approvals, 0)
   const burned = await instance.burnAsset({ ...REQUEST, minConfirmations: 3 })
   assert.equal(burned.txid, TXID)
@@ -265,3 +266,66 @@ test('WebRGB invoice retries disclose only the exact still-authorized allocation
   assert.equal(approvals, 2)
   await second.journal.assertAvailable()
 })
+
+test('WebRGB 0.1.7 accepts one native destination and rejects legacy or contradictory burn fields', async () => {
+  const wallet = mockWallet()
+  for (const input of [
+    { ...REQUEST, burnRecipient: RECIPIENT },
+    { ...REQUEST, burnDestination: DESTINATION },
+    { ...REQUEST, burnDestination: { ...WIRE_DESTINATION, recipient: DESTINATION.recipient } },
+    { ...REQUEST, burnDestination: { ...WIRE_DESTINATION, version: 2 } },
+    { ...REQUEST, burnDestination: { ...WIRE_DESTINATION, chainId: OTHER_ROUTE.chainId } },
+    { ...REQUEST, burnDestination: { ...WIRE_DESTINATION, address: '0x' + '00'.repeat(20) } }
+  ]) await assert.rejects(provider(wallet, 'burnAsset').burnAsset(input), { code: 'INVALID_PARAMS' })
+  assert.equal(wallet.submitted, 0)
+  const result = await provider(wallet, 'burnAsset').burnAsset(REQUEST)
+  assert.deepEqual(result.burnDestination, WIRE_DESTINATION)
+  assert.equal(Object.hasOwn(result, 'burnRecipient'), false)
+  assert.equal(wallet.submitted, 1)
+})
+
+for (const method of ['blindReceive', 'witnessReceive']) {
+  test(`WebRGB 0.1.7 ${method} preserves an assetless first invoice and its separate asset expectation`, async () => {
+    const calls = []
+    const wallet = {
+      getInfo: () => ({ ready: true, protocol: 'RGB_L1', network: 'regtest', methods: [method] }),
+      async receiveWebRgbInvoice (request) {
+        calls.push(request)
+        await request.approve()
+        return { invoice: 'rgb:owned-first-invoice', recipientId: 'owned-recipient', expirationTimestamp: '1234567890' }
+      }
+    }
+    let approval
+    const instance = provider(wallet, method, { confirm (request) { approval = request; return true } })
+    await instance[method]({ durationSeconds: 86400, minConfirmations: 6 })
+    assert.equal(calls[0].options.assetId, undefined)
+    assert.equal(calls[0].expectedAssetId, ASSET)
+    assert.equal(calls[0].options.expirationSeconds, 86400)
+    assert.equal(approval.params.assetId, undefined)
+    assert.equal(approval.params.minConfirmations, 6)
+    wallet.receiveWebRgbInvoice = () => { throw new WalletRuntimeError('NO_AVAILABLE_UTXOS', 'private allocation detail') }
+    await assert.rejects(instance[method](), { code: 'NO_AVAILABLE_UTXOS', message: 'No RGB output is available for this receive' })
+  })
+}
+
+for (const route of [
+  { chainId: 'eip155:42161', dstEid: 0 },
+  { chainId: 'eip155:1', dstEid: 30101 },
+  { chainId: 'eip155:137', dstEid: 30109 },
+  { chainId: 'eip155:9745', dstEid: 30383 },
+  { chainId: 'tron:728126428', dstEid: 30420 }
+]) {
+  test(`single-destination WebRGB burn admits the exact ${route.chainId} route and returns the approved native address`, async () => {
+    const address = route.chainId.startsWith('tron:') ? 'TEdvoHEatmDKvTh3o9vBRB9Vdtbhn4QFhy' : RECIPIENT.address
+    const destination = { version: 1, ...route, address }
+    const wallet = mockWallet()
+    wallet.getInfo = () => ({ ...INFO, burnDestinationRoutes: [route] })
+    const policy = { ...POLICY, burnDestinationRoutes: [route] }
+    let approval
+    const rpc = provider(wallet, 'burnAsset', { policy, confirm (value) { approval = value; return true } })
+    const result = await rpc.burnAsset({ ...REQUEST, burnDestination: destination })
+    assert.deepEqual(approval.params.burnDestination, destination)
+    assert.deepEqual(result.burnDestination, destination)
+    assert.equal(wallet.submitted, 1)
+  })
+}

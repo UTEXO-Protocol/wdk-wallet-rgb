@@ -465,7 +465,7 @@ mod tests {
             Ok(outpoint.clone())
         })
         .unwrap();
-        assert_eq!(outputs, [outpoint.clone()]);
+        assert_eq!(outputs.as_slice(), std::slice::from_ref(&outpoint));
         assert!(
             require_no_intersection(
                 &outputs,

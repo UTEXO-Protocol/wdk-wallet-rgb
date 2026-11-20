@@ -8,10 +8,10 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
-DEST = ROOT / ".sources" / "rgb-lib-bfa-clean"
-SOURCE_URL = "https://github.com/UTEXO-Protocol/rgb-lib-bfa.git"
-SHA = "2f7b21d8637baad548504ea870deb2c0d4d0a37d"
-BASE_TREE = "5492824f3cf47b4c821dfca8b7a63fed27858486"
+DEST = ROOT / ".sources" / "rgb-lib-upstream"
+SOURCE_URL = "https://github.com/RGB-Tools/rgb-lib.git"
+SHA = "567e5b8308f70a6242137475394be5a82fc15c95"
+BASE_TREE = "8a887b28bd12625e36cd7cfe2af067ff766ece1d"
 
 def git(repo, *args):
     return subprocess.check_output(["git", "-c", "core.hooksPath=/dev/null", "-C", str(repo), *args], text=True).strip()
@@ -22,7 +22,7 @@ def verify(repo):
         or git(repo, "write-tree") != BASE_TREE
         or git(repo, "diff", "--name-only")
         or git(repo, "ls-files", "--others")):
-        raise SystemExit("RGB BFA build source does not match the exact unmodified upstream tree")
+        raise SystemExit("RGB build source does not match the exact unmodified upstream tree")
 
 def main():
     os.umask(0o077)
@@ -50,8 +50,6 @@ def main():
         if not local.is_dir():
             raise SystemExit("Source override must be an existing local Git directory")
         source = str(local)
-    else:
-        credentials += ["-c", "credential.helper=!gh auth git-credential"]
     with tempfile.TemporaryDirectory(dir=dest.parent) as work:
         staged = Path(work) / "candidate"
         staged.mkdir()

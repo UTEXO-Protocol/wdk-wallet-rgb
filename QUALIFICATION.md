@@ -2,6 +2,16 @@
 
 The candidate is an on-chain SDK for Node and Bare. Mainnet and Public Signet admit Bitcoin and ordinary RGB under the network policies in the [candidate guide](CANDIDATE.md). Regtest, Dev and staging have separate service and bridge policies. This register contains deployment-specific test evidence and stays in the repository outside the package.
 
+## RC3: public RGB upstream and WebRGB 0.1.7 qualification
+
+This Android qualification candidate is `3.0.0-rc.3`, using unmodified public RGB-Tools rgb-lib `0.3.0-beta.8` at `567e5b8308f70a6242137475394be5a82fc15c95`, tree `8a887b28bd12625e36cd7cfe2af067ff766ece1d`. RGB protocol crates are locked registry `0.11.2-rc.2` sources. No RGB, indexer or TLS source patch is applied. Earlier RC2 artifacts remain identified below and do not qualify this graph.
+
+The source passes 82 JavaScript tests, public types, 52 native Release tests, strict adapter Clippy, and 17 release-admission regressions. The current Dev E2E's retained burn consignment decodes on this graph and exports the same `rgb:Ridn2CNN-roDb90a-RHSJ_ml-9oisvDH-LYvmiQ9-khBPP7Y` genesis without transfer history. This decoding check is separate from funded receive and hosted settlement acceptance.
+
+The WebRGB facade accepts the 0.1.7 single native `burnDestination` and derives its encoded commitment. Omitted receive `assetId` remains absent from the native invoice; a single-asset application policy is retained separately as its expected asset. Named invoices do not silently downgrade to assetless. Retained mint verification continues to bind the exact owned invoice, validated operation and LockId to the actual consignment asset.
+
+Local artifact work targets Android first and a Node qualification host. `publicationHold: true` prevents release preparation even when the listed target binaries are admitted for runtime use. The full SDK release still requires all five Node workers and eleven Bare targets and their receipts. This candidate adds no Mainnet BFA profile or prepared-burn WebRGB protocol.
+
 ## 3.0.0-rc.2: invoice-scoped mint verification
 
 The complete RC2 package is packed from `2e53b9f65ac7a40573311408bb0ab850e626d133`, with native producer `49a19de14046f778241a89a3e16483521fd393cc`. Its 41 files include all eleven Bare addons; the five Node workers are separate artifacts. Archive size is 203,881,548 bytes and SHA-256 is `2c6c74ddbffb33af0bbe8ca87ac6f3aceb0e25823a334309d5531b3f1d4c95ff`. The installed consumer matched every package file and native pin. Later qualification-only commits do not change that package identity.

@@ -1,4 +1,16 @@
-# Dependency acceptance for the stock BFA.8 release candidate
+# Dependency policy for the unmodified upstream candidate
+
+RC3 uses public RGB-Tools rgb-lib `0.3.0-beta.8`, commit
+`567e5b8308f70a6242137475394be5a82fc15c95`, tree
+`8a887b28bd12625e36cd7cfe2af067ff766ece1d`. The source is unmodified and its
+RGB protocol dependencies are locked registry `0.11.2-rc.2` packages. The RC3
+Node audit retains the same eight findings listed below. The newly locked Bare
+graph uses `libsqlite3-sys 0.37.1` and has seven TLS findings, with the same YAML
+maintenance warning. The Android qualification pack remains on publication hold;
+these audit results do not declare the findings fixed or create a blanket waiver
+for later dependency changes.
+
+## Recorded RC2 acceptance
 
 On November 16, 2026, the release owner directed this candidate to use the
 unmodified upstream BFA.8 dependency graph and accepted retaining its reported

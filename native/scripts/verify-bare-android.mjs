@@ -35,8 +35,8 @@ const system = resolve(ndk, 'sysroot/usr/lib', platform.sysroot, '26')
 const libraries = ['libc.so', 'libdl.so', 'liblog.so', 'libm.so']
 const exportsExpected = ['bare_get_module_name_v0', 'bare_register_module_v0']
 const soname = `libutexo__wdk-wallet-rgb.${version}.so`
-const expectedCargoLock = 'fdc48289868bc51ad9772a764fe79970782fd97b35f11f91d30b8c3bbfedb830'
-const expectedIntegrationTree = '5492824f3cf47b4c821dfca8b7a63fed27858486'
+const expectedCargoLock = '1bcf8e27fdc8613beec71ebdf8e4553aab46cca37debad9658ac02a2791900ea'
+const expectedIntegrationTree = '8a887b28bd12625e36cd7cfe2af067ff766ece1d'
 const page = 16 * 1024
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
 const ensure = (condition, message) => {
@@ -149,9 +149,9 @@ console.log(JSON.stringify({
   devPolicySha256: hash(devPolicy),
   devHostedEnabled: JSON.parse(devPolicy).enabled === true,
   rgb: {
-    revision: '2f7b21d8637baad548504ea870deb2c0d4d0a37d',
+    revision: '567e5b8308f70a6242137475394be5a82fc15c95',
     integrationTree: expectedIntegrationTree,
-    features: ['electrum', 'esplora', 'camel_case']
+    features: ['electrum', 'esplora', 'camel_case', 'rgb_fs_store_migration']
   },
   loadAlignments: loads.map(load => load.Alignment),
   relro: { sections: protectedSections.map(section => section.Name.Name), aligned: true },

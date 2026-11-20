@@ -52,8 +52,8 @@ mod received_mint;
 #[path = "input_reservations.rs"]
 mod input_reservations;
 
-const SOURCE: &str = "2f7b21d8637baad548504ea870deb2c0d4d0a37d";
-const OVERLAY: &str = "5492824f3cf47b4c821dfca8b7a63fed27858486";
+const SOURCE: &str = "567e5b8308f70a6242137475394be5a82fc15c95";
+const OVERLAY: &str = "8a887b28bd12625e36cd7cfe2af067ff766ece1d";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
@@ -62,7 +62,7 @@ const MAX_FEE_RATE: u64 = 100_000;
 const MAX_MONEY: u64 = 2_100_000_000_000_000;
 const LOCK_FILE: &str = ".utexo-rgb-native.lock";
 const IDENTITY_FILE: &str = ".utexo-rgb-native.identity";
-const BACKEND: &str = "rgb-l1-bfa8-v1";
+const BACKEND: &str = "rgb-l1-beta8-v1";
 const REGTEST_MAX_MINT_LOCK_BLOCKS: u64 = 512;
 const SIGNET_MAX_MINT_LOCK_BLOCKS: u64 = 7_200;
 const DEV_ARBITRUM_MAX_MINT_LOCK_BLOCKS: u64 = 16_000;
@@ -93,6 +93,10 @@ fn native(err: rgb_lib::Error) -> Fault {
         rgb_lib::Error::AssetNotFound { .. } => fault(
             "ASSET_NOT_FOUND",
             "The asset is not registered in this wallet.",
+        ),
+        rgb_lib::Error::InsufficientAllocationSlots => fault(
+            "NO_AVAILABLE_UTXOS",
+            "No RGB output is available for this receive.",
         ),
         _ => fault(
             "NATIVE_OPERATION_FAILED",
@@ -769,10 +773,10 @@ impl Worker {
                         .map_err(|_| input("Invalid wallet journal identity."))?,
                 );
                 let fingerprint_path = root.join(&p.master_fingerprint);
-                if let Ok(meta) = fingerprint_path.symlink_metadata() {
-                    if !meta.is_dir() {
-                        return Err(fault("STORAGE_ERROR", "Invalid wallet data directory."));
-                    }
+                if let Ok(meta) = fingerprint_path.symlink_metadata()
+                    && !meta.is_dir()
+                {
+                    return Err(fault("STORAGE_ERROR", "Invalid wallet data directory."));
                 }
                 let data_dir = root
                     .to_str()
@@ -863,12 +867,12 @@ impl Session {
                     "The RGB proxy does not match the wallet's bound endpoint.",
                 ));
             }
-        } else if let Some(services) = self.bridge_services()? {
-            if endpoint != services.proxy {
-                return Err(input(
-                    "The wallet requires the approved RGB proxy for its Signet profile.",
-                ));
-            }
+        } else if let Some(services) = self.bridge_services()?
+            && endpoint != services.proxy
+        {
+            return Err(input(
+                "The wallet requires the approved RGB proxy for its Signet profile.",
+            ));
         }
         validate_proxy(endpoint, self.network == BitcoinNetwork::Regtest)
     }
@@ -1119,18 +1123,17 @@ impl Session {
                 "This wallet profile does not accept EVM RPC or proxy credentials.",
             ));
         }
-        if let Some(services) = self.bridge_services()? {
-            if p.evm_rpc_urls.len() != 1
+        if let Some(services) = self.bridge_services()?
+            && (p.evm_rpc_urls.len() != 1
                 || p.evm_rpc_urls.get("42161").map(String::as_str) != Some(services.arbitrum_rpc)
-                || !p.proxy_auth_keys.is_empty()
-            {
-                for secret in p.proxy_auth_keys.values_mut() {
-                    secret.zeroize();
-                }
-                return Err(input(
-                    "Signet RGB requires the approved Arbitrum RPC without proxy credentials.",
-                ));
+                || !p.proxy_auth_keys.is_empty())
+        {
+            for secret in p.proxy_auth_keys.values_mut() {
+                secret.zeroize();
             }
+            return Err(input(
+                "Signet RGB requires the approved Arbitrum RPC without proxy credentials.",
+            ));
         }
         if p.evm_rpc_urls.len() > 16 || p.proxy_auth_keys.len() > 16 {
             return Err(input("Too many network endpoints."));
@@ -1690,6 +1693,13 @@ mod tests {
     const CONTRACT_SHA256: &str =
         "60e78d9fc22b69ebd61aafbd37a530f98440cff7b33da5671494790fd3d78be1";
     const CONTRACT: &str = include_str!("../tests/fixtures/regtest-bfa.6.rgb.base64");
+
+    #[test]
+    fn missing_receive_allocation_has_a_public_actionable_error() {
+        let error = native(rgb_lib::Error::InsufficientAllocationSlots);
+        assert_eq!(error.code, "NO_AVAILABLE_UTXOS");
+        assert_eq!(error.message, "No RGB output is available for this receive.");
+    }
 
     fn open_params(root: &Path, name: &str) -> Value {
         let keys = rgb_lib::keys::generate_keys(chain(name).unwrap(), WitnessVersion::Taproot);

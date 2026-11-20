@@ -1,8 +1,8 @@
 # On-chain WDK integration guide
 
-This release candidate uses unmodified BFA.8 with stock Electrum and Esplora clients. See the [qualification register](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/QUALIFICATION.md) for the exact rebuilt artifacts, tests and outstanding acceptance.
+This qualification candidate uses unmodified RGB-Tools rgb-lib `0.3.0-beta.8` with stock Electrum and Esplora clients. See the [qualification register](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/QUALIFICATION.md) for the exact rebuilt artifacts, tests and outstanding acceptance.
 
-`@utexo/wdk-wallet-rgb@3.0.0-rc.2` introduces the version 3 API. It is a breaking change from the published wrapper; see [MIGRATION.md](MIGRATION.md). The native protocol is version 2 and requires network checks, unsigned-operation recovery, journal writes and ordinary RGB asset issuance. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
+`@utexo/wdk-wallet-rgb@3.0.0-rc.3` introduces the version 3 API. It is a breaking change from the published wrapper; see [MIGRATION.md](MIGRATION.md). The native protocol is version 2 and requires network checks, unsigned-operation recovery, journal writes and ordinary RGB asset issuance. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and rejects implicit migration of existing native wallet directories.
 
 | Component | Pinned version or source |
 | --- | --- |
@@ -10,11 +10,11 @@ This release candidate uses unmodified BFA.8 with stock Electrum and Esplora cli
 | Bare runtime minimum and test runtime | `1.37.1` (desktop and embedded mobile) |
 | Android symbol qualification runtime | Bare Kit `3.0.1`, Bare `1.37.1` |
 | Bare C headers | `1.35.0` |
-| RGB library | `v0.3.0-beta.7-upstream-dev-bfa.8`, `2f7b21d8637baad548504ea870deb2c0d4d0a37d` |
+| RGB library | RGB-Tools `0.3.0-beta.8`, `567e5b8308f70a6242137475394be5a82fc15c95` |
 | Native artifacts | [Exact target pins](src/onchain-bare-native.json), qualified separately |
 | Signing | `@scure/btc-signer@2.4.1`, `@scure/bip32@2.4.0`, `@scure/base@2.4.0`, `@noble/curves@2.4.0`, `@noble/hashes@2.4.0` |
 
-The BFA.8 candidate uses a new wallet directory identity. BFA.8 removed a database migration recorded by BFA.7 wallets, so an earlier directory is refused before the database is opened. Keep the earlier directory with its original SDK and use a fresh directory for BFA.8 qualification.
+The official beta.8 candidate uses a separate `rgb-l1-beta8-v1` wallet directory identity. An earlier engine directory is refused before its database opens. Keep earlier directories with their original SDK and use fresh directories for qualification.
 
 ## Build and use
 
@@ -33,7 +33,7 @@ For ordinary RGB, supply one `rpcs://` transport endpoint that implements protoc
 
 For the separate staging bridge profile on Public Signet, set `network: 'signet'`, `mode: 'rgb'` and `profile: 'staging'`, with the Public Signet Electrum endpoint, `transportEndpoint: 'rpcs://staging.rgb-proxy.utexo.com/json-rpc'` and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. The profile rejects proxy credentials. The application explicitly enables each V1 payout route. The supported exact route pairs are shared with Dev below; permitting a route is not evidence that a particular bridge deployment settles it.
 
-For manual hosted Dev testing, set `network: 'signet'`, `mode: 'rgb'` and `profile: 'dev'`. Set `indexerUrl: 'https://dev.esplora-01.mint.utexo.com'`, `transportEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc'` and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. Dev verifies its own block-one checkpoint and uses a separate wallet directory. The application configures its asset ID and exact V1 routes. Stock BFA.8 cannot preregister a standalone genesis: `registerAssetContract()` reports `CONTRACT_IMPORT_UNAVAILABLE`. A generic receive can discover an unknown asset through a validated transfer, but does not replace asset-pinned preregistration. Hosted mint, burn and payout acceptance are tracked separately. [Dev bridge route table](https://github.com/UTEXO-Protocol/utexo-bridge-fe/blob/a0e21415213b9e99adc20424ce59891bff7e7448/utexo/src/mintBurn/burnDestination.ts#L16-L23)
+For manual hosted Dev testing, set `network: 'signet'`, `mode: 'rgb'` and `profile: 'dev'`. Set `indexerUrl: 'https://dev.esplora-01.mint.utexo.com'`, `transportEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc'` and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. Dev verifies its own block-one checkpoint and uses a separate wallet directory. The application configures its asset ID and exact V1 routes. The pinned upstream library cannot preregister a standalone genesis: `registerAssetContract()` reports `CONTRACT_IMPORT_UNAVAILABLE`. A generic receive can discover an unknown asset through a validated transfer, but does not replace asset-pinned preregistration. Hosted mint, burn and payout acceptance are tracked separately. [Dev bridge route table](https://github.com/UTEXO-Protocol/utexo-bridge-fe/blob/a0e21415213b9e99adc20424ce59891bff7e7448/utexo/src/mintBurn/burnDestination.ts#L16-L23)
 
 The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Desktop Bare loads and hashes the addon for its exact host. Android links the worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. iOS uses Bare Link to build and sign the app framework, then supplies `iosNativeFrameworkDir` and `nativeSha256` for the final framework binary. The iOS package prebuild and the final embedded framework have separate hashes. The SDK verifies the native profile before opening on each target.
 
