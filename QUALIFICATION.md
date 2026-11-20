@@ -8,6 +8,8 @@ This Android qualification candidate is `3.0.0-rc.3`, using unmodified public RG
 
 Node and Bare both lock SQLx `0.9.1` and `libsqlite3-sys 0.40.0` (bundled SQLite `3.54.1`). The Node-only compatible lock update removes its SQLite advisory; seven upstream Esplora TLS findings remain in both graphs. Frozen Android qualification artifacts keep their original identities.
 
+All sixteen native targets were rebuilt from producer `83c6f654fd8abfaec92d01f153fb08f3050b478d`; [all nineteen CI jobs passed](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/44722103576). [Platform admission](qualification/rc3/platforms.json) records the verified ZIP digests, every retained entry, source/lock receipts, binary hashes and ABI. Nine desktop targets execute packed consumers; seven mobile targets have build/ABI acceptance. The manifest now admits all eleven Bare addons and retains the qualification publication hold.
+
 The source passes 85 JavaScript tests, public types, 52 native Release tests, strict adapter Clippy, and 17 release-admission regressions. The current Dev E2E's retained burn consignment decodes on this graph and exports the same `rgb:Ridn2CNN-roDb90a-RHSJ_ml-9oisvDH-LYvmiQ9-khBPP7Y` genesis without transfer history. This decoding check is separate from funded receive and hosted settlement acceptance.
 
 The WebRGB facade accepts the 0.1.7 single native `burnDestination` and derives its encoded commitment. Omitted receive `assetId` remains absent from the native invoice; a single-asset application policy is retained separately as its expected asset. Named invoices do not silently downgrade to assetless. Retained mint verification continues to bind the exact owned invoice, validated operation and LockId to the actual consignment asset.

@@ -10,7 +10,7 @@ This release candidate introduces the on-chain Node/Bare SDK on unmodified publi
 - BFA mint validation and V1 burns with scoped proof retrieval and restart recovery. Arbitrum, Ethereum, Polygon, Plasma and Tron routes must be explicitly configured.
 - Separate sender and recipient RGB proxies, with endpoint admission on both the JavaScript and native boundaries.
 - Stable operation identities, authorization, exposed-input protection and recovery without constructing a replacement transfer.
-- BIP-322 message signing, Tether Core integration and awaited wallet shutdown.
+- BIP-322 message signing, immutable public account-key export, Tether Core integration and awaited wallet shutdown.
 - Exact target manifests and third-party notices. Full SDK publication requires five Node workers and eleven Bare addons; qualification archives may contain a subset and retain a publication hold.
 
 Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedded mobile runtimes. Node workers are separate verified downloads. The npm archive contains the Bare addons; mobile applications must link the appropriate native artifact.
