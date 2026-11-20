@@ -2646,5 +2646,1062 @@
       },
       "completedAt": "2026-11-20T11:42:42.067Z"
     }
+  },
+  "safeSubmissionArchiveQualification": {
+    "sourceCommit": "2210de2d738802557b2a54ca0f164c9ad157931c",
+    "sourceTree": "9a8053c19cc330f11c7506099d2917d9d27ac9ce",
+    "nativeProducer": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+    "archiveSha256": "640bf91ab4437a15a318683106540e76c2671223eee35e345937fe73421f9f24",
+    "archiveBytes": 208356588,
+    "packedFileCount": 41,
+    "gitSourceFileCount": 30,
+    "bareTargets": 11,
+    "nodeTargets": 5,
+    "nativeInputsUnchanged": true,
+    "publicationHold": true,
+    "javascriptTests": 96,
+    "releaseAdmissionTests": 17,
+    "cleanup": {
+      "scope": "Installed full RC3 pack; real Node/Bare native83; isolated funded Regtest; JS RPC faults only, no mocked native financial operation",
+      "packSha256": "640bf91ab4437a15a318683106540e76c2671223eee35e345937fe73421f9f24",
+      "walletSourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+      "nativeSha256": "9752dc2fc7aa51dbbf506272769366d84d8957e65a53caad1b3dd08416e39e0d",
+      "runtimes": [
+        {
+          "runtime": "node",
+          "cases": [
+            {
+              "mode": "before-end",
+              "kind": "rgb-output",
+              "txid": "b03655420e4b5c93e9a435edb3c5f52c37d77f191a49c714fd726d4b4b977de2",
+              "stage": "declined",
+              "noFeeOrBroadcast": true,
+              "exactIdCannotReplay": true
+            },
+            {
+              "mode": "close-submitting",
+              "kind": "rgb-output",
+              "txid": "b18d5763488bec58a1a0e4764aaaab00dd1c29d4df36630cb58dd57a6a60dacf",
+              "stage": "declined",
+              "noFeeOrBroadcast": true,
+              "exactIdCannotReplay": true
+            },
+            {
+              "mode": "after-end",
+              "kind": "rgb-output",
+              "txid": "01608b803570a0fb062862f3f43dfa9d77578c504cd955d0926725a2b596cabf",
+              "originalStage": "submitting",
+              "recoveredStage": "submitted",
+              "confirmations": 3,
+              "noAdditionalEnd": true
+            },
+            {
+              "mode": "before-end",
+              "kind": "btc-send",
+              "txid": "0587fd0e2be57657bac37f8b1ead1b7810971773e846f27a0ef68f52e9477149",
+              "originalStage": "declined",
+              "exactIdCannotReplay": true,
+              "noFeeOrBroadcast": true
+            },
+            {
+              "mode": "after-end",
+              "kind": "btc-send",
+              "txid": "923ff846e77e74c134429e5fa84bdee4db6fe43c0dd76d08e720425a02c5876a",
+              "originalStage": "submitting",
+              "exactIdCannotReplay": true,
+              "recoveredStage": "submitted",
+              "noAdditionalEnd": true
+            }
+          ],
+          "fundingTxid": "49b607794443c7c6efe6e54136ec18f0c8df65770c38423a35ff9974869049b5",
+          "forwardedEnd": [
+            "createUtxosEnd",
+            "sendBtcEnd"
+          ],
+          "positiveLiveAborts": [
+            "b03655420e4b5c93e9a435edb3c5f52c37d77f191a49c714fd726d4b4b977de2",
+            "b18d5763488bec58a1a0e4764aaaab00dd1c29d4df36630cb58dd57a6a60dacf",
+            "0587fd0e2be57657bac37f8b1ead1b7810971773e846f27a0ef68f52e9477149"
+          ]
+        },
+        {
+          "runtime": "bare",
+          "cases": [
+            {
+              "mode": "before-end",
+              "kind": "rgb-output",
+              "txid": "3627bb1969c65147a2997d450b456f4a144ec5e4d3cecad3b008bd1aaa49d55a",
+              "stage": "declined",
+              "noFeeOrBroadcast": true,
+              "exactIdCannotReplay": true
+            },
+            {
+              "mode": "close-submitting",
+              "kind": "rgb-output",
+              "txid": "37bc868c4c225fcbfd8f09e2cfda3c6d99222c0da398b108a3ef5d6dc312d1cb",
+              "stage": "declined",
+              "noFeeOrBroadcast": true,
+              "exactIdCannotReplay": true
+            },
+            {
+              "mode": "after-end",
+              "kind": "rgb-output",
+              "txid": "851c8082bdf760d943e056d946a3f08a23ec407a0a9baeeb128053452201a00b",
+              "originalStage": "submitting",
+              "recoveredStage": "submitted",
+              "confirmations": 3,
+              "noAdditionalEnd": true
+            },
+            {
+              "mode": "before-end",
+              "kind": "btc-send",
+              "txid": "412e1595905f3f522fb3bef70a908c99e99737e092123052809d6053af8460d1",
+              "originalStage": "declined",
+              "exactIdCannotReplay": true,
+              "noFeeOrBroadcast": true
+            },
+            {
+              "mode": "after-end",
+              "kind": "btc-send",
+              "txid": "02a7ee5728690bbf0a985f3d84d34e43d3ae5c4da72292e57b344f8cb82c966b",
+              "originalStage": "submitting",
+              "exactIdCannotReplay": true,
+              "recoveredStage": "submitted",
+              "noAdditionalEnd": true
+            }
+          ],
+          "fundingTxid": "f1cc8e761de4a260ffa209eaff91915c12adbf192754d43fdf84e54979d1766b",
+          "forwardedEnd": [
+            "createUtxosEnd",
+            "sendBtcEnd"
+          ],
+          "positiveLiveAborts": [
+            "3627bb1969c65147a2997d450b456f4a144ec5e4d3cecad3b008bd1aaa49d55a",
+            "37bc868c4c225fcbfd8f09e2cfda3c6d99222c0da398b108a3ef5d6dc312d1cb",
+            "412e1595905f3f522fb3bef70a908c99e99737e092123052809d6053af8460d1"
+          ]
+        }
+      ]
+    },
+    "fundedRoutes": {
+      "node": {
+        "Arbitrum": {
+          "runtime": "node",
+          "version": "3.0.0-rc.3",
+          "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+          "nativeSha256": "9752dc2fc7aa51dbbf506272769366d84d8957e65a53caad1b3dd08416e39e0d",
+          "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+          "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+          "payout": {
+            "version": 1,
+            "destinationChainId": 42161,
+            "dstEid": 0,
+            "recipient": "0x2222222222222222222222222222222222222222"
+          },
+          "commitment": "0x610f4b627466e94905912b02207cc75dee89781a974de04c9d5422be1540e39f",
+          "txid": "4dece737745b6c9c74d9a23fc5beeac3278c1837201953ba84d06fdc7bb4af6d",
+          "confirmations": 6,
+          "proofBytes": 3823,
+          "proofSha256": "1fc9a13735a5adfd2b23f24a209532376b3dab92ec6d9958a2e23b566c2f9037",
+          "verification": {
+            "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+            "txid": "4dece737745b6c9c74d9a23fc5beeac3278c1837201953ba84d06fdc7bb4af6d",
+            "amount": "100000",
+            "commitment": "610f4b627466e94905912b02207cc75dee89781a974de04c9d5422be1540e39f",
+            "burnOpId": "630699f9b8c5a85bd89e31aa56a7f6f50682aded21396e0179266729ca6999ef",
+            "validation": {
+              "consignmentId": "rgb:csg:psNjH8xR-HP6_r6F-DOjcXZu-_3QX5Zw-G3F6jcq-MV0kUt4#fame-polka-barbara",
+              "isTransfer": true,
+              "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+              "assetSchema": "Bfa",
+              "safeHeight": 955,
+              "witnesses": [
+                {
+                  "txid": "087a049ca47d672869afff4b4faaa262423b31f7eea3c8d2fcfa011ec15607ee",
+                  "status": {
+                    "mined": {
+                      "height": 946,
+                      "timestamp": 1795177195
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "4dece737745b6c9c74d9a23fc5beeac3278c1837201953ba84d06fdc7bb4af6d",
+                  "status": {
+                    "mined": {
+                      "height": 952,
+                      "timestamp": 1795177200
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "8a3673aba41ae5dfac53556636f7eaeadbc1808c1e7a3b08e8568849958b05fe",
+                  "status": {
+                    "mined": {
+                      "height": 940,
+                      "timestamp": 1795177190
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "aa3cc3b1990cb327ffa08966f4c45cb3987f4f88958dfa0806f5d547e00aa3c8",
+                  "status": {
+                    "mined": {
+                      "height": 937,
+                      "timestamp": 1795177187
+                    }
+                  },
+                  "fromConsignment": false
+                }
+              ],
+              "warnings": []
+            },
+            "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+            "payoutExecuted": false,
+            "sha256": "1fc9a13735a5adfd2b23f24a209532376b3dab92ec6d9958a2e23b566c2f9037",
+            "issuerSha256": "a327c3a6d9cf0fb43c7f188d3ff79e773239c2033b37626200c79c03724a551f"
+          },
+          "processRestarts": 4,
+          "exactRequestRecoveredWithoutNativeReplay": true,
+          "foreignTopicProofDenied": true,
+          "localOnly": true
+        },
+        "Ethereum": {
+          "runtime": "node",
+          "version": "3.0.0-rc.3",
+          "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+          "nativeSha256": "9752dc2fc7aa51dbbf506272769366d84d8957e65a53caad1b3dd08416e39e0d",
+          "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+          "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+          "payout": {
+            "version": 1,
+            "destinationChainId": 1,
+            "dstEid": 30101,
+            "recipient": "0x2222222222222222222222222222222222222222"
+          },
+          "commitment": "0x9274beba7130d3f8a4ef95c5c4c555616718050c688f8478e23f8131762a9537",
+          "txid": "087a049ca47d672869afff4b4faaa262423b31f7eea3c8d2fcfa011ec15607ee",
+          "confirmations": 6,
+          "proofBytes": 3166,
+          "proofSha256": "64aab6cca20af38feaa156d0d135a4884ef05b492fc19ad1b8d729d439570bf5",
+          "verification": {
+            "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+            "txid": "087a049ca47d672869afff4b4faaa262423b31f7eea3c8d2fcfa011ec15607ee",
+            "amount": "100000",
+            "commitment": "9274beba7130d3f8a4ef95c5c4c555616718050c688f8478e23f8131762a9537",
+            "burnOpId": "2942b0bf72cc0c91409c1fe8f97286e29e4278860cecc60673d86386f0265b46",
+            "validation": {
+              "consignmentId": "rgb:csg:0LbQrKrm-7_HrTyO-VDKhbP9-0oDiLzQ-e8kIMaT-osAe3tc#easy-sonic-quiz",
+              "isTransfer": true,
+              "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+              "assetSchema": "Bfa",
+              "safeHeight": 949,
+              "witnesses": [
+                {
+                  "txid": "087a049ca47d672869afff4b4faaa262423b31f7eea3c8d2fcfa011ec15607ee",
+                  "status": {
+                    "mined": {
+                      "height": 946,
+                      "timestamp": 1795177195
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "8a3673aba41ae5dfac53556636f7eaeadbc1808c1e7a3b08e8568849958b05fe",
+                  "status": {
+                    "mined": {
+                      "height": 940,
+                      "timestamp": 1795177190
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "aa3cc3b1990cb327ffa08966f4c45cb3987f4f88958dfa0806f5d547e00aa3c8",
+                  "status": {
+                    "mined": {
+                      "height": 937,
+                      "timestamp": 1795177187
+                    }
+                  },
+                  "fromConsignment": false
+                }
+              ],
+              "warnings": []
+            },
+            "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+            "payoutExecuted": false,
+            "sha256": "64aab6cca20af38feaa156d0d135a4884ef05b492fc19ad1b8d729d439570bf5",
+            "issuerSha256": "a327c3a6d9cf0fb43c7f188d3ff79e773239c2033b37626200c79c03724a551f"
+          },
+          "processRestarts": 3,
+          "exactRequestRecoveredWithoutNativeReplay": true,
+          "foreignTopicProofDenied": true,
+          "localOnly": true
+        },
+        "Polygon": {
+          "runtime": "node",
+          "version": "3.0.0-rc.3",
+          "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+          "nativeSha256": "9752dc2fc7aa51dbbf506272769366d84d8957e65a53caad1b3dd08416e39e0d",
+          "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+          "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+          "payout": {
+            "version": 1,
+            "destinationChainId": 137,
+            "dstEid": 30109,
+            "recipient": "0x2222222222222222222222222222222222222222"
+          },
+          "commitment": "0xa37aee7d1440eef325ef2b3ca5a85721463b4cad8174214d32d7f4f56bb3cf80",
+          "txid": "8a3673aba41ae5dfac53556636f7eaeadbc1808c1e7a3b08e8568849958b05fe",
+          "confirmations": 6,
+          "proofBytes": 2495,
+          "proofSha256": "59dcfee8f131989fee8d6e669e3c718d238fda9f06b12d8ab053b1b54dd23426",
+          "verification": {
+            "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+            "txid": "8a3673aba41ae5dfac53556636f7eaeadbc1808c1e7a3b08e8568849958b05fe",
+            "amount": "100000",
+            "commitment": "a37aee7d1440eef325ef2b3ca5a85721463b4cad8174214d32d7f4f56bb3cf80",
+            "burnOpId": "a8fb01e9b1521a527e462f31e0f0f544b8d57608164cb12980d51c69d232075b",
+            "validation": {
+              "consignmentId": "rgb:csg:YDjUZvAN-IF0Ou4D-0cEFnmc-u3LUB~8-RvNuEuu-A3FpaYw#oscar-engine-analog",
+              "isTransfer": true,
+              "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+              "assetSchema": "Bfa",
+              "safeHeight": 943,
+              "witnesses": [
+                {
+                  "txid": "8a3673aba41ae5dfac53556636f7eaeadbc1808c1e7a3b08e8568849958b05fe",
+                  "status": {
+                    "mined": {
+                      "height": 940,
+                      "timestamp": 1795177190
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "aa3cc3b1990cb327ffa08966f4c45cb3987f4f88958dfa0806f5d547e00aa3c8",
+                  "status": {
+                    "mined": {
+                      "height": 937,
+                      "timestamp": 1795177187
+                    }
+                  },
+                  "fromConsignment": false
+                }
+              ],
+              "warnings": []
+            },
+            "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+            "payoutExecuted": false,
+            "sha256": "59dcfee8f131989fee8d6e669e3c718d238fda9f06b12d8ab053b1b54dd23426",
+            "issuerSha256": "a327c3a6d9cf0fb43c7f188d3ff79e773239c2033b37626200c79c03724a551f"
+          },
+          "processRestarts": 2,
+          "exactRequestRecoveredWithoutNativeReplay": true,
+          "foreignTopicProofDenied": true,
+          "localOnly": true
+        },
+        "Plasma": {
+          "runtime": "node",
+          "version": "3.0.0-rc.3",
+          "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+          "nativeSha256": "9752dc2fc7aa51dbbf506272769366d84d8957e65a53caad1b3dd08416e39e0d",
+          "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+          "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+          "payout": {
+            "version": 1,
+            "destinationChainId": 9745,
+            "dstEid": 30383,
+            "recipient": "0x2222222222222222222222222222222222222222"
+          },
+          "commitment": "0xf32c3a9fda81984217f0f0c6f222aff38d62184c3b1deb3cdf55c5466c9adb79",
+          "txid": "c81e9077fab5a487948202018745c93d5b90ea140d8bb0d055529e06ba9b7882",
+          "confirmations": 6,
+          "proofBytes": 4494,
+          "proofSha256": "4a8a15c270ae681dd7c9398d95353e959456bc60aa2d13f44bfbe9d6a34463fc",
+          "verification": {
+            "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+            "txid": "c81e9077fab5a487948202018745c93d5b90ea140d8bb0d055529e06ba9b7882",
+            "amount": "100000",
+            "commitment": "f32c3a9fda81984217f0f0c6f222aff38d62184c3b1deb3cdf55c5466c9adb79",
+            "burnOpId": "79dc01eeb5ac52c77f8a6bef68eb641fa0a29408ac104e0888432301f39c214a",
+            "validation": {
+              "consignmentId": "rgb:csg:YAjF2bd5-xDAScSP-aztlnlv-rKKROjv-WSNqhP5-szF2ZTM#sonic-size-gregory",
+              "isTransfer": true,
+              "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+              "assetSchema": "Bfa",
+              "safeHeight": 961,
+              "witnesses": [
+                {
+                  "txid": "087a049ca47d672869afff4b4faaa262423b31f7eea3c8d2fcfa011ec15607ee",
+                  "status": {
+                    "mined": {
+                      "height": 946,
+                      "timestamp": 1795177195
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "4dece737745b6c9c74d9a23fc5beeac3278c1837201953ba84d06fdc7bb4af6d",
+                  "status": {
+                    "mined": {
+                      "height": 952,
+                      "timestamp": 1795177200
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "8a3673aba41ae5dfac53556636f7eaeadbc1808c1e7a3b08e8568849958b05fe",
+                  "status": {
+                    "mined": {
+                      "height": 940,
+                      "timestamp": 1795177190
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "aa3cc3b1990cb327ffa08966f4c45cb3987f4f88958dfa0806f5d547e00aa3c8",
+                  "status": {
+                    "mined": {
+                      "height": 937,
+                      "timestamp": 1795177187
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "c81e9077fab5a487948202018745c93d5b90ea140d8bb0d055529e06ba9b7882",
+                  "status": {
+                    "mined": {
+                      "height": 958,
+                      "timestamp": 1795177206
+                    }
+                  },
+                  "fromConsignment": false
+                }
+              ],
+              "warnings": []
+            },
+            "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+            "payoutExecuted": false,
+            "sha256": "4a8a15c270ae681dd7c9398d95353e959456bc60aa2d13f44bfbe9d6a34463fc",
+            "issuerSha256": "a327c3a6d9cf0fb43c7f188d3ff79e773239c2033b37626200c79c03724a551f"
+          },
+          "processRestarts": 5,
+          "exactRequestRecoveredWithoutNativeReplay": true,
+          "foreignTopicProofDenied": true,
+          "localOnly": true
+        },
+        "Tron": {
+          "runtime": "node",
+          "version": "3.0.0-rc.3",
+          "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+          "nativeSha256": "9752dc2fc7aa51dbbf506272769366d84d8957e65a53caad1b3dd08416e39e0d",
+          "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+          "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+          "payout": {
+            "version": 1,
+            "destinationChainId": 728126428,
+            "dstEid": 30420,
+            "recipient": "0x413333333333333333333333333333333333333333"
+          },
+          "commitment": "0x60c369ce30870783c2a8cee9e6018e78650ad4787c2e898c05c35cb85179eac0",
+          "txid": "25bb53b4c5690734090a6b97d30cfe49f2c44b4763fdadeab42552aedc03e35e",
+          "confirmations": 6,
+          "proofBytes": 5165,
+          "proofSha256": "108ca348b2fc5002c36d2b6a7be4461ca40d9eaacaff8cf7b2a68ad4bfdeaaf1",
+          "verification": {
+            "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+            "txid": "25bb53b4c5690734090a6b97d30cfe49f2c44b4763fdadeab42552aedc03e35e",
+            "amount": "100000",
+            "commitment": "60c369ce30870783c2a8cee9e6018e78650ad4787c2e898c05c35cb85179eac0",
+            "burnOpId": "6739d4ec4ab73fc9c131815525c472d1a6a1963aa5a45246c16bf6d74fa0555f",
+            "validation": {
+              "consignmentId": "rgb:csg:lyvpf3QJ-STJZeKE-JOmJBzh-pBgPcvj-idmaLy2-v0kujtM#buffalo-studio-complex",
+              "isTransfer": true,
+              "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+              "assetSchema": "Bfa",
+              "safeHeight": 967,
+              "witnesses": [
+                {
+                  "txid": "087a049ca47d672869afff4b4faaa262423b31f7eea3c8d2fcfa011ec15607ee",
+                  "status": {
+                    "mined": {
+                      "height": 946,
+                      "timestamp": 1795177195
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "25bb53b4c5690734090a6b97d30cfe49f2c44b4763fdadeab42552aedc03e35e",
+                  "status": {
+                    "mined": {
+                      "height": 964,
+                      "timestamp": 1795177211
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "4dece737745b6c9c74d9a23fc5beeac3278c1837201953ba84d06fdc7bb4af6d",
+                  "status": {
+                    "mined": {
+                      "height": 952,
+                      "timestamp": 1795177200
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "8a3673aba41ae5dfac53556636f7eaeadbc1808c1e7a3b08e8568849958b05fe",
+                  "status": {
+                    "mined": {
+                      "height": 940,
+                      "timestamp": 1795177190
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "aa3cc3b1990cb327ffa08966f4c45cb3987f4f88958dfa0806f5d547e00aa3c8",
+                  "status": {
+                    "mined": {
+                      "height": 937,
+                      "timestamp": 1795177187
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "c81e9077fab5a487948202018745c93d5b90ea140d8bb0d055529e06ba9b7882",
+                  "status": {
+                    "mined": {
+                      "height": 958,
+                      "timestamp": 1795177206
+                    }
+                  },
+                  "fromConsignment": false
+                }
+              ],
+              "warnings": []
+            },
+            "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+            "payoutExecuted": false,
+            "sha256": "108ca348b2fc5002c36d2b6a7be4461ca40d9eaacaff8cf7b2a68ad4bfdeaaf1",
+            "issuerSha256": "a327c3a6d9cf0fb43c7f188d3ff79e773239c2033b37626200c79c03724a551f"
+          },
+          "processRestarts": 6,
+          "exactRequestRecoveredWithoutNativeReplay": true,
+          "foreignTopicProofDenied": true,
+          "localOnly": true
+        }
+      },
+      "bare": {
+        "Arbitrum": {
+          "runtime": "bare",
+          "version": "3.0.0-rc.3",
+          "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+          "nativeSha256": "2bfdfadf37def7692eb1ebfc2059931e86417d8d8f76047450bcce4089ecac6c",
+          "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+          "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+          "payout": {
+            "version": 1,
+            "destinationChainId": 42161,
+            "dstEid": 0,
+            "recipient": "0x2222222222222222222222222222222222222222"
+          },
+          "commitment": "0x610f4b627466e94905912b02207cc75dee89781a974de04c9d5422be1540e39f",
+          "txid": "15b3c8cbb040b9f1c0080035ad9f9df3fa5ef95ac0e766f02ff93dd45633460a",
+          "confirmations": 6,
+          "proofBytes": 3823,
+          "proofSha256": "99aa1e1bb9cce4adcc706b495492685201a7d7a56c27320cb5ffd60c46551821",
+          "verification": {
+            "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+            "txid": "15b3c8cbb040b9f1c0080035ad9f9df3fa5ef95ac0e766f02ff93dd45633460a",
+            "amount": "100000",
+            "commitment": "610f4b627466e94905912b02207cc75dee89781a974de04c9d5422be1540e39f",
+            "burnOpId": "0dde509ab8a18743dd87f7db80e01328e63601fc78179012961b8d54556a74d2",
+            "validation": {
+              "consignmentId": "rgb:csg:7zWXKQMp-s_v9jQ~-0W1kqWm-a4XzpZC-hhihJOa-J8fEZXU#orange-fruit-hotel",
+              "isTransfer": true,
+              "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+              "assetSchema": "Bfa",
+              "safeHeight": 916,
+              "witnesses": [
+                {
+                  "txid": "15b3c8cbb040b9f1c0080035ad9f9df3fa5ef95ac0e766f02ff93dd45633460a",
+                  "status": {
+                    "mined": {
+                      "height": 913,
+                      "timestamp": 1795177161
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "3af38e04d3f101c6bd949033ed35f27b704d51543c11855843f6a3df09486fb0",
+                  "status": {
+                    "mined": {
+                      "height": 901,
+                      "timestamp": 1795177150
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "581f93a6ecf095686f0416806a77b20e787eed1b5dce54cef3a13378b8885740",
+                  "status": {
+                    "mined": {
+                      "height": 898,
+                      "timestamp": 1795177148
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "ca4e3fbeda45155043c2344314857eb5fd4989bdc0162972c61a736e237e70fa",
+                  "status": {
+                    "mined": {
+                      "height": 907,
+                      "timestamp": 1795177156
+                    }
+                  },
+                  "fromConsignment": false
+                }
+              ],
+              "warnings": []
+            },
+            "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+            "payoutExecuted": false,
+            "sha256": "99aa1e1bb9cce4adcc706b495492685201a7d7a56c27320cb5ffd60c46551821",
+            "issuerSha256": "a327c3a6d9cf0fb43c7f188d3ff79e773239c2033b37626200c79c03724a551f"
+          },
+          "processRestarts": 4,
+          "exactRequestRecoveredWithoutNativeReplay": true,
+          "foreignTopicProofDenied": true,
+          "localOnly": true
+        },
+        "Ethereum": {
+          "runtime": "bare",
+          "version": "3.0.0-rc.3",
+          "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+          "nativeSha256": "2bfdfadf37def7692eb1ebfc2059931e86417d8d8f76047450bcce4089ecac6c",
+          "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+          "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+          "payout": {
+            "version": 1,
+            "destinationChainId": 1,
+            "dstEid": 30101,
+            "recipient": "0x2222222222222222222222222222222222222222"
+          },
+          "commitment": "0x9274beba7130d3f8a4ef95c5c4c555616718050c688f8478e23f8131762a9537",
+          "txid": "ca4e3fbeda45155043c2344314857eb5fd4989bdc0162972c61a736e237e70fa",
+          "confirmations": 6,
+          "proofBytes": 3166,
+          "proofSha256": "28a0d76cb1037f7b1611e94dd969945c9372f48916789d488650117dcf1f414a",
+          "verification": {
+            "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+            "txid": "ca4e3fbeda45155043c2344314857eb5fd4989bdc0162972c61a736e237e70fa",
+            "amount": "100000",
+            "commitment": "9274beba7130d3f8a4ef95c5c4c555616718050c688f8478e23f8131762a9537",
+            "burnOpId": "1bddf474d8c5e47b76003a4323721a5bc8b140c9267994daa00d771b9919e480",
+            "validation": {
+              "consignmentId": "rgb:csg:MUVjDcTk-bqzM6GE-74Uz5Sa-ZhbPCn~-LtyEFc2-j7jCH7E#dexter-orlando-torch",
+              "isTransfer": true,
+              "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+              "assetSchema": "Bfa",
+              "safeHeight": 910,
+              "witnesses": [
+                {
+                  "txid": "3af38e04d3f101c6bd949033ed35f27b704d51543c11855843f6a3df09486fb0",
+                  "status": {
+                    "mined": {
+                      "height": 901,
+                      "timestamp": 1795177150
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "581f93a6ecf095686f0416806a77b20e787eed1b5dce54cef3a13378b8885740",
+                  "status": {
+                    "mined": {
+                      "height": 898,
+                      "timestamp": 1795177148
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "ca4e3fbeda45155043c2344314857eb5fd4989bdc0162972c61a736e237e70fa",
+                  "status": {
+                    "mined": {
+                      "height": 907,
+                      "timestamp": 1795177156
+                    }
+                  },
+                  "fromConsignment": false
+                }
+              ],
+              "warnings": []
+            },
+            "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+            "payoutExecuted": false,
+            "sha256": "28a0d76cb1037f7b1611e94dd969945c9372f48916789d488650117dcf1f414a",
+            "issuerSha256": "a327c3a6d9cf0fb43c7f188d3ff79e773239c2033b37626200c79c03724a551f"
+          },
+          "processRestarts": 3,
+          "exactRequestRecoveredWithoutNativeReplay": true,
+          "foreignTopicProofDenied": true,
+          "localOnly": true
+        },
+        "Polygon": {
+          "runtime": "bare",
+          "version": "3.0.0-rc.3",
+          "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+          "nativeSha256": "2bfdfadf37def7692eb1ebfc2059931e86417d8d8f76047450bcce4089ecac6c",
+          "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+          "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+          "payout": {
+            "version": 1,
+            "destinationChainId": 137,
+            "dstEid": 30109,
+            "recipient": "0x2222222222222222222222222222222222222222"
+          },
+          "commitment": "0xa37aee7d1440eef325ef2b3ca5a85721463b4cad8174214d32d7f4f56bb3cf80",
+          "txid": "3af38e04d3f101c6bd949033ed35f27b704d51543c11855843f6a3df09486fb0",
+          "confirmations": 6,
+          "proofBytes": 2495,
+          "proofSha256": "f5436279652739830bb022e553f8c21a7d6d8496ba382772f80ede95502bc926",
+          "verification": {
+            "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+            "txid": "3af38e04d3f101c6bd949033ed35f27b704d51543c11855843f6a3df09486fb0",
+            "amount": "100000",
+            "commitment": "a37aee7d1440eef325ef2b3ca5a85721463b4cad8174214d32d7f4f56bb3cf80",
+            "burnOpId": "a404006ed010b2605dd123b375568016f4a7dd51d03d9d7fda496fb4c553f46f",
+            "validation": {
+              "consignmentId": "rgb:csg:Sl4w9ETN-D_f56mg-GQ0OYtH-jcBxG3f-ghhGxps-k73s3z8#grid-balsa-target",
+              "isTransfer": true,
+              "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+              "assetSchema": "Bfa",
+              "safeHeight": 904,
+              "witnesses": [
+                {
+                  "txid": "3af38e04d3f101c6bd949033ed35f27b704d51543c11855843f6a3df09486fb0",
+                  "status": {
+                    "mined": {
+                      "height": 901,
+                      "timestamp": 1795177150
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "581f93a6ecf095686f0416806a77b20e787eed1b5dce54cef3a13378b8885740",
+                  "status": {
+                    "mined": {
+                      "height": 898,
+                      "timestamp": 1795177148
+                    }
+                  },
+                  "fromConsignment": false
+                }
+              ],
+              "warnings": []
+            },
+            "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+            "payoutExecuted": false,
+            "sha256": "f5436279652739830bb022e553f8c21a7d6d8496ba382772f80ede95502bc926",
+            "issuerSha256": "a327c3a6d9cf0fb43c7f188d3ff79e773239c2033b37626200c79c03724a551f"
+          },
+          "processRestarts": 2,
+          "exactRequestRecoveredWithoutNativeReplay": true,
+          "foreignTopicProofDenied": true,
+          "localOnly": true
+        },
+        "Plasma": {
+          "runtime": "bare",
+          "version": "3.0.0-rc.3",
+          "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+          "nativeSha256": "2bfdfadf37def7692eb1ebfc2059931e86417d8d8f76047450bcce4089ecac6c",
+          "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+          "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+          "payout": {
+            "version": 1,
+            "destinationChainId": 9745,
+            "dstEid": 30383,
+            "recipient": "0x2222222222222222222222222222222222222222"
+          },
+          "commitment": "0xf32c3a9fda81984217f0f0c6f222aff38d62184c3b1deb3cdf55c5466c9adb79",
+          "txid": "ea17861f67ec1e8d39f8b799f33d1e689c39bce183a3c662247e0edf4f351898",
+          "confirmations": 6,
+          "proofBytes": 4494,
+          "proofSha256": "2723dd85cff9668b6280805df85222d0a4c2119b7e597e1a24fb6cfa123ed7e1",
+          "verification": {
+            "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+            "txid": "ea17861f67ec1e8d39f8b799f33d1e689c39bce183a3c662247e0edf4f351898",
+            "amount": "100000",
+            "commitment": "f32c3a9fda81984217f0f0c6f222aff38d62184c3b1deb3cdf55c5466c9adb79",
+            "burnOpId": "d42e29aaa4c432f12e820557951368e550c22a9bc10fbe00b97317fa990cc4fc",
+            "validation": {
+              "consignmentId": "rgb:csg:iv6yhekY-2YUn1EN-gWcg5~m-zlmcPBg-v~7H7Kn-F1edbjg#cyclone-habitat-first",
+              "isTransfer": true,
+              "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+              "assetSchema": "Bfa",
+              "safeHeight": 922,
+              "witnesses": [
+                {
+                  "txid": "15b3c8cbb040b9f1c0080035ad9f9df3fa5ef95ac0e766f02ff93dd45633460a",
+                  "status": {
+                    "mined": {
+                      "height": 913,
+                      "timestamp": 1795177161
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "3af38e04d3f101c6bd949033ed35f27b704d51543c11855843f6a3df09486fb0",
+                  "status": {
+                    "mined": {
+                      "height": 901,
+                      "timestamp": 1795177150
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "581f93a6ecf095686f0416806a77b20e787eed1b5dce54cef3a13378b8885740",
+                  "status": {
+                    "mined": {
+                      "height": 898,
+                      "timestamp": 1795177148
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "ca4e3fbeda45155043c2344314857eb5fd4989bdc0162972c61a736e237e70fa",
+                  "status": {
+                    "mined": {
+                      "height": 907,
+                      "timestamp": 1795177156
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "ea17861f67ec1e8d39f8b799f33d1e689c39bce183a3c662247e0edf4f351898",
+                  "status": {
+                    "mined": {
+                      "height": 919,
+                      "timestamp": 1795177166
+                    }
+                  },
+                  "fromConsignment": false
+                }
+              ],
+              "warnings": []
+            },
+            "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+            "payoutExecuted": false,
+            "sha256": "2723dd85cff9668b6280805df85222d0a4c2119b7e597e1a24fb6cfa123ed7e1",
+            "issuerSha256": "a327c3a6d9cf0fb43c7f188d3ff79e773239c2033b37626200c79c03724a551f"
+          },
+          "processRestarts": 5,
+          "exactRequestRecoveredWithoutNativeReplay": true,
+          "foreignTopicProofDenied": true,
+          "localOnly": true
+        },
+        "Tron": {
+          "runtime": "bare",
+          "version": "3.0.0-rc.3",
+          "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+          "nativeSha256": "2bfdfadf37def7692eb1ebfc2059931e86417d8d8f76047450bcce4089ecac6c",
+          "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+          "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+          "payout": {
+            "version": 1,
+            "destinationChainId": 728126428,
+            "dstEid": 30420,
+            "recipient": "0x413333333333333333333333333333333333333333"
+          },
+          "commitment": "0x60c369ce30870783c2a8cee9e6018e78650ad4787c2e898c05c35cb85179eac0",
+          "txid": "f97a7f30e860b1832a072d523034d91902a42c40658e2c028a4c0fa8d7d11bb4",
+          "confirmations": 6,
+          "proofBytes": 5165,
+          "proofSha256": "4080ba3aedd5f2eca7dccaca6930a8b8b39d2a4c438677e98a61ff115c0c5d1c",
+          "verification": {
+            "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+            "txid": "f97a7f30e860b1832a072d523034d91902a42c40658e2c028a4c0fa8d7d11bb4",
+            "amount": "100000",
+            "commitment": "60c369ce30870783c2a8cee9e6018e78650ad4787c2e898c05c35cb85179eac0",
+            "burnOpId": "fb8e656b0d22c296efb73fa519830aa32e03fedc867c73e88670623d18747ebb",
+            "validation": {
+              "consignmentId": "rgb:csg:K_kpQAfu-F3f10KF-LQ3FBE3-Z5CrKYy-0RdP5g1-qN~6iWk#morning-vitamin-vortex",
+              "isTransfer": true,
+              "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+              "assetSchema": "Bfa",
+              "safeHeight": 928,
+              "witnesses": [
+                {
+                  "txid": "15b3c8cbb040b9f1c0080035ad9f9df3fa5ef95ac0e766f02ff93dd45633460a",
+                  "status": {
+                    "mined": {
+                      "height": 913,
+                      "timestamp": 1795177161
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "3af38e04d3f101c6bd949033ed35f27b704d51543c11855843f6a3df09486fb0",
+                  "status": {
+                    "mined": {
+                      "height": 901,
+                      "timestamp": 1795177150
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "581f93a6ecf095686f0416806a77b20e787eed1b5dce54cef3a13378b8885740",
+                  "status": {
+                    "mined": {
+                      "height": 898,
+                      "timestamp": 1795177148
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "ca4e3fbeda45155043c2344314857eb5fd4989bdc0162972c61a736e237e70fa",
+                  "status": {
+                    "mined": {
+                      "height": 907,
+                      "timestamp": 1795177156
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "ea17861f67ec1e8d39f8b799f33d1e689c39bce183a3c662247e0edf4f351898",
+                  "status": {
+                    "mined": {
+                      "height": 919,
+                      "timestamp": 1795177166
+                    }
+                  },
+                  "fromConsignment": false
+                },
+                {
+                  "txid": "f97a7f30e860b1832a072d523034d91902a42c40658e2c028a4c0fa8d7d11bb4",
+                  "status": {
+                    "mined": {
+                      "height": 925,
+                      "timestamp": 1795177171
+                    }
+                  },
+                  "fromConsignment": false
+                }
+              ],
+              "warnings": []
+            },
+            "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+            "payoutExecuted": false,
+            "sha256": "4080ba3aedd5f2eca7dccaca6930a8b8b39d2a4c438677e98a61ff115c0c5d1c",
+            "issuerSha256": "a327c3a6d9cf0fb43c7f188d3ff79e773239c2033b37626200c79c03724a551f"
+          },
+          "processRestarts": 6,
+          "exactRequestRecoveredWithoutNativeReplay": true,
+          "foreignTopicProofDenied": true,
+          "localOnly": true
+        }
+      }
+    },
+    "mints": {
+      "node": {
+        "runtime": "node",
+        "version": "3.0.0-rc.3",
+        "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+        "nativeSha256": "9752dc2fc7aa51dbbf506272769366d84d8957e65a53caad1b3dd08416e39e0d",
+        "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+        "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+        "txid": "aa3cc3b1990cb327ffa08966f4c45cb3987f4f88958dfa0806f5d547e00aa3c8",
+        "confirmations": 3,
+        "firstReceive": "generic-blinded-no-preregistration",
+        "routes": [
+          {
+            "chainId": "eip155:137",
+            "dstEid": 30109
+          },
+          {
+            "chainId": "eip155:1",
+            "dstEid": 30101
+          },
+          {
+            "chainId": "eip155:42161",
+            "dstEid": 0
+          },
+          {
+            "chainId": "eip155:9745",
+            "dstEid": 30383
+          },
+          {
+            "chainId": "tron:728126428",
+            "dstEid": 30420
+          }
+        ]
+      },
+      "bare": {
+        "runtime": "bare",
+        "version": "3.0.0-rc.3",
+        "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+        "nativeSha256": "2bfdfadf37def7692eb1ebfc2059931e86417d8d8f76047450bcce4089ecac6c",
+        "sourceSha256": "18956dc8145eb83b9be365acffed8fd6bdd8928a618eac6f2571367ca06c7769",
+        "assetId": "rgb:dRAyfDdm-MS2Yt6K-mfwu4~4-MlO8h67-1gvMZDA-ylBqkuA",
+        "txid": "581f93a6ecf095686f0416806a77b20e787eed1b5dce54cef3a13378b8885740",
+        "confirmations": 3,
+        "firstReceive": "generic-blinded-no-preregistration",
+        "routes": [
+          {
+            "chainId": "eip155:137",
+            "dstEid": 30109
+          },
+          {
+            "chainId": "eip155:1",
+            "dstEid": 30101
+          },
+          {
+            "chainId": "eip155:42161",
+            "dstEid": 0
+          },
+          {
+            "chainId": "eip155:9745",
+            "dstEid": 30383
+          },
+          {
+            "chainId": "tron:728126428",
+            "dstEid": 30420
+          }
+        ]
+      }
+    },
+    "scopeLimitations": [
+      "All financial operations use isolated Regtest/Anvil host consumers, not hosted Dev or external payouts.",
+      "The deterministic submitting-write shutdown race is reproduced and repaired; it is not established as the cause of the earlier Dev APK output failure.",
+      "Consumed or unavailable guards, ambiguous abort replies and failed durable acknowledgement preserve unknown outcomes; no mutation is automatically replayed.",
+      "Application APK acceptance is recorded separately."
+    ]
   }
 }
