@@ -3,7 +3,28 @@
   "source": "567e5b8308f70a6242137475394be5a82fc15c95",
   "overlayTree": "8a887b28bd12625e36cd7cfe2af067ff766ece1d",
   "protocol": 2,
-  "targets": {},
+  "targets": {
+    "android-arm64": {
+      "byteLength": 67204768,
+      "sha256": "caa5b3d2efe2c2e7e2f8fea55b66ea68e0e5264cff69eaed180aa5080e7b2330",
+      "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.3.so"
+    },
+    "android-x64": {
+      "byteLength": 68991032,
+      "sha256": "4fed840e7af6ba514821768986d3e2d13a90ea571769466354a9ef664c8d70fe",
+      "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.3.so"
+    },
+    "android-arm": {
+      "byteLength": 47509940,
+      "sha256": "a7a9bd121efc38abb05ee0f9cc3ace9a33fde71e155c9fff4054fb52ae8905f8",
+      "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.3.so"
+    },
+    "android-ia32": {
+      "byteLength": 67208564,
+      "sha256": "f678bed6ebb44dc6603d979050223c454e3fe038debe10e006a448d83ee1d051",
+      "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.3.so"
+    }
+  },
   "releaseHold": false,
   "publicationHold": true
 }

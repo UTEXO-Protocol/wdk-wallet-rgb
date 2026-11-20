@@ -1,0 +1,227 @@
+{
+  "sdkVersion": "3.0.0-rc.3",
+  "producerCommit": "5a9f59305b8c7764ee8c489e99370ba17b737d47",
+  "scope": "Local Android build and ABI admission; installed-app execution is a separate scope.",
+  "targets": {
+    "android-arm64": {
+      "sdkProducerCommit": "5a9f59305b8c7764ee8c489e99370ba17b737d47",
+      "pin": {
+        "byteLength": 67204768,
+        "sha256": "caa5b3d2efe2c2e7e2f8fea55b66ea68e0e5264cff69eaed180aa5080e7b2330",
+        "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.3.so"
+      },
+      "target": "aarch64-linux-android",
+      "abi": "arm64-v8a",
+      "minNativeApi": 26,
+      "androidNdk": "28.2.13676358",
+      "rust": "1.94.0",
+      "cargoLockSha256": "1bcf8e27fdc8613beec71ebdf8e4553aab46cca37debad9658ac02a2791900ea",
+      "bindingSourceSha256": "c186f37eb4efc47a7f6ea8c75110e83204a6f792bf84a9be6feb23dc1b95614a",
+      "nativeEngineSha256": "0e64ce2b18618ee8c04f51c86c07ee05bdc3b1c92bedbe4bf5198364e3e7dd1e",
+      "devPolicySha256": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393",
+      "devHostedEnabled": true,
+      "rgb": {
+        "revision": "567e5b8308f70a6242137475394be5a82fc15c95",
+        "integrationTree": "8a887b28bd12625e36cd7cfe2af067ff766ece1d",
+        "features": [
+          "electrum",
+          "esplora",
+          "camel_case",
+          "rgb_fs_store_migration"
+        ]
+      },
+      "loadAlignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "relro": {
+        "sections": [
+          ".dynamic",
+          ".got",
+          ".got.plt"
+        ],
+        "aligned": true
+      },
+      "bindNow": true,
+      "nodelete": true,
+      "nxStack": true,
+      "neededLibraries": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "bareExports": [
+        "bare_get_module_name_v0",
+        "bare_register_module_v0"
+      ]
+    },
+    "android-x64": {
+      "sdkProducerCommit": "5a9f59305b8c7764ee8c489e99370ba17b737d47",
+      "pin": {
+        "byteLength": 68991032,
+        "sha256": "4fed840e7af6ba514821768986d3e2d13a90ea571769466354a9ef664c8d70fe",
+        "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.3.so"
+      },
+      "target": "x86_64-linux-android",
+      "abi": "x86_64",
+      "minNativeApi": 26,
+      "androidNdk": "28.2.13676358",
+      "rust": "1.94.0",
+      "cargoLockSha256": "1bcf8e27fdc8613beec71ebdf8e4553aab46cca37debad9658ac02a2791900ea",
+      "bindingSourceSha256": "c186f37eb4efc47a7f6ea8c75110e83204a6f792bf84a9be6feb23dc1b95614a",
+      "nativeEngineSha256": "0e64ce2b18618ee8c04f51c86c07ee05bdc3b1c92bedbe4bf5198364e3e7dd1e",
+      "devPolicySha256": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393",
+      "devHostedEnabled": true,
+      "rgb": {
+        "revision": "567e5b8308f70a6242137475394be5a82fc15c95",
+        "integrationTree": "8a887b28bd12625e36cd7cfe2af067ff766ece1d",
+        "features": [
+          "electrum",
+          "esplora",
+          "camel_case",
+          "rgb_fs_store_migration"
+        ]
+      },
+      "loadAlignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "relro": {
+        "sections": [
+          ".dynamic",
+          ".got",
+          ".got.plt"
+        ],
+        "aligned": true
+      },
+      "bindNow": true,
+      "nodelete": true,
+      "nxStack": true,
+      "neededLibraries": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "bareExports": [
+        "bare_get_module_name_v0",
+        "bare_register_module_v0"
+      ]
+    },
+    "android-arm": {
+      "sdkProducerCommit": "5a9f59305b8c7764ee8c489e99370ba17b737d47",
+      "pin": {
+        "byteLength": 47509940,
+        "sha256": "a7a9bd121efc38abb05ee0f9cc3ace9a33fde71e155c9fff4054fb52ae8905f8",
+        "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.3.so"
+      },
+      "target": "armv7-linux-androideabi",
+      "abi": "armeabi-v7a",
+      "minNativeApi": 26,
+      "androidNdk": "28.2.13676358",
+      "rust": "1.94.0",
+      "cargoLockSha256": "1bcf8e27fdc8613beec71ebdf8e4553aab46cca37debad9658ac02a2791900ea",
+      "bindingSourceSha256": "c186f37eb4efc47a7f6ea8c75110e83204a6f792bf84a9be6feb23dc1b95614a",
+      "nativeEngineSha256": "0e64ce2b18618ee8c04f51c86c07ee05bdc3b1c92bedbe4bf5198364e3e7dd1e",
+      "devPolicySha256": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393",
+      "devHostedEnabled": true,
+      "rgb": {
+        "revision": "567e5b8308f70a6242137475394be5a82fc15c95",
+        "integrationTree": "8a887b28bd12625e36cd7cfe2af067ff766ece1d",
+        "features": [
+          "electrum",
+          "esplora",
+          "camel_case",
+          "rgb_fs_store_migration"
+        ]
+      },
+      "loadAlignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "relro": {
+        "sections": [
+          ".dynamic",
+          ".got",
+          ".got.plt"
+        ],
+        "aligned": true
+      },
+      "bindNow": true,
+      "nodelete": true,
+      "nxStack": true,
+      "neededLibraries": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "bareExports": [
+        "bare_get_module_name_v0",
+        "bare_register_module_v0"
+      ]
+    },
+    "android-ia32": {
+      "sdkProducerCommit": "5a9f59305b8c7764ee8c489e99370ba17b737d47",
+      "pin": {
+        "byteLength": 67208564,
+        "sha256": "f678bed6ebb44dc6603d979050223c454e3fe038debe10e006a448d83ee1d051",
+        "linkedName": "libutexo__wdk-wallet-rgb.3.0.0-rc.3.so"
+      },
+      "target": "i686-linux-android",
+      "abi": "x86",
+      "minNativeApi": 26,
+      "androidNdk": "28.2.13676358",
+      "rust": "1.94.0",
+      "cargoLockSha256": "1bcf8e27fdc8613beec71ebdf8e4553aab46cca37debad9658ac02a2791900ea",
+      "bindingSourceSha256": "c186f37eb4efc47a7f6ea8c75110e83204a6f792bf84a9be6feb23dc1b95614a",
+      "nativeEngineSha256": "0e64ce2b18618ee8c04f51c86c07ee05bdc3b1c92bedbe4bf5198364e3e7dd1e",
+      "devPolicySha256": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393",
+      "devHostedEnabled": true,
+      "rgb": {
+        "revision": "567e5b8308f70a6242137475394be5a82fc15c95",
+        "integrationTree": "8a887b28bd12625e36cd7cfe2af067ff766ece1d",
+        "features": [
+          "electrum",
+          "esplora",
+          "camel_case",
+          "rgb_fs_store_migration"
+        ]
+      },
+      "loadAlignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "relro": {
+        "sections": [
+          ".dynamic",
+          ".got",
+          ".got.plt"
+        ],
+        "aligned": true
+      },
+      "bindNow": true,
+      "nodelete": true,
+      "nxStack": true,
+      "neededLibraries": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "bareExports": [
+        "bare_get_module_name_v0",
+        "bare_register_module_v0"
+      ]
+    }
+  }
+}
