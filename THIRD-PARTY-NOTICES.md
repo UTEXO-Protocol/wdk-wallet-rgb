@@ -49,8 +49,8 @@ Their MPL text is included in the license collection. The inventory also gives
 the source archive for every registry crate and the exact repository revision
 for every Git dependency. Cargo registry checksums are retained in the two
 locked native dependency graphs identified by the inventory. WDK does not
-modify these dependency source files. The private BFA fork is MIT-licensed; its
-supplied license text and exact source revision are retained in the inventory.
+modify these dependency source files. The public RGB-Tools rgb-lib dependency is MIT-licensed; its supplied license
+text and exact source revision are retained in the inventory.
 
 ## Reproduction
 

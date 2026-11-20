@@ -377,6 +377,11 @@ export class WalletAccountRgb {
 
   isDisposed () { return this.#closed }
   getNetwork () { return this.#config.network }
+  getPublicKeys () {
+    this.#assertOpen()
+    const { network, accountXpubVanilla, accountXpubColored, masterFingerprint } = this.#signer.identity
+    return Object.freeze({ network, accountXpubVanilla, accountXpubColored, masterFingerprint })
+  }
   shutdown () { return this.dispose() }
 
   dispose () {

@@ -1,0 +1,184 @@
+{
+  "sourceCommit": "83c6f654fd8abfaec92d01f153fb08f3050b478d",
+  "auditTool": "cargo-audit-audit 0.22.2",
+  "database": {
+    "advisory-count": 1550,
+    "last-commit": "074ea9a7ed619f511b5b7374c7a97e98d1e98be4",
+    "last-updated": "2026-11-19T17:35:07+01:00"
+  },
+  "graphs": {
+    "node": {
+      "lockfile": "native/Cargo.lock",
+      "lockSha256": "f657009c60ffbc6a9d42b05294f14b5e6a2b4c20252dbf4d8ab2bc91ef2ee072",
+      "findings": [
+        {
+          "id": "RUSTSEC-2026-0346",
+          "package": "rustls",
+          "version": "0.21.12",
+          "title": "`Debug` impls for client session values expose TLS secrets",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0346.html",
+          "patched": [
+            ">=0.23.46"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0349",
+          "package": "rustls",
+          "version": "0.21.12",
+          "title": "Unauthenticated ServerHello can downgrade later connections to classical key exchange",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0349.html",
+          "patched": [
+            ">=0.23.46"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0104",
+          "package": "rustls-webpki",
+          "version": "0.101.7",
+          "title": "Reachable panic in certificate revocation list parsing",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0104.html",
+          "patched": [
+            ">=0.103.13, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.7"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0098",
+          "package": "rustls-webpki",
+          "version": "0.101.7",
+          "title": "Name constraints for URI names were incorrectly accepted",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0098.html",
+          "patched": [
+            ">=0.103.12, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.6"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0099",
+          "package": "rustls-webpki",
+          "version": "0.101.7",
+          "title": "Name constraints were accepted for certificates asserting a wildcard name",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0099.html",
+          "patched": [
+            ">=0.103.12, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.6"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0382",
+          "package": "rustls-webpki",
+          "version": "0.101.7",
+          "title": "Certificate verification may accept distrusted intermediates",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0382.html",
+          "patched": [
+            ">=0.103.16, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.8"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0381",
+          "package": "webpki-roots",
+          "version": "0.25.4",
+          "title": "Bundled root certificates allow trust in distrusted emSign intermediates",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0381.html",
+          "patched": [
+            ">=1.0.10"
+          ]
+        }
+      ],
+      "count": 7,
+      "warnings": [
+        "unmaintained"
+      ],
+      "sqliteVersion": "3.54.1",
+      "libsqlite3SysVersion": "0.40.0"
+    },
+    "bare": {
+      "lockfile": "native/bare/Cargo.lock",
+      "lockSha256": "1bcf8e27fdc8613beec71ebdf8e4553aab46cca37debad9658ac02a2791900ea",
+      "findings": [
+        {
+          "id": "RUSTSEC-2026-0346",
+          "package": "rustls",
+          "version": "0.21.12",
+          "title": "`Debug` impls for client session values expose TLS secrets",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0346.html",
+          "patched": [
+            ">=0.23.46"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0349",
+          "package": "rustls",
+          "version": "0.21.12",
+          "title": "Unauthenticated ServerHello can downgrade later connections to classical key exchange",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0349.html",
+          "patched": [
+            ">=0.23.46"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0104",
+          "package": "rustls-webpki",
+          "version": "0.101.7",
+          "title": "Reachable panic in certificate revocation list parsing",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0104.html",
+          "patched": [
+            ">=0.103.13, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.7"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0098",
+          "package": "rustls-webpki",
+          "version": "0.101.7",
+          "title": "Name constraints for URI names were incorrectly accepted",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0098.html",
+          "patched": [
+            ">=0.103.12, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.6"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0099",
+          "package": "rustls-webpki",
+          "version": "0.101.7",
+          "title": "Name constraints were accepted for certificates asserting a wildcard name",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0099.html",
+          "patched": [
+            ">=0.103.12, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.6"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0382",
+          "package": "rustls-webpki",
+          "version": "0.101.7",
+          "title": "Certificate verification may accept distrusted intermediates",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0382.html",
+          "patched": [
+            ">=0.103.16, <0.104.0-alpha.1",
+            ">=0.104.0-alpha.8"
+          ]
+        },
+        {
+          "id": "RUSTSEC-2026-0381",
+          "package": "webpki-roots",
+          "version": "0.25.4",
+          "title": "Bundled root certificates allow trust in distrusted emSign intermediates",
+          "url": "https://rustsec.org/advisories/RUSTSEC-2026-0381.html",
+          "patched": [
+            ">=1.0.10"
+          ]
+        }
+      ],
+      "count": 7,
+      "warnings": [
+        "unmaintained"
+      ],
+      "sqliteVersion": "3.54.1",
+      "libsqlite3SysVersion": "0.40.0"
+    }
+  },
+  "interpretation": "Seven retained upstream Esplora TLS findings in each graph; no audit suppression or zero-vulnerability native claim. See DEPENDENCY-POLICY.md for configuration prerequisites and relevant certificate-verifier exposure. The former Node SQLite finding is removed by a compatible lock update without source patches."
+}

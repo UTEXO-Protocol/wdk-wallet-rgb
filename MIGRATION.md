@@ -17,7 +17,7 @@ The public configuration and methods are defined in [onchain.d.ts](onchain.d.ts)
 
 ## Wallet data
 
-Create a new, private directory for this engine. Use distinct directories for Mainnet, Public Signet, Dev Signet and Regtest. Do not copy a legacy database into a new directory or remove the directory identity marker to bypass admission. BFA.8 also removed a database migration recorded by earlier BFA.7 candidates; those directories require their original SDK.
+Create a new, private directory for this engine. Use distinct directories for Mainnet, Public Signet, Dev Signet and Regtest. Do not copy a legacy database into a new directory or remove the directory identity marker to bypass admission. Earlier BFA.7/BFA.8 engine directories require their original SDK. The upstream file-codec migration feature does not admit an earlier WDK directory.
 
 For disposable testing, use a fresh wallet. For an existing funded wallet, retain the original SDK and its complete data until funds have been transferred and independently reconciled. This release makes no same-seed, same-address, database-conversion or RGB seed-only recovery guarantee across engines. There is no production wallet migration implementation in this PR.
 
@@ -25,4 +25,4 @@ For disposable testing, use a fresh wallet. For an existing funded wallet, retai
 
 Keep the original operation ID and parameters when reconciling an interrupted send, output setup or burn. Use the corresponding recovery method; do not create a replacement spend merely because a result was lost. Signed-input reservations and operation journals are part of the wallet's financial state. Do not delete them to make an operation retryable.
 
-Standalone contract registration remains unavailable in stock BFA.8. Query `getCapabilities()` before offering asset preregistration. Generic receive can learn a new asset from a validated transfer; it does not register a standalone contract export.
+Standalone contract registration remains unavailable in the pinned public library. Query `getCapabilities()` before offering asset preregistration. Generic receive can learn a new asset from a validated transfer; it does not register a standalone contract export.

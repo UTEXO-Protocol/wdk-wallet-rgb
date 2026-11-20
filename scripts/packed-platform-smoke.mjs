@@ -57,6 +57,14 @@ async function openWallet (network, read) {
   const manager = new WalletManagerRgb(seed, config)
   try {
     const account = await manager.getAccount()
+    const keys = account.getPublicKeys()
+    if (!Object.isFrozen(keys) || keys === account.getPublicKeys() ||
+        keys.network !== config.network || !/^[a-f0-9]{8}$/.test(keys.masterFingerprint) ||
+        !keys.accountXpubVanilla.startsWith(config.network === 'mainnet' ? 'xpub' : 'tpub') ||
+        !keys.accountXpubColored.startsWith(config.network === 'mainnet' ? 'xpub' : 'tpub') ||
+        Object.keys(keys).sort().join(',') !== 'accountXpubColored,accountXpubVanilla,masterFingerprint,network') {
+      throw new Error('Invalid public account identity')
+    }
     if (account.getConnectionStatus() !== 'offline' || await account.getBalance() !== 0n ||
         (await account.listAssets()).length !== 0) throw new Error('Unexpected offline wallet state')
     if (read) {
@@ -97,6 +105,7 @@ try {
   console.log(JSON.stringify({
     target, runtime: bare ? Bare.version : process.version, nativeSha256: sha256,
     checks: ['wrong native hash rejection', 'offline Regtest/Mainnet/Public Signet/Dev/staging open, reads and reopen',
+      'immutable public account keys on all five network profiles',
       'NIA/CFA issuance reaches native and rejects offline on all five network profiles', 'WebRGB issuance excluded']
   }))
 } finally {

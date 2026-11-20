@@ -17,6 +17,6 @@ Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedd
 
 Use a new engine-specific directory and follow [MIGRATION.md](MIGRATION.md) for the API changes. Seed recovery does not reconstruct missing RGB consignments or WDK journals. There is no legacy wallet-directory migration.
 
-Standalone contract registration still awaits a public upstream API and is reported unavailable through capabilities. Automatic VSS restore and Mainnet BFA are not provided. The SDK ships no USDT contract metadata. The stock TLS/SQLite dependency findings are retained under the documented dependency policy, without source patches or audit suppression.
+Standalone contract registration still awaits a public upstream API and is reported unavailable through capabilities. Automatic VSS restore and Mainnet BFA are not provided. The SDK ships no USDT contract metadata. Node and Bare use bundled SQLite 3.54.1. Seven upstream Esplora TLS findings remain under the documented dependency policy, without source patches or audit suppression.
 
 See [QUALIFICATION.md](QUALIFICATION.md) for exact passing test scopes and artifact identities. Mobile build/ABI verification does not establish installed-app acceptance, and local mint/burn fixtures do not establish hosted bridge payouts.

@@ -5,6 +5,7 @@
 - Pin unmodified public RGB-Tools rgb-lib `0.3.0-beta.8` and the locked RGB `0.11.2-rc.2` graph without source overlays.
 - Use SQLx `0.9.1` and bundled SQLite `3.54.1` for Node and Bare; retain and document the upstream Esplora TLS findings.
 - Give this engine a separate wallet directory identity.
+- Expose immutable public account xpubs and fingerprint through `getPublicKeys()`, including while offline.
 - Align the WebRGB facade with `0.1.7`: one native burn destination, assetless first invoices, a separately persisted asset expectation, and actionable receive-output errors.
 - Rebuild Android targets and the qualification host. Other platform artifacts require a separate rebuild before SDK publication.
 

@@ -2,7 +2,7 @@
 
 The addon uses the same watch-only engine as the Node worker. The application owns the seed, transaction review and signer. Builds use unmodified RGB-Tools rgb-lib beta.8 `567e5b8308f70a6242137475394be5a82fc15c95` with stock Electrum and Esplora clients. See the [qualification register](../../QUALIFICATION.md) for current results and dependency advisories.
 
-The SDK requires **Bare 1.37.1 or newer**, including embedded mobile runtimes. The build locks pin `bare@1.37.1`, `bare-runtime@1.37.1` and `bare-headers@1.35.0`. Android symbol qualification uses Bare Kit 3.0.1 with Bare source `32aa0ae69da547f0d0cca011f3e8bcbbfc9f44c3`. An older app runtime must be updated and tested before integrating this candidate.
+The SDK requires **Bare 1.37.1 or newer**, including embedded mobile runtimes. The build locks pin `bare@1.37.1`, `bare-runtime@1.37.1` and `bare-headers@1.35.0`. Android symbol qualification uses Bare Kit 3.1.0 with Bare source `32aa0ae69da547f0d0cca011f3e8bcbbfc9f44c3`. An older app runtime must be updated and tested before integrating this candidate.
 
 ## Supported targets
 
@@ -17,7 +17,7 @@ The [CI workflow](../../.github/workflows/build.yml) builds this matrix and reco
 
 ## Build a desktop package
 
-Run from a clean, committed repository checkout. Install the locked JavaScript dependencies and prepare the private RGB source using an authenticated GitHub CLI (`gh`); preparation invokes `gh auth git-credential`. An exact local source clone can instead be supplied as the preparation script's final argument. Compilation does not apply source patches.
+Run from a clean, committed repository checkout. Install the locked JavaScript dependencies and prepare the pinned public RGB source; no private source credential is required. An exact local source clone can instead be supplied as the preparation script's final argument. Compilation does not apply source patches.
 
 ```sh
 npm ci --ignore-scripts --no-audit

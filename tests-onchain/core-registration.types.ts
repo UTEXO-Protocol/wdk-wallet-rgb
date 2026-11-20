@@ -39,6 +39,11 @@ core.registerWallet('rgb', RgbManagerForCore, withoutApproval)
 // Core's result type is the common wallet interface. This application knows it
 // registered the RGB manager and has not replaced it with an incompatible middleware.
 const account = await registered.getAccountByPath('rgb', "0'/0/0") as WdkAccount & WalletAccountRgb
+const publicKeys = account.getPublicKeys()
+const publicAccount: string = publicKeys.accountXpubVanilla
+// @ts-expect-error Public account identities cannot be mutated.
+publicKeys.masterFingerprint = '00000000'
+void publicAccount
 const balance: bigint = await account.getBalance()
 const operation = await account.sendBtc({
   operationId: 'typed-send', address: 'bcrt1p-address', amount: 1000n, feeRate: 2n

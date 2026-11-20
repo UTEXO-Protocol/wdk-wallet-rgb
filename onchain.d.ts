@@ -230,6 +230,13 @@ export class WalletAccountRgb {
   shutdown(): Promise<void>
   isDisposed(): boolean
   getNetwork(): CandidateNetwork
+  /** Public account identity only. Available offline; throws after account shutdown. */
+  getPublicKeys(): Readonly<{
+    network: CandidateNetwork
+    accountXpubVanilla: string
+    accountXpubColored: string
+    masterFingerprint: string
+  }>
   /** Tracks whether an indexer session was established. Call getNetworkInfo for current reachability. */
   getConnectionStatus(): 'offline' | 'connected' | 'unavailable'
   connect(): Promise<void>

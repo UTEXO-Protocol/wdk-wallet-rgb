@@ -45,7 +45,7 @@ requires that exact unmodified tree. WDK applies no source patches to RGB,
 Electrum, Esplora, TLS or SQLite. Cargo's exact RGB protocol repository overrides
 select the sources required by BFA.8; they are not local source-file patches.
 
-## Findings retained
+## Historical RC2 findings
 
 The [recorded audit](qualification/rc1/dependency-audit.json) identifies the
 following findings in the locked native graph:
@@ -58,10 +58,10 @@ following findings in the locked native graph:
 | `webpki-roots 0.25.4` | `RUSTSEC-2026-0381` | The stock Esplora trust store includes the affected emSign root. The upstream dependency remains unchanged. |
 | `unsafe-libyaml 0.2.11` | `RUSTSEC-2024-0449` maintenance warning | The existing upstream YAML dependency is retained. The warning is not described as a demonstrated WDK exploit. |
 
-The eight native audit findings and the YAML maintenance warning remain visible.
-They are not suppressed or relabeled as a clean Rust audit. The recorded
-JavaScript runtime audit found zero known vulnerabilities; that result does not
-override the native audit.
+The RC2 audit recorded eight native findings and the YAML maintenance warning.
+RC3 removes the SQLite finding through its compatible lock update; its seven
+remaining TLS findings are not suppressed or relabeled as a clean Rust audit.
+The JavaScript runtime audit is separate from these native findings.
 
 ## Release handling
 
