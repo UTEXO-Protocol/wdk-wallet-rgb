@@ -4,11 +4,31 @@ RC3 uses public RGB-Tools rgb-lib `0.3.0-beta.8`, commit
 `567e5b8308f70a6242137475394be5a82fc15c95`, tree
 `8a887b28bd12625e36cd7cfe2af067ff766ece1d`. The source is unmodified and its
 RGB protocol dependencies are locked registry `0.11.2-rc.2` packages. The RC3
-Node audit retains the same eight findings listed below. The newly locked Bare
-graph uses `libsqlite3-sys 0.37.1` and has seven TLS findings, with the same YAML
-maintenance warning. The Android qualification pack remains on publication hold;
-these audit results do not declare the findings fixed or create a blanket waiver
-for later dependency changes.
+Node and Bare graphs both use SQLx `0.9.1` and bundled `libsqlite3-sys 0.40.0`
+(SQLite `3.54.1`). They therefore exclude the SQLite finding listed in the
+historical RC2 acceptance below. Both locked native audits retain seven TLS
+findings and the upstream YAML maintenance warning. The qualification pack
+remains on publication hold; those findings are not represented as fixed or
+suppressed.
+
+The old TLS branch is `bdk_esplora 0.22.3` / `rgb-ops 0.11.2-rc.2` through
+`esplora-client 0.12.3` and `minreq 2.14.1`. It fixes Rustls to the `0.21` line,
+webpki to `0.101`, and the root store to `0.25`. The application does not provide
+a custom session store that formats session secrets or configure CRLs. That
+removes the known prerequisites for the session-Debug and CRL-parser findings
+from this configuration. This Rustls branch offers classical key exchange only;
+it does not make a post-quantum guarantee.
+
+The certificate name-constraint and emSign trust findings remain relevant to the
+Esplora HTTPS verifier. They are not dismissed as logging issues. Adding a newer
+direct Rustls dependency or enabling native TLS does not replace this forced
+branch: minreq selects Rustls when both TLS features are enabled. Upstream
+Esplora `0.13.0` and minreq `3.0.0` exist, but BDK's current compatible dependency
+range does not admit them. A compatible upstream BDK/RGB resolver release or a
+maintained minreq `2.x` backport is needed to remove this branch without source
+patches. [minreq implementation](https://docs.rs/minreq/2.14.1/src/minreq/connection/rustls_stream.rs.html)
+· [emSign verifier advisory](https://rustsec.org/advisories/RUSTSEC-2026-0382.html)
+· [SQLite advisory](https://rustsec.org/advisories/RUSTSEC-2026-0459.html).
 
 ## Recorded RC2 acceptance
 

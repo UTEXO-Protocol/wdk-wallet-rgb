@@ -1918,17 +1918,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 ==============================================================================
-SHA-256: 154397a08d0cb342110281129971868cd562542d0780b0d10722788cd11a1399
-cargo:sqlx-core@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
-cargo:sqlx-macros-core@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
-cargo:sqlx-macros@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
-cargo:sqlx-mysql@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
-cargo:sqlx-postgres@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
-cargo:sqlx-sqlite@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
-------------------------------------------------------------------------------
-../LICENSE-APACHE
-
-==============================================================================
 SHA-256: 155420c6403d4e0fca34105e3c03fdd6939b64c393c7ec6f95f5b72c5474eab0
 cargo:powerfmt@0.2.1:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-Apache
 ------------------------------------------------------------------------------
@@ -7956,7 +7945,6 @@ cargo:sqlx-macros@0.9.1:registry+https://github.com/rust-lang/crates.io-index | 
 cargo:sqlx-mysql@0.9.1:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
 cargo:sqlx-postgres@0.9.1:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
 cargo:sqlx-sqlite@0.9.1:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
-cargo:sqlx@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
 cargo:sqlx@0.9.1:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
 ------------------------------------------------------------------------------
 Copyright (C) SQLx Contributors
@@ -10227,17 +10215,6 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
-==============================================================================
-SHA-256: 72af89a828df52a9dcc42512ed64663b3b8d7961dd7a5586d44478eede82bc7a
-cargo:sqlx-core@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
-cargo:sqlx-macros-core@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
-cargo:sqlx-macros@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
-cargo:sqlx-mysql@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
-cargo:sqlx-postgres@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
-cargo:sqlx-sqlite@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
-------------------------------------------------------------------------------
-../LICENSE-MIT
 
 ==============================================================================
 SHA-256: 7365cc8878a1d7ce155a58c4ca09c3d7a6be413efa5334a80ea842912b669349
@@ -19600,7 +19577,6 @@ SOFTWARE.
 
 ==============================================================================
 SHA-256: c10c1f27337546471e5f7e4e97fdd398b35b9d4e126115dcd22de8d8e65abf6f
-cargo:libsqlite3-sys@0.37.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE
 cargo:libsqlite3-sys@0.40.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE
 ------------------------------------------------------------------------------
 Copyright (c) 2014 The rusqlite developers
@@ -20700,7 +20676,6 @@ cargo:sqlx-macros@0.9.1:registry+https://github.com/rust-lang/crates.io-index | 
 cargo:sqlx-mysql@0.9.1:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:sqlx-postgres@0.9.1:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:sqlx-sqlite@0.9.1:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
-cargo:sqlx@0.9.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:sqlx@0.9.1:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 ------------------------------------------------------------------------------
 Apache License
@@ -23285,36 +23260,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-
-==============================================================================
-SHA-256: ea4fcb309f14a22065e1ea45362d494d320012249ed865fe9c7c0946db754131
-cargo:libsqlite3-sys@0.37.0:registry+https://github.com/rust-lang/crates.io-index | package | sqlcipher/LICENSE
-------------------------------------------------------------------------------
-Copyright (c) 2008-2020 Zetetic LLC
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-    * Neither the name of the ZETETIC LLC nor the
-      names of its contributors may be used to endorse or promote products
-      derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY ZETETIC LLC ''AS IS'' AND ANY
-EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL ZETETIC LLC BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ==============================================================================

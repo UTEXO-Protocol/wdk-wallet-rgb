@@ -6,6 +6,8 @@ The candidate is an on-chain SDK for Node and Bare. Mainnet and Public Signet ad
 
 This Android qualification candidate is `3.0.0-rc.3`, using unmodified public RGB-Tools rgb-lib `0.3.0-beta.8` at `567e5b8308f70a6242137475394be5a82fc15c95`, tree `8a887b28bd12625e36cd7cfe2af067ff766ece1d`. RGB protocol crates are locked registry `0.11.2-rc.2` sources. No RGB, indexer or TLS source patch is applied. Earlier RC2 artifacts remain identified below and do not qualify this graph.
 
+Node and Bare both lock SQLx `0.9.1` and `libsqlite3-sys 0.40.0` (bundled SQLite `3.54.1`). The Node-only compatible lock update removes its SQLite advisory; seven upstream Esplora TLS findings remain in both graphs. Frozen Android qualification artifacts keep their original identities.
+
 The source passes 82 JavaScript tests, public types, 52 native Release tests, strict adapter Clippy, and 17 release-admission regressions. The current Dev E2E's retained burn consignment decodes on this graph and exports the same `rgb:Ridn2CNN-roDb90a-RHSJ_ml-9oisvDH-LYvmiQ9-khBPP7Y` genesis without transfer history. This decoding check is separate from funded receive and hosted settlement acceptance.
 
 The WebRGB facade accepts the 0.1.7 single native `burnDestination` and derives its encoded commitment. Omitted receive `assetId` remains absent from the native invoice; a single-asset application policy is retained separately as its expected asset. Named invoices do not silently downgrade to assetless. Retained mint verification continues to bind the exact owned invoice, validated operation and LockId to the actual consignment asset.
