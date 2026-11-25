@@ -29,6 +29,15 @@ Qualification-only candidates retain `publicationHold: true`; the release tool m
 
 The artifact root contains `node-<target>` and `bare-<target>` directories. The tool requires a clean checkout, committed source identities, exact package inventory, all sixteen targets and unchanged native inputs since the producer. It emits five deterministic Node archives, the npm archive, `SHA256SUMS` and a release manifest. It rejects stale or missing binaries, unadmitted package files and unsafe archive entries. It does not publish anything.
 
+## PR and application order
+
+1. Review and finalize [SDK #23](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/pull/23). Keep `publicationHold: true` until the release owner accepts the documented risks and qualification scope. After that acceptance, commit and review its removal as part of finalization. Merge with a normal merge commit: `verify_source()` requires the reviewed native producer to remain an ancestor of the release source. Squashing or rebasing this branch would require changing and requalifying that provenance procedure before its artifacts could be admitted.
+2. Assemble the delivery set from the final committed release source with the hold cleared. Removing the hold changes a packed file, so the qualification archive's checksum cannot identify the release archive. Repack, verify all source and native identities, and repeat packed-consumer checks. The existing admitted binaries can be reused only while the SDK version and native build inputs remain unchanged. A version bump requires rebuilt versioned mobile libraries.
+3. Publish the verified `3.0.0-rc.3` archive under `next` and attach the five matching Node worker archives, `SHA256SUMS` and release manifest to the GitHub Release. npm alone does not deliver the Node workers.
+4. Update [Iris #11](https://github.com/UTEXO-Protocol/utexo-mobile/pull/11) from its frozen local archive to the exact published version and integrity. Update the coupled package/source/profile pins, admit the registry package, then rebuild and test that final application integration before merging it into `dev`. Iris #10 is already contained in #11 and needs no separate merge.
+
+The tested application uses WebRGB and WalletConnect `0.1.7`, matching the November 25 Sandbox inspection. Their required protocol/session PRs and bridge frontend #192/#197 are already merged. Closed frontend #146 is not a prerequisite, and standalone contract-import PR RGB-Tools #103 is optional for the current generic first-receive flow. Newly published WebRGB/WalletConnect `0.2.0` needs a separate compatibility qualification; this procedure does not silently upgrade the tested wire protocol. The former RLN/LDK/Bare/Node/Lightning PR stack is not part of this SDK's native graph.
+
 ## Publication, when authorized
 
 - Obtain the required PR review and merge approval. Revalidate source equivalence and the assembled release set against the reviewed release commit. If native inputs or the package version changed, rebuild affected binaries and repeat admission; do not silently reuse earlier versioned mobile libraries.
