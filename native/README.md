@@ -24,7 +24,7 @@ python3 native/scripts/check-dev-signet.py
 
 The preparation script verifies the exact upstream commit, tree, index, working files and untracked files. It can accept a local Git directory as its final argument. The qualifier packs an archive of committed source and installs it into a separate consumer, then tests the exact addon, its source/hash admission and lifecycle. The addon, tested package, build receipt and logs remain in the output directory. Node addons are bundled in the npm archive and resolved automatically; optional `nativeAddon` and `nativeSha256` values must match the admitted target. See the [Node addon runbook](node/README.md), [CI](../.github/workflows/build.yml) and [Bare runbook](bare/README.md).
 
-Format only owned source with `rustfmt +1.94.0 --edition 2024 native/src/main.rs`. Do not run formatting across the prepared upstream path dependency.
+Format only owned source with `rustfmt +1.94.0 --edition 2024 --config skip_children=true native/node/lib.rs`. Do not run formatting across the prepared upstream path dependency.
 
 ## Network and operation boundaries
 

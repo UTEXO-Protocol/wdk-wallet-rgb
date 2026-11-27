@@ -13,7 +13,7 @@ The SDK requires **Bare 1.37.1 or newer**, including embedded mobile runtimes. T
 | Android | `android-arm64`, `android-arm`, `android-x64`, `android-ia32` | Rust 1.94.0 target, Android NDK `28.2.13676358` |
 | iOS | `ios-arm64`, `ios-arm64-simulator`, `ios-x64-simulator` | macOS, Rust 1.94.0 target and corresponding Xcode SDK |
 
-The [CI workflow](../../.github/workflows/build.yml) builds this matrix and records ABI and binary identities. Desktop jobs execute the packed SDK and teardown tests. Mobile jobs build and inspect the addon; they do not establish application or device acceptance. Windows and Linux musl Bare are outside this matrix. The separate Node worker supports Linux musl x64.
+The [CI workflow](../../.github/workflows/build.yml) builds this matrix and records ABI and binary identities. Desktop jobs execute the packed SDK and teardown tests. Mobile jobs build and inspect the addon; they do not establish application or device acceptance. Windows and Linux musl Bare are outside this matrix. The Node addon supports Linux musl x64.
 
 ## Build a desktop package
 
@@ -42,7 +42,7 @@ CARGO_TARGET_DIR="$PWD/native/target/bare-rust" \
 cargo audit --file native/bare/Cargo.lock
 ```
 
-macOS addons target the macOS 11 ABI; the selected Bare executable may require a newer macOS version. Linux receipts record the actual libc symbol requirements. Use the [Node build guide](../README.md) for worker verification and shared network/financial policies.
+macOS addons target the macOS 11 ABI; the selected Bare executable may require a newer macOS version. Linux receipts record the actual libc symbol requirements. Use the [native build guide](../README.md) for addon verification and shared network/financial policies.
 
 ## Android
 

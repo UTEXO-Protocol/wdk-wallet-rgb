@@ -36,7 +36,7 @@ Use Rust 1.94.0 and a supported Node installation including its headers:
 ```sh
 native/node/build.sh darwin-arm64 "$PWD/native/target/node-addon/utexo-rgb-native.node"
 node native/node/smoke.cjs "$PWD/native/target/node-addon/utexo-rgb-native.node"
-cargo +1.94.0 test --manifest-path native/Cargo.toml --lib --locked
+cargo +1.94.0 test --manifest-path native/Cargo.toml --release --lib --tests --locked
 ```
 
 The other native host targets are `darwin-x64`, `linux-arm64-gnu`,

@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "sourceCommit": "1323731494ec83b87a54d415ea942deaee04e52d",
+  "archiveSha256": "b6054baafa939a0cdbda1f127d666b6ef9a46661c14873204822875350bb3b6d",
+  "nativeSha256": "08e7464baf5095e842c5a20f9d1ab77c2b524d74d16f70ee58b038cf9a71a598",
+  "target": "darwin-arm64",
+  "harnessSha256": {
+    "run.mjs": "dc5508db1053236d902fd36f5f8d8d6b99274cf1a95d7f1fee6782ea648afb56",
+    "worker.mjs": "29cb51dd1a61dbd32ab61f8a0604e527a59387c28d13f25fc1bc072500323cb9",
+    "README.md": "32e66e5790c5247def372c6f904076101a835a117fff121db7610aa08596c3bd"
+  },
+  "runtimes": [
+    {
+      "node": "v22.23.3",
+      "receipt": "packed-node22.json",
+      "sha256": "4ba1e7fabbaef0101a4c22b43e951dc63c173824f28a3595702bd89e5be80479",
+      "passed": true
+    },
+    {
+      "node": "v24.22.3",
+      "receipt": "packed-node24.json",
+      "sha256": "d9d7757cdbc2dae8900ff4e949259bc487b13fd0766dc2bf69070aeb4ad8d935",
+      "passed": true
+    },
+    {
+      "node": "v26.11.1",
+      "receipt": "packed-node26.json",
+      "sha256": "027ed7ba3e076007cc375e42e63aba215036738c5658b3ba8609ea40661e1e8b",
+      "passed": true
+    }
+  ],
+  "scope": "Exact portable packed-only runner on all three Node runtimes. Four concurrent managers and native workers; offline read/BIP-322, native file-lock collision, partial/full shutdown and reopen. Automatic addon discovery. No financial or hosted operations."
+}

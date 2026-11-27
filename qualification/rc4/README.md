@@ -1,12 +1,18 @@
 # RC4 qualification evidence
 
-## Current release-preparation pack
+## Current Node addon pack
 
-The complete archive `c7b42d8b…`, package source `2331119…`, uses all sixteen binaries from producer `c5b4c1f…` with stock `url 2.5.9` and `form_urlencoded 1.2.3`. `platforms.json` records 19 passing CI jobs; `complete-pack.json` verifies all 41 files, eleven Bare addons, npm integrity and the local publication dry-run. Publication remains held. `dependency-audit.json` records the current locks and findings.
+The current complete archive is `b6054baa…`, package source `1323731…`. It contains five rebuilt Node-API addons from `ca2deb6…` and eleven unchanged Bare addons from `c5b4c1f…`. `platforms.json` records their exact mixed producers and admission evidence. [Node addon evidence](node-addon/README.md) covers all 48 packed files, actual Node 22/24/26 concurrency, funded in-place executable-to-addon upgrades, transfers, mint/burn and proof recovery. Publication remains held.
+
+The records below remain historical. They qualify their own executable-based archives and provide retained wallet baselines; they do not identify the new Node package. `dependency-audit.json` remains applicable because both Cargo locks and npm dependencies are unchanged.
+
+## Previous executable-based release-preparation pack
+
+The complete archive `c7b42d8b…`, package source `2331119…`, uses all sixteen binaries from producer `c5b4c1f…` with stock `url 2.5.9` and `form_urlencoded 1.2.3`. [the retained platform receipt](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/418b98dddf7b7e71dc6f9bbef3c8e50a89cdb4b5/qualification/rc4/platforms.json) records 19 passing CI jobs; `complete-pack.json` verifies all 41 files, eleven Bare addons, npm integrity and the local publication dry-run. Publication remains held. `dependency-audit.json` records the current locks and findings.
 
 `funded-release.json` and `financial-release.json` record actual Node/Bare execution of that exact archive: two fresh funded RC3 updates, six retained RC4 wallets, fresh contract registration/mint, BTC/NIA/CFA/BFA transfers, all five configured V1 burn routes and lost-response/restart proof recovery. An independent audit checks four mints, twelve burns and eight transfers; new-asset balances reconcile as 6 − 1.28 = 4.72 units. The earlier asset retains 14.5 units. No EVM burn redemption was performed.
 
-[Reproduction instructions and sanitized runners](funded-upgrade-fixture/release-rerun/README.md) reuse the isolated fixture below with a separate issuer and asset. Generated wallet state, seeds and raw proofs are excluded. The new mobile binaries have build/ABI acceptance; prior Iris app results do not qualify these new hashes.
+[Reproduction instructions and sanitized runners](funded-upgrade-fixture/release-rerun/README.md) reuse the isolated fixture below with a separate issuer and asset. Generated wallet state, seeds and raw proofs are excluded. Those mobile binaries have build/ABI acceptance; prior Iris app results do not qualify those hashes.
 
 ## Retained earlier RC4 upgrade evidence
 

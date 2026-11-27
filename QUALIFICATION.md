@@ -2,11 +2,32 @@
 
 This register covers `@utexo/wdk-wallet-rgb@3.0.0-rc.4`. Build, packed runtime, funded local and installed-app checks have separate scopes. Receipts and disposable fixtures are excluded from the npm package.
 
-## Node addon qualification in progress
+## Current Node addon candidate
 
-Node now uses a bundled Node-API addon on a dedicated thread instead of a separate Rust executable. The Rust engine, upstream sources, database identities and Bare native inputs are unchanged. All five Node targets passed [their producer workflow](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/46015918020) and artifact admission. All eleven Bare binaries retain their original source and hashes. Publication remains held; complete-pack funded acceptance is underway.
+Node uses a bundled Node-API v8 addon on a dedicated thread instead of a separate Rust executable. The shared Rust engine, upstream sources, database identities and Bare native inputs are unchanged. Every Node target was rebuilt and executed; all eleven Bare binaries retain their original hashes. The complete archive passed funded Node/Bare acceptance. Publication remains held.
 
-Verification passes 165 JavaScript tests and public types, 36 release/scope regressions, 54 Rust library tests plus five network integration tests on every Node platform, and local strict Clippy. The same Darwin ARM64 Node-API v8 binary executes on Node 22, 24 and 26. Lifecycle regressions cover timeout/close during native mutation, retained directory ownership, no automatic replay and result recovery after reopen. These local checks do not qualify the final cross-platform archive; funded upgrade and exact-pack checks are underway.
+| Input | Reviewed identity |
+| --- | --- |
+| RGB source / tree | `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2` / `a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd` |
+| Node native producer | `ca2deb62b68272f037fa22d543625c2af93f24b3` |
+| Retained Bare native producer | `c5b4c1f0e15f0fac7f8d05a69734be70aa82825d` |
+| Package source | `1323731494ec83b87a54d415ea942deaee04e52d` |
+| Complete archive SHA-256 | `b6054baafa939a0cdbda1f127d666b6ef9a46661c14873204822875350bb3b6d` |
+
+| Scope | Result and evidence |
+| --- | --- |
+| Node platform builds | All five [producer jobs pass](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/46015918020): macOS ARM64/x64, Linux GNU ARM64/x64 and Linux musl x64. Each runs 54 Rust library and five network integration tests, native lifecycle tests and actual packed-consumer automatic/explicit addon loading. [Platform admission](qualification/rc4/platforms.json) independently verifies GitHub ZIP hashes, source/locks, binary identities, ABI, exports and loader protections. |
+| Retained Bare platforms | All eleven native artifacts retain the admitted source and hashes from [their successful producer](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/45995455771). The shared engine and Bare bindings are unchanged. Four desktop targets have their retained runtime acceptance; seven mobile targets have retained build/ABI acceptance. Current packed Bare Darwin ARM64 also passes the funded tests below. |
+| Source and lifecycle tests | 165 JavaScript tests, public types, 36 release/scope regressions, runtime npm audit and strict local Clippy pass. Fourteen real Node-API fixture regressions cover identity/bounds, terminal errors, timeout/close during a dispatched mutation, retained directory ownership and no replay. These fixtures are separate from actual funded execution. |
+| Complete package | [Archive receipt](qualification/rc4/node-addon/complete-pack.json): 48 files, 305,412,746 bytes, five Node and eleven Bare addons. Every file matches committed source or an admitted binary. Independent installation comparisons and the local npm publication dry-run pass. Registry authentication and server acceptance are not established. |
+| Concurrent native execution | The exact CI Darwin ARM64 addon in the full archive passes on [Node 22, 24 and 26](qualification/rc4/node-addon/concurrency/acceptance.json). Four independent managers/native threads perform reads and BIP-322, enforce native lock exclusion across JS isolates, shut down partially and completely, and reopen with unchanged identities. |
+| Funded wallet preservation | [Exact-pack receipt](qualification/rc4/node-addon/funded-release.json): ten retained wallets reopen unchanged. Two freshly funded executable-based RC4 wallets upgrade in place, preserving keys, BTC/BFA balances, NIA/CFA metadata, every prior transfer field, pending blinded invoices and saved burn proofs. No reset or seed restoration substitutes for these updates. |
+| Funded operations and recovery | The same pack completes two new mints, four new NIA/CFA issuances, twelve confirmed BTC/BFA/NIA/CFA transfers and ten new V1 burns across Arbitrum, Ethereum, Polygon, Plasma and Tron destinations on isolated Regtest/Anvil. Each runtime loses one successful native burn response; repeated recovery and full process restart return the original proof, duplicate operations are rejected, and `burnEnd` executes once. |
+| Independent financial audit | [Reconciliation](qualification/rc4/node-addon/financial-release.json) checks four mints and twelve burns including the executable baselines, all twelve transfers, NIA/CFA supply, confirmed Bitcoin fees/commitments, saved proofs and independently computed V1 destinations. The new asset reconciles as 6 minted − 1.28 burned = 4.72 retained units; all three fixture assets total 23.94 units. The bridge retains 32 units of backing because no EVM redemption was performed. |
+
+The funded runner initially requested the burn-only public proof API for an ordinary BFA transfer. That confirmed transfer was reconciled against its original operation ID, transaction and journal before continuing; it was not resent. The final independent audit reads its saved native consignment. [Reproduction instructions](qualification/rc4/node-addon/README.md) and receipts distinguish this harness correction from SDK behavior.
+
+Node applications remove `nativeExecutable` and the old executable hash, preserve their complete wallet directory, await shutdown, and restart the host process when replacing native code. A worker thread is not a subprocess crash boundary; native code shares the host environment and upstream diagnostics. A caller deadline cannot cancel a dispatched mutation. See [MIGRATION.md](MIGRATION.md).
 
 ## Previous executable-based candidate
 
