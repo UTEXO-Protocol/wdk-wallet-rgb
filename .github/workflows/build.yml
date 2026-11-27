@@ -138,7 +138,7 @@ jobs:
         if: matrix.kind == 'node' && matrix.target != 'linux-x64-musl'
         run: |
           node native/scripts/node-host.mjs build "$TARGET" "$NATIVE_RESULT"
-          cargo +1.94.0 test --locked --release --lib --manifest-path native/Cargo.toml -- --test-threads=1
+          cargo +1.94.0 test --locked --release --lib --tests --manifest-path native/Cargo.toml -- --test-threads=1
       - name: Build and test the Bare engine
         if: matrix.kind == 'bare'
         env:
@@ -173,7 +173,7 @@ jobs:
               git config --global --add safe.directory /wdk/native/.sources/rgb-lib-upstream
               npm ci --ignore-scripts --no-audit --no-fund
               NODE_INCLUDE_DIR=/usr/local/include/node node native/scripts/node-host.mjs build linux-x64-musl /output/native-result
-              cargo +1.94.0 test --locked --release --lib --manifest-path native/Cargo.toml -- --test-threads=1
+              cargo +1.94.0 test --locked --release --lib --tests --manifest-path native/Cargo.toml -- --test-threads=1
               bash scripts/qualify-desktop.sh node linux-x64-musl /output/native-result
               chown -R "$OUTPUT_UID:$OUTPUT_GID" /output/native-result
             '

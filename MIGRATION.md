@@ -23,7 +23,7 @@ The exact RGB source is `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, which includ
 
 ## Updating the Node transport
 
-The Node addon uses the same Rust engine, database schema, directory identity, derivation and operation journals as the earlier RC4 executable. Keep the complete wallet directory and the same configuration. Remove `nativeExecutable`; the SDK now resolves its bundled `.node` addon. An explicit `nativeAddon` path is optional and must match the admitted binary for the current platform. It cannot select an arbitrary native build.
+The Node addon uses the same Rust engine, database schema, directory identity, derivation and operation journals as the earlier RC4 executable. Keep the complete wallet directory and the same configuration. Remove `nativeExecutable` and its old executable `nativeSha256`; the SDK now resolves and verifies its bundled `.node` addon. An explicit `nativeAddon` path is optional and must match the admitted binary for the current platform. It cannot select an arbitrary native build.
 
 Await shutdown before replacing an account or moving its directory. The addon runs on a dedicated worker thread. A timeout rejects the caller's wait, but a native operation that has already started may still complete. Shutdown waits for that operation and releases the native lock before resolving. Reopen with the original operation ID and use the recovery API; never resend under a new ID. Unlike the previous executable, a native crash affects the host process, so applications must preserve the journals across process restart.
 

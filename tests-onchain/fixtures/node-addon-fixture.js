@@ -27,9 +27,10 @@ async function compileFixture () {
   }
   if (!headers) throw new Error('Node-API fixture requires Node headers; set NODE_INCLUDE_DIR to their directory')
   const output = join(buildDirectory, 'fixture.node')
-  const flags = process.platform === 'darwin' ? ['-dynamiclib', '-undefined', 'dynamic_lookup'] : ['-shared', '-fPIC', '-ldl']
+  const flags = process.platform === 'darwin' ? ['-dynamiclib', '-undefined', 'dynamic_lookup'] : ['-shared', '-fPIC']
   await run(process.env.CC || 'cc', [...flags, '-std=c11', '-DNAPI_VERSION=8', '-I', headers,
-    fileURLToPath(new URL('./node-addon-fixture.c', import.meta.url)), '-o', output])
+    fileURLToPath(new URL('./node-addon-fixture.c', import.meta.url)),
+    ...(process.platform === 'linux' ? ['-ldl'] : []), '-o', output])
   return output
 }
 

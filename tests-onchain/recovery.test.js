@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
-import { createHash } from 'node:crypto'
-import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, realpath, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
