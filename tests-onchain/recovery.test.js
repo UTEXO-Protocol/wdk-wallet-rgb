@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { p2tr, TEST_NETWORK } from '@scure/btc-signer'
 import { OnchainJournal } from '../src/onchain-journal.js'
+import { buildFixtureAddon, importWorkerFixture } from './fixtures/node-addon-fixture.js'
 import { importWalletFixture } from './fixtures/native-manifest.js'
 import nativeManifest from '../src/onchain-bare-native.json' with { type: 'json' }
 
@@ -195,33 +196,33 @@ test('shutdown does not wait for a pending human approval or sign after closure'
 
 async function workerFixture (t) {
   const dir = await realpath(await mkdtemp(join(tmpdir(), 'wdk-worker-claim-')))
-  const executable = join(dir, 'worker')
-  const source = String.raw`#!${process.execPath}
-require('node:readline').createInterface({ input: process.stdin }).on('line', line => {
+  const source = String.raw`module.exports = line => {
   const { id, method, params } = JSON.parse(line)
-  const reply = result => process.stdout.write(JSON.stringify({ id, result }) + '\n')
+  const reply = result => JSON.stringify({ id, result })
   if (method === 'version') return reply({
-    protocol: 2, unsignedRecovery: 1, journalWrites: 1, assetIssuance: 2, networkChecks: 7, contractRegistration: 1, contractExport: 1, receivedMintVerification: 1, exposedInputs: 1, runtime: 'node-host-process',
+    protocol: 2, unsignedRecovery: 1, journalWrites: 1, assetIssuance: 2, networkChecks: 7, contractRegistration: 1, contractExport: 1, receivedMintVerification: 1, exposedInputs: 1, runtime: 'node-in-process',
     indexer: 'electrum-and-dev-esplora', source: '${nativeManifest.source}',
     overlayTree: '${nativeManifest.overlayTree}',
     integrationTree: '${nativeManifest.integrationTree}'
   })
   if (method === 'open') return reply({ network: params.network, watchOnly: true })
   if (method === 'bindJournal') return reply({ written: true })
-  if (method === 'getBtcBalance') process.kill(process.pid, 'SIGKILL')
-})
+  if (method === 'getBtcBalance') process.exit(0)
+}
 `
-  await writeFile(executable, source, { mode: 0o700 })
+  const addon = await buildFixtureAddon(t, source)
+  const { workerModuleUrl } = await importWorkerFixture(t, { addon })
+  const { WalletManagerRgb: FixtureManager } = await importWalletFixture(dir, false, workerModuleUrl)
   const managers = []
   t.after(async () => {
     await Promise.all(managers.map(manager => manager.shutdown()))
     await rm(dir, { recursive: true, force: true })
   })
-  const pin = createHash('sha256').update(source).digest('hex')
+  const pin = addon.sha256
   const seed = Uint8Array.from({ length: 64 }, (_, i) => i + 1)
   return (nativeSha256 = pin) => {
-    const manager = new WalletManagerRgb(seed, {
-      network: 'regtest', startupMode: 'offline', dataDir: join(dir, 'wallet'), nativeExecutable: executable, nativeSha256,
+    const manager = new FixtureManager(seed, {
+      network: 'regtest', startupMode: 'offline', dataDir: join(dir, 'wallet'), nativeAddon: addon.path, nativeSha256,
       indexerUrl: 'tcp://127.0.0.1:50001', transportEndpoint: 'rpc://127.0.0.1:3003/json-rpc',
       maxFeeSats: '1000', authorize: () => false
     })
@@ -230,7 +231,7 @@ require('node:readline').createInterface({ input: process.stdin }).on('line', li
   }
 }
 
-test('an independently dead child cannot release the wallet path to another manager in the same runtime', async t => {
+test('an independently exited native thread cannot release the wallet path to another manager in the same runtime', async t => {
   const createManager = await workerFixture(t)
   const first = createManager()
   const second = createManager()

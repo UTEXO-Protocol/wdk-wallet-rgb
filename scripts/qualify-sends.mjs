@@ -10,9 +10,9 @@ import WalletManagerRgb, { burnDestinationFor } from '@utexo/wdk-wallet-rgb'
 const { OnchainWorker } = await import(new URL('./src/onchain-worker.js', import.meta.resolve('@utexo/wdk-wallet-rgb')))
 
 const [nativeFile, fixtureRoot, outputDir] = process.argv.slice(2)
-assert(nativeFile && fixtureRoot && outputDir, 'Pass native executable, isolated fixture, and fresh output directory')
-const nativeExecutable = await fs.realpath(resolve(nativeFile))
-const nativeSha256 = createHash('sha256').update(await fs.readFile(nativeExecutable)).digest('hex')
+assert(nativeFile && fixtureRoot && outputDir, 'Pass native addon, isolated fixture, and fresh output directory')
+const nativeAddon = await fs.realpath(resolve(nativeFile))
+const nativeSha256 = createHash('sha256').update(await fs.readFile(nativeAddon)).digest('hex')
 const fixture = await fs.realpath(resolve(fixtureRoot))
 assert(fixture.endsWith('/send-qualification/fixture'), 'The funded test needs a dedicated send fixture')
 await fs.mkdir(resolve(outputDir), { mode: 0o700 })
@@ -60,7 +60,7 @@ async function open (name) {
     network: 'regtest',
     dataDir: join(out, name),
     indexerUrl: chain.electrumUrl,
-    nativeExecutable,
+    nativeAddon,
     nativeSha256,
     transportEndpoint,
     evmRpcUrls: { [chain.evmChainId]: chain.evmRpc },

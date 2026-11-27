@@ -9,7 +9,7 @@ Version 3 replaces the 2.x wrapper with an asynchronous Node/Bare wallet, an app
 | Synchronous native wrapper methods | Await the account's asynchronous methods. |
 | `sendTransaction()` / `transfer()` or manual Begin/End calls | Use `sendBtc()` / `sendRgbInvoice()` with a stable operation ID and an authorization callback. |
 | Generic signing methods | Use `signMessageBip322()` with explicit message authorization. |
-| Implicit native package discovery | Node supplies a worker path and its SHA-256; Bare uses the exact platform addon from the package. Mobile applications link and verify the admitted addon. |
+| Implicit native package discovery | Node and Bare select their exact platform addon from the package. Mobile applications link and verify the admitted addon. |
 | `dispose()` as the only shutdown step | Await `account.shutdown()` or `manager.shutdown()` before disposing Tether Core or replacing the wallet. |
 | Seed or legacy backup treated as full RGB recovery | Preserve the complete wallet directory, including consignments, allocation data and WDK operation/input journals. A seed alone restores keys and discoverable Bitcoin history. |
 
@@ -20,6 +20,12 @@ The public configuration and methods are defined in [onchain.d.ts](onchain.d.ts)
 RC4 retains the `rgb-l1-beta8-v1` directory identity, account derivation, network/profile identity and existing journals. Keep the complete RC3 wallet directory and update it in place. Do not reset it, import its seed into a new directory, or recreate pending invoices and operation IDs. This is distinct from the unsupported 2.x and earlier-engine conversions below.
 
 The exact RGB source is `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, which includes the merged public contract APIs and the pending [PR #138 metadata repair](https://github.com/RGB-Tools/rgb-lib/pull/138). The repair restores BFA bridge and reject-list metadata from the wallet's retained validated stock; it does not change balances, allocations or transfers. Missing stock fails the open operation rather than inventing metadata. Upstream also migrates consignment file names and adds invoice storage. Preserve a complete private backup before the first upgrade; do not reopen an upgraded database with the older binary. Exact funded wallet and installed-application upgrade acceptance is recorded in the [qualification register](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/QUALIFICATION.md), separately from source tests.
+
+## Updating the Node transport
+
+The Node addon uses the same Rust engine, database schema, directory identity, derivation and operation journals as the earlier RC4 executable. Keep the complete wallet directory and the same configuration. Remove `nativeExecutable`; the SDK now resolves its bundled `.node` addon. An explicit `nativeAddon` path is optional and must match the admitted binary for the current platform. It cannot select an arbitrary native build.
+
+Await shutdown before replacing an account or moving its directory. The addon runs on a dedicated worker thread. A timeout rejects the caller's wait, but a native operation that has already started may still complete. Shutdown waits for that operation and releases the native lock before resolving. Reopen with the original operation ID and use the recovery API; never resend under a new ID. Unlike the previous executable, a native crash affects the host process, so applications must preserve the journals across process restart.
 
 ## Earlier wallet engines
 

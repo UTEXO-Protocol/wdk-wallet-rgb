@@ -11,7 +11,7 @@ This qualification candidate uses the exact public RGB-Tools rgb-lib commit belo
 | Android symbol qualification runtime | Bare Kit `3.1.0`, Bare `1.37.1` |
 | Bare C headers | `1.35.0` |
 | RGB library | RGB-Tools `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, tree `a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd` (pending PR #138; source package label `0.3.0-beta.7`) |
-| Native artifacts | [Exact target pins](src/onchain-bare-native.json), qualified separately |
+| Native artifacts | [Node target pins](src/onchain-node-native.json) and [Bare target pins](src/onchain-bare-native.json), qualified separately |
 | Signing | `@scure/btc-signer@2.4.1`, `@scure/bip32@2.4.0`, `@scure/base@2.4.0`, `@noble/curves@2.4.0`, `@noble/hashes@2.4.0` |
 
 `account.getPublicKeys()` returns a new frozen public identity with `network`, `accountXpubVanilla`, `accountXpubColored` and `masterFingerprint`. It is available offline and refuses access after account shutdown. This host API is not exposed through the WebRGB method list.
@@ -20,7 +20,7 @@ RC4 keeps RC3's `rgb-l1-beta8-v1` wallet directory identity, account paths and j
 
 ## Build and use
 
-Public JavaScript checks run from the lock with `npm ci --ignore-scripts`, `npm test`, and `npm run check:types`. The [native manifest](src/onchain-bare-native.json) admits only explicitly recorded Bare artifacts. Native builds do not require RGB source patches. The [SDK repository](https://github.com/UTEXO-Protocol/wdk-wallet-rgb) contains the native build runbook and qualification evidence.
+Public JavaScript checks run from the lock with `npm ci --ignore-scripts`, `npm test`, and `npm run check:types`. The Node and Bare manifests admit only explicitly recorded native artifacts. Node uses a Node-API addon on a dedicated worker thread; Bare retains its existing addon and worker. Both are delivered in the npm archive. Native builds do not require RGB source patches. The [SDK repository](https://github.com/UTEXO-Protocol/wdk-wallet-rgb) contains the native build runbook and qualification evidence.
 
 Supply a canonical private data directory and a disposable seed for qualification. Use a separate directory for each network and profile.
 
@@ -37,7 +37,7 @@ The public staging environment is now named Sandbox; the SDK retains `profile: '
 
 For manual hosted Dev testing, set `network: 'signet'`, `mode: 'rgb'` and `profile: 'dev'`. Set `indexerUrl: 'https://dev.esplora-01.mint.utexo.com'`, `transportEndpoint: 'rpcs://dev.rgb-proxy.utexo.com/json-rpc'` and `evmRpcUrls: { 42161: 'https://arb1.arbitrum.io/rpc' }`. Dev verifies its own block-one checkpoint and uses a separate wallet directory. The application configures its asset ID, approved public contract and exact V1 routes. Register the contract with `registerAssetContract()` before requesting an asset-pinned invoice. A generic receive can still discover an unknown asset through a validated transfer. Hosted mint, burn and payout acceptance are tracked separately. [Dev bridge route table](https://github.com/UTEXO-Protocol/utexo-bridge-fe/blob/a0e21415213b9e99adc20424ce59891bff7e7448/utexo/src/mintBurn/burnDestination.ts#L16-L23)
 
-The Node entry takes the absolute protocol-2 worker path and pinned SHA-256. Desktop Bare loads and hashes the addon for its exact host. Android links the worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. iOS uses Bare Link to build and sign the app framework, then supplies `iosNativeFrameworkDir` and `nativeSha256` for the final framework binary. The iOS package prebuild and the final embedded framework have separate hashes. The SDK verifies the native profile before opening on each target.
+The Node entry selects and verifies the exact packaged Node-API addon for its OS, architecture and libc. An optional `nativeAddon` path must match that same admitted binary. Desktop Bare loads and hashes the addon for its exact host. Android links the worklet, preserves the admitted addon bytes under the versioned native library name and supplies its canonical `androidNativeLibraryDir`. iOS uses Bare Link to build and sign the app framework, then supplies `iosNativeFrameworkDir` and `nativeSha256` for the final framework binary. The iOS package prebuild and the final embedded framework have separate hashes. The SDK verifies the native profile before opening on each target.
 
 Set `startupMode: 'offline'` to open without waiting on services. Local reads are cached until `connect()` completes. Address allocation, invoice creation and transaction preparation require a connected session. `getConnectionStatus()` describes session state. `getNetworkInfo()` reads the current tip from the configured indexer and checks the selected Signet block-one checkpoint. The indexer is a trusted service for the chain data it reports. The endpoint checks accept only the configured services. A proxy check verifies the advertised protocol independently of credential and mint readiness.
 

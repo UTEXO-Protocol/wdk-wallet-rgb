@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { addonPath, assertTargetPin, BARE_TARGETS } from './bare-targets.mjs'
+import { addonPath as nodeAddonPath, assertTargetPin as assertNodePin, NODE_TARGETS } from './node-targets.mjs'
 
 const root = new URL('../', import.meta.url)
 const readJson = path => JSON.parse(readFileSync(new URL(path, root), 'utf8'))
@@ -60,6 +61,13 @@ for (const path of files) {
 
 const artifacts = [...files].filter(path => path.startsWith('prebuilds/'))
 const native = readJson('src/onchain-bare-native.json')
+const nodeNative = readJson('src/onchain-node-native.json')
+const nodeTargets = Object.keys(nodeNative.targets)
+for (const key of ['source', 'overlayTree', 'integrationTree', 'protocol']) assert.equal(nodeNative[key], native[key], 'Runtime source identities differ')
+assert.equal(nodeNative.nodeApiVersion, 8)
+assert.equal(nodeNative.runtime, 'node-in-process')
+if (nodeNative.releaseHold !== false) assert.deepEqual(nodeTargets, [], 'Node targets must be empty until admission')
+for (const target of nodeTargets) assertNodePin(target, nodeNative.targets[target])
 assert.match(native.source, /^[a-f0-9]{40}$/)
 assert.match(native.overlayTree, /^[a-f0-9]{40}$/)
 assert.match(native.integrationTree, /^[a-f0-9]{40}$/)
@@ -67,20 +75,23 @@ assert.equal(native.protocol, 2)
 const targets = Object.keys(native.targets)
 if (native.releaseHold !== false) {
   assert.deepEqual(targets, [], 'Native targets must be empty while the release is blocked')
-  assert.ok(!requireNative, 'Native pack has not passed artifact admission')
+  assert.ok(!requireAll, 'Bare pack has not passed artifact admission')
 }
 for (const target of targets) assertTargetPin(target, native.targets[target], manifest.version)
 if (!requireNative) {
   assert.deepEqual(artifacts, [], 'Public source-only CI must not contain staged native binaries')
   console.log('Package exports and source-only inventory passed. Native admission is a separate gate.')
 } else {
-  assert.ok(targets.length, 'No reviewed Bare artifacts')
-  if (requireAll) assert.deepEqual(targets.sort(), [...BARE_TARGETS].sort(), 'Incomplete Bare target coverage')
-  assert.deepEqual(artifacts.sort(), targets.map(addonPath).sort(), 'Unexpected packed native addon inventory')
+  assert.ok(targets.length + nodeTargets.length, 'No reviewed native artifacts')
+  if (requireAll) {
+    assert.deepEqual(targets.sort(), [...BARE_TARGETS].sort(), 'Incomplete Bare target coverage')
+    assert.deepEqual(nodeTargets.sort(), [...NODE_TARGETS].sort(), 'Incomplete Node target coverage')
+    assert.equal(nodeNative.releaseHold, false, 'Node artifact admission remains on hold')
+  }
+  assert.deepEqual(artifacts.sort(), [...targets.map(addonPath), ...nodeTargets.map(nodeAddonPath)].sort(), 'Unexpected packed native addon inventory')
   const servicePolicy = readFileSync(new URL('src/onchain-dev-services.json', root))
-  for (const target of targets) {
-    const pin = native.targets[target]
-    const path = addonPath(target)
+  for (const [target, pin, path] of [...targets.map(target => [target, native.targets[target], addonPath(target)]),
+    ...nodeTargets.map(target => [target, nodeNative.targets[target], nodeAddonPath(target)])]) {
     const bytes = readFileSync(new URL(path, root))
     checkAssetMarkers(path, bytes)
     assert.equal(bytes.length, pin.byteLength)

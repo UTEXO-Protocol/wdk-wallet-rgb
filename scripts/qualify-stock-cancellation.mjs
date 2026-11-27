@@ -235,7 +235,7 @@ async function open (peer, runtime, name, seed) {
   await peer.request('open', name, [], { seed, config: {
     network: 'regtest', dataDir: join(output, runtime, name), indexerUrl: fixture.indexerUrl,
     transportEndpoint: fixture.transportEndpoint, maxFeeSats: '5000',
-    ...(runtime === 'node' ? { nativeExecutable: worker, nativeSha256: nodeSha256 } : { nativeSha256: bareSha256 })
+    ...(runtime === 'node' ? { nativeAddon: worker, nativeSha256: nodeSha256 } : { nativeSha256: bareSha256 })
   } })
 }
 

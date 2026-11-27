@@ -22,8 +22,8 @@ def main():
         "--manifest-path", str(ROOT / "Cargo.toml"),
     ]
     for tests in [
-        ["--bin", "utexo-rgb-native", "engine::network::tests::"],
-        ["--bin", "utexo-rgb-native", "profile::tests::"],
+        ["--lib", "engine::network::tests::"],
+        ["--lib", "profile::tests::"],
         ["--test", "dev_signet", "--test", "electrum_checked_reconnect"],
     ]:
         subprocess.run(command + tests, check=True)

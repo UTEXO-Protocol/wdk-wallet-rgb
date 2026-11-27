@@ -14,11 +14,11 @@ This release candidate replaces the 2.x wrapper and is intended for npm `next`.
 - Durable operation IDs and exposed-input protection. Reconcile interrupted
   transfers instead of creating replacement payments.
 - BIP-322, public account-key export, Tether Core integration and awaited shutdown.
-- Five Node workers and eleven Bare addons, each admitted by source and hash.
+- Five Node-API addons and eleven Bare addons, each admitted by source and hash.
 
 Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedded
-mobile runtimes. Node workers are separate release downloads; the npm archive
-contains the Bare addons. Mobile applications link the appropriate native artifact.
+mobile runtimes. The npm archive contains all Node and Bare addons; Node selects
+its addon automatically and no longer requires an executable path. Mobile applications link the appropriate native artifact.
 
 Follow [MIGRATION.md](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/v3.0.0-rc.4/MIGRATION.md) when replacing 2.x. Existing RC3 applications
 keep their complete wallet directory and keys; RC4 repairs cached BFA metadata

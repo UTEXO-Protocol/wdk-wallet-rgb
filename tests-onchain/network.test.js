@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { burnDestinationFor } from '../onchain.js'
+import { buildFixtureAddon, importWorkerFixture } from './fixtures/node-addon-fixture.js'
 import { importWalletFixture } from './fixtures/native-manifest.js'
 import devServices from '../src/onchain-dev-services.json' with { type: 'json' }
 import nativeManifest from '../src/onchain-bare-native.json' with { type: 'json' }
@@ -67,19 +68,16 @@ async function managerFor (t, {
   const protocol = workerIndexerProtocol ?? (options.profile === 'dev' ? 'Esplora' : 'Electrum')
   const dir = await realpath(await mkdtemp(join(tmpdir(), 'wdk-network-')))
   await mkdir(join(dir, '.wdk-onchain-invoices-v1'), { mode: 0o700 })
-  const worker = join(dir, 'fixture-worker')
-  const source = `#!${process.execPath}
-const assert = require('node:assert/strict')
-const readline = require('node:readline')
+  const source = `const assert = require('node:assert/strict')
 let connectionAttempts = 0
 let tipReads = 0
 let mintReads = 0
-readline.createInterface({ input: process.stdin }).on('line', line => {
+module.exports = line => {
   const { id, method, params } = JSON.parse(line)
-  const reply = result => process.stdout.write(JSON.stringify({ id, result }) + '\\n')
+  const reply = result => JSON.stringify({ id, result })
   if (method === 'version') return reply({
     protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance}, ...${JSON.stringify(contractCapabilities)}, receivedMintVerification: ${receivedMintVerification}, exposedInputs: 1,
-    indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
+    indexer: 'electrum-and-dev-esplora', runtime: 'node-in-process',
     source: '${nativeSource}',
     ...${JSON.stringify(nativeTrees)}
   })
@@ -95,9 +93,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   if (method === 'importContract') return reply({ assetId: params.expectedAssetId })
   if (method === 'goOnline') {
     assert.deepEqual(params, ${JSON.stringify(expectedOnline)})
-    if (++connectionAttempts === 1) return process.stdout.write(JSON.stringify({
-      id, error: { code: 'INVALID_INDEXER', message: 'Indexer offline' }
-    }) + '\\n')
+    if (++connectionAttempts === 1) return JSON.stringify({ id, error: { code: 'INVALID_INDEXER', message: 'Indexer offline' } })
     return reply({})
   }
   if (method === 'getAddress') {
@@ -117,7 +113,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     assert.equal(connectionAttempts, 2)
     assert.deepEqual(params, { batchTransferIdx: 42, recipientId: 'fixture-receive' })
     const response = ${JSON.stringify(cancellationResponse)}
-    return process.stdout.write(JSON.stringify({ id, ...response }) + '\\n')
+    return JSON.stringify({ id, ...response })
   }
   if (method === 'getFeeRate') {
     assert.equal(connectionAttempts, 2)
@@ -139,12 +135,14 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     return reply({ ok: true, private: 'omitted' })
   }
   assert.fail('Unexpected worker method: ' + method)
-})
+}
 `
-  await writeFile(worker, source, { mode: 0o700 })
-  const manager = new WalletManagerRgb(SEED, {
-    ...DEFAULTS, ...options, dataDir: dir, nativeExecutable: worker,
-    nativeSha256: createHash('sha256').update(source).digest('hex')
+  const addon = await buildFixtureAddon(t, source)
+  const { workerModuleUrl } = await importWorkerFixture(t, { addon })
+  const { WalletManagerRgb: FixtureManager } = await importWalletFixture(dir, false, workerModuleUrl)
+  const manager = new FixtureManager(SEED, {
+    ...DEFAULTS, ...options, dataDir: dir, nativeAddon: addon.path,
+    nativeSha256: addon.sha256
   })
   t.after(async () => {
     try { await manager.shutdown() } finally { await rm(dir, { recursive: true, force: true }) }
@@ -205,7 +203,7 @@ test('native release hold rejects wallet opening before touching storage or laun
   t.after(() => rm(root, { recursive: true, force: true }))
   const manager = new BlockedWalletManagerRgb(SEED, {
     ...DEFAULTS, startupMode: 'offline',
-    dataDir: join(root, 'must-not-open'), nativeExecutable: join(root, 'must-not-run'), nativeSha256: '00'.repeat(32)
+    dataDir: join(root, 'must-not-open'), nativeAddon: join(root, 'must-not-run.node'), nativeSha256: '00'.repeat(32)
   })
   t.after(() => manager.shutdown())
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_BUILD_BLOCKED' })

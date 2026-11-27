@@ -106,17 +106,18 @@ type NetworkConfig = ({
   indexerUrl: `ssl://electrum.iriswallet.com:50003${'' | '/'}`
 } & (BtcOnlyModeConfig | OrdinaryRgbModeConfig))
 export type CandidateConfig = SharedCandidateConfig & NetworkConfig & ({
-  nativeExecutable: string
-  nativeSha256: string
+  /** Optional canonical path to the exact packaged Node addon. Normally resolved automatically. */
+  nativeAddon?: string
+  nativeSha256?: string
   androidNativeLibraryDir?: never
   iosNativeFrameworkDir?: never
 } | {
-  nativeExecutable?: never
+  nativeAddon?: never
   androidNativeLibraryDir?: string
   iosNativeFrameworkDir?: never
   nativeSha256?: string
 } | {
-  nativeExecutable?: never
+  nativeAddon?: never
   androidNativeLibraryDir?: never
   /** Directory containing the final signed framework in the app bundle. */
   iosNativeFrameworkDir: string

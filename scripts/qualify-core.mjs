@@ -10,9 +10,9 @@ import WalletManagerRgb from '@utexo/wdk-wallet-rgb'
 
 const [executable, expectedSha256, fixtureDir, outputDir] = process.argv.slice(2)
 assert(executable && /^[a-f0-9]{64}$/.test(expectedSha256) && fixtureDir && outputDir,
-  'Pass a native executable, its SHA-256, the isolated fixture, and a fresh output directory')
-const nativeExecutable = await realpath(resolve(executable))
-const nativeSha256 = createHash('sha256').update(await readFile(nativeExecutable)).digest('hex')
+  'Pass a native addon, its SHA-256, the isolated fixture, and a fresh output directory')
+const nativeAddon = await realpath(resolve(executable))
+const nativeSha256 = createHash('sha256').update(await readFile(nativeAddon)).digest('hex')
 assert.equal(nativeSha256, expectedSha256)
 const fixture = await realpath(resolve(fixtureDir))
 assert(fixture.endsWith('/send-qualification/fixture'), 'Use the dedicated send fixture')
@@ -56,7 +56,7 @@ async function open (name, startupMode, mode = 'rgb') {
     dataDir: join(root, name),
     indexerUrl: chain.electrumUrl,
     ...(mode === 'btc-only' ? { mode } : { transportEndpoint: chain.proxyEndpoint }),
-    nativeExecutable,
+    nativeAddon,
     nativeSha256,
     startupMode,
     maxFeeSats: 5000n,

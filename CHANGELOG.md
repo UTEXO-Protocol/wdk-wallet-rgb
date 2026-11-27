@@ -29,8 +29,9 @@ Git history.
 - BIP-322, immutable public account keys, Tether Core integration and awaited
   native shutdown. Pure getters can retry one unavailable indexer response;
   financial operations retain their original identity and are not replayed.
-- Five Node workers and eleven Bare addons with source, lock, ABI and checksum
-  admission. Node workers are delivered separately from the npm archive.
+- Five Node-API addons and eleven Bare addons with source, lock, ABI and checksum
+  admission, all delivered in the npm archive. Node runs the unchanged engine on a
+  dedicated thread and waits for native cleanup without replaying interrupted operations.
 
 ### Upgrade and dependencies
 

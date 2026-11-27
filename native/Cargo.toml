@@ -6,6 +6,10 @@ rust-version = "1.94.0"
 license = "Apache-2.0"
 publish = false
 
+[lib]
+path = "node/lib.rs"
+crate-type = ["staticlib"]
+
 [dependencies]
 rgb-lib = { path = ".sources/rgb-lib-upstream", default-features = false, features = ["electrum", "esplora", "camel_case", "rgb_fs_store_migration"] }
 rgb-invoicing = { version = "=0.11.2-rc.2", default-features = false }

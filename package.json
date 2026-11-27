@@ -81,7 +81,10 @@
     "src/onchain-bare-native.json",
     "src/onchain-dev-services.json",
     "prebuilds/*/utexo__wdk-wallet-rgb.bare",
-    "webrgb-onchain.d.ts"
+    "webrgb-onchain.d.ts",
+    "src/onchain-node-thread.cjs",
+    "src/onchain-node-native.json",
+    "prebuilds/*/utexo-rgb-native.node"
   ],
   "imports": {
     "#onchain-webrgb-url": {
@@ -95,6 +98,10 @@
     "#onchain-worker": {
       "bare": "./src/onchain-bare-worker.js",
       "node": "./src/onchain-worker.js"
+    },
+    "#onchain-native": {
+      "bare": "./src/onchain-bare-native.json",
+      "node": "./src/onchain-node-native.json"
     }
   }
 }

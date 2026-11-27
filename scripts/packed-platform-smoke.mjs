@@ -4,14 +4,14 @@ import { WalletManagerRgb } from '@utexo/wdk-wallet-rgb'
 const bare = typeof Bare !== 'undefined'
 const fs = bare ? (await import('bare-fs/promises')).default : await import('node:fs/promises')
 const join = bare ? (await import('bare-path')).join : (await import('node:path')).join
-const [target, sha256, executable] = bare ? Bare.argv.slice(2) : process.argv.slice(2)
+const [target, sha256, addon] = bare ? Bare.argv.slice(2) : process.argv.slice(2)
 if (bare && Bare.Addon.host !== target) throw new Error('Unexpected Bare host')
 const directory = await fs.realpath(await fs.mkdtemp(join(await fs.realpath('.'), '.wallet-smoke-')))
 const seed = new Uint8Array(64).map((_, i) => i + 1)
 const common = {
   startupMode: 'offline',
   nativeSha256: sha256,
-  ...(!bare && { nativeExecutable: executable }),
+  ...(!bare && { ...(addon && { nativeAddon: addon }) }),
   maxFeeSats: '5000',
   authorize: () => { throw new Error('Offline smoke unexpectedly requested signing') }
 }

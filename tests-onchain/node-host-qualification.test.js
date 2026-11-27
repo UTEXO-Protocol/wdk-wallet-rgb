@@ -6,10 +6,12 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { buildFixtureAddon } from './fixtures/node-addon-fixture.js'
 import { stageQualificationPackage } from '../native/scripts/node-host.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const sourceManifest = join(root, 'src/onchain-bare-native.json')
+const sourceManifest = join(root, 'src/onchain-node-native.json')
+const target = `${process.platform}-${process.arch}${process.platform === 'linux' ? (process.report.getReport().header.glibcVersionRuntime ? '-gnu' : '-musl') : ''}`
 
 async function workspace (t) {
   const directory = await mkdtemp(join(await realpath(tmpdir()), 'wdk-host-qualification-test-'))
@@ -17,15 +19,16 @@ async function workspace (t) {
   return directory
 }
 
-test('pre-admission Node qualification changes only its private manifest hold', async t => {
+test('pre-admission Node qualification changes only its private manifest and exact target pin', async t => {
   const original = await readFile(sourceManifest)
   const manifest = JSON.parse(original)
   const directory = await workspace(t)
-  const staged = await stageQualificationPackage(root, directory)
+  const pin = { sha256: 'ab'.repeat(32), byteLength: 123 }
+  const staged = await stageQualificationPackage(root, directory, { target, pin })
   assert.equal((await lstat(staged)).mode & 0o777, 0o700)
   assert.deepEqual(await readFile(sourceManifest), original)
-  assert.deepEqual(JSON.parse(await readFile(join(staged, 'src/onchain-bare-native.json'))), {
-    ...manifest, releaseHold: false
+  assert.deepEqual(JSON.parse(await readFile(join(staged, 'src/onchain-node-native.json'))), {
+    ...manifest, releaseHold: false, targets: { [target]: pin }
   })
   assert.equal(await realpath(join(staged, 'node_modules')), await realpath(join(root, 'node_modules')))
   for (const file of ['onchain.js', 'package.json', 'src/onchain-wallet.js', 'src/onchain-worker.js']) {
@@ -35,27 +38,23 @@ test('pre-admission Node qualification changes only its private manifest hold', 
   assert.deepEqual(await readFile(sourceManifest), original)
 })
 
-test('pre-admission staging still rejects both an incorrect worker hash and native identity', async t => {
+test('pre-admission staging still rejects both an incorrect addon hash and native identity', async t => {
   const original = await readFile(sourceManifest)
   const directory = await workspace(t)
-  const staged = await stageQualificationPackage(root, directory)
+  const addon = await buildFixtureAddon(t, `module.exports = line => {
+    const { id, method } = JSON.parse(line)
+    if (method !== 'version') throw new Error('Unexpected native method')
+    return JSON.stringify({ id, result: { protocol: 2, source: 'unreviewed' } })
+  }`)
+  const pin = { sha256: addon.sha256, byteLength: addon.byteLength }
+  const staged = await stageQualificationPackage(root, directory, { target, pin })
   const { WalletManagerRgb } = await import(pathToFileURL(join(staged, 'onchain.js')).href)
-  const worker = join(directory, 'incompatible-worker')
-  const script = `#!${process.execPath}
-const readline = require('node:readline')
-readline.createInterface({ input: process.stdin }).on('line', line => {
-  const { id, method } = JSON.parse(line)
-  if (method !== 'version') process.exit(13)
-  process.stdout.write(JSON.stringify({ id, result: { protocol: 2, source: 'unreviewed' } }) + '\\n')
-})
-`
-  await writeFile(worker, script, { mode: 0o700 })
-  const digest = createHash('sha256').update(script).digest('hex')
+  const digest = addon.sha256
   for (const [name, hash] of [['wrong-hash', '0'.repeat(64)], ['wrong-identity', digest]]) {
     const manager = new WalletManagerRgb(new Uint8Array(64).fill(7), {
       network: 'regtest', startupMode: 'offline', dataDir: join(directory, name),
       indexerUrl: 'tcp://127.0.0.1:50001', transportEndpoint: 'rpc://127.0.0.1:3000/json-rpc',
-      nativeExecutable: worker, nativeSha256: hash, maxFeeSats: '5000',
+      nativeAddon: addon.path, nativeSha256: hash, maxFeeSats: '5000',
       authorize: () => assert.fail('Qualification must not request a transaction signature')
     })
     try {

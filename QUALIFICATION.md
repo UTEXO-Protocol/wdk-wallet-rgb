@@ -2,7 +2,13 @@
 
 This register covers `@utexo/wdk-wallet-rgb@3.0.0-rc.4`. Build, packed runtime, funded local and installed-app checks have separate scopes. Receipts and disposable fixtures are excluded from the npm package.
 
-## Current candidate
+## Node addon qualification in progress
+
+Node now uses a bundled Node-API addon on a dedicated thread instead of a separate Rust executable. The Rust engine, upstream sources, database identities and Bare native inputs are unchanged. The five Node targets are on artifact-admission hold until the new builds and packed consumers pass. Publication remains held.
+
+Local verification passes 165 JavaScript tests and public types, 54 Rust library tests and strict Clippy. The same Darwin ARM64 Node-API v8 binary executes on Node 22, 24 and 26. Lifecycle regressions cover timeout/close during native mutation, retained directory ownership, no automatic replay and result recovery after reopen. These local checks do not qualify the final cross-platform archive; funded upgrade and exact-pack checks are underway.
+
+## Previous executable-based candidate
 
 | Input | Reviewed identity |
 | --- | --- |
@@ -17,9 +23,9 @@ The public RGB source includes merged contract APIs from [#124](https://github.c
 
 **#138 remains a merge dependency.** It reconstructs missing BFA bridge/reject-list metadata from retained validated stock during transactional wallet initialization, preserving keys, allocations and transfers. Missing stock fails without a partial backfill. Without the repair, an older BFA database can migrate and then panic when listing an asset.
 
-Native artifact admission is complete. `publicationHold: true` remains. Removing that hold changes a packed file: repack and rerun package admission/consumer checks against the final release source. [RELEASING.md](RELEASING.md) records the review, normal-merge and publication order.
+The previous candidate had complete native artifact admission. `publicationHold: true` remains. Removing that hold changes a packed file: repack and rerun package admission/consumer checks against the final release source. [RELEASING.md](RELEASING.md) records the review, normal-merge and publication order.
 
-## Current verification
+## Previous executable-based verification
 
 | Scope | Result and evidence |
 | --- | --- |

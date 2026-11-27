@@ -14,7 +14,7 @@ npm install --save-exact @utexo/wdk-wallet-rgb@3.0.0-rc.4
 
 Until publication, install the reviewed local archive with `npm install ./utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz`. PR #23 remains on publication hold pending [upstream #138](https://github.com/RGB-Tools/rgb-lib/pull/138).
 
-Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedded mobile runtimes. The complete npm package contains all eleven Bare targets. Node applications also need the matching worker from the [GitHub release assets](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/releases) and its SHA-256. Configure its absolute path as `nativeExecutable` and hash as `nativeSha256`. Installation does not download or compile native code.
+Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedded mobile runtimes. The complete npm package contains all five Node and eleven Bare addons. Node selects and verifies its packaged addon automatically; no executable path or separate download is needed. Installation does not download or compile native code.
 
 The [integration guide](CANDIDATE.md) covers Bare and mobile linking, network selection, transaction approval, Tether Core and error recovery. The repository's [release procedure](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/RELEASING.md) describes artifact verification and publication.
 
@@ -42,7 +42,7 @@ Balance, history, asset, output, fee and chain getters retry one `INDEXER_UNAVAI
 | Android Bare | ARM64, ARMv7, x64 and x86 |
 | iOS Bare | ARM64 device; ARM64 and x64 simulators |
 
-GNU hosts must provide the GLIBC symbol versions recorded in each worker or addon receipt. macOS binaries target macOS 11 or newer; the selected Node/Bare host runtime can require a newer OS. Linux musl is available for the Node x64 worker only.
+GNU hosts must provide the GLIBC symbol versions recorded in each addon receipt. macOS binaries target macOS 11 or newer; the selected Node/Bare host runtime can require a newer OS. Linux musl is available for the Node x64 addon only.
 
 Build and ABI verification, packed desktop execution, funded fixture tests and installed application acceptance have separate scopes. The [qualification register](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/QUALIFICATION.md) records exact versions and evidence. Windows is not supported.
 

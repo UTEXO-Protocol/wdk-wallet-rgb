@@ -293,7 +293,7 @@ for (const runtime of runtimes) {
     await peer.request('open', name, [], { seed: seeds[name], config: {
       network: 'regtest', dataDir: join(root, name), indexerUrl: fixture.indexerUrl,
       transportEndpoint: proxies[name], maxFeeSats: '5000',
-      ...(runtime === 'node' ? { nativeExecutable: worker, nativeSha256: nodeSha256 } : { nativeSha256: bareSha256 })
+      ...(runtime === 'node' ? { nativeAddon: worker, nativeSha256: nodeSha256 } : { nativeSha256: bareSha256 })
     } })
   }
   async function restart () {

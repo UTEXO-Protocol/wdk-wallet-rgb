@@ -43,8 +43,9 @@ class ReleasePreparationTests(unittest.TestCase):
         self.artifacts = self.root / "artifacts"
         self.artifacts.mkdir()
         self.native = {"targets": {}}
+        self.node_native = {"targets": {}}
         self.evidence = {"packageVersion": self.package["version"], "producerCommit": self.producer,
-                         "count": 16, "platforms": {}, "packedBareTargets": {}}
+                         "count": 16, "platforms": {}, "packedBareTargets": {}, "packedNodeTargets": {}}
         self.entries = []
         for target in release.BARE_TARGETS:
             self.add_binary("bare-" + target, "utexo__wdk-wallet-rgb.bare")
@@ -58,7 +59,12 @@ class ReleasePreparationTests(unittest.TestCase):
             self.evidence["packedBareTargets"][target] = {"pin": pin, "producerCommit": self.producer}
             self.entries.append(("package/prebuilds/" + target + "/utexo__wdk-wallet-rgb.bare", data, False))
         for target in release.NODE_TARGETS:
-            self.add_binary("node-" + target, "utexo-rgb-native")
+            self.add_binary("node-" + target, "utexo-rgb-native.node")
+            data = ("node-" + target).encode()
+            pin = {"sha256": release.sha256(data), "byteLength": len(data)}
+            self.node_native["targets"][target] = pin
+            self.evidence["packedNodeTargets"][target] = {"pin": pin, "producerCommit": self.producer}
+            self.entries.append(("package/prebuilds/" + target + "/utexo-rgb-native.node", data, False))
         for name in ["package.json", "README.md", "LICENSE", "onchain.js", *release.NOTICE_FILES]:
             self.entries.append(("package/" + name, (self.repo / name).read_bytes(), False))
         self.archive = self.root / "sdk.tgz"
@@ -96,44 +102,44 @@ class ReleasePreparationTests(unittest.TestCase):
                 if "darwin" in name else {"format": "ELF", "glibcVersions": ["2.17", "2.34"]})
 
     def verify_pack(self):
-        return release.verify_pack(self.archive, self.head, self.package, self.native)
+        return release.verify_pack(self.archive, self.head, self.package, self.native, self.node_native)
 
     def test_complete_set_and_pack_are_admitted(self):
-        self.assertEqual(len(release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native)), 16)
+        self.assertEqual(len(release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native, self.node_native)), 16)
         self.assertEqual(len(self.verify_pack()["files"]), len(self.entries))
         self.assertTrue(release.verify_source(self.producer, self.head)["nativeInputsUnchanged"])
 
     def test_changed_worker_is_rejected_even_with_forged_local_receipt(self):
         folder = self.artifacts / "node-linux-x64-gnu"
-        (folder / "utexo-rgb-native").write_bytes(b"foreign binary")
+        (folder / "utexo-rgb-native.node").write_bytes(b"foreign binary")
         (folder / "build-receipt.json").write_text(json.dumps({"binary": {"sha256": release.sha256(b"foreign binary")}}))
         with self.assertRaisesRegex(ValueError, "identity mismatch"):
-            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native)
+            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native, self.node_native)
 
     def test_missing_target_is_rejected(self):
         del self.evidence["platforms"]["bare-android-ia32"]
         with self.assertRaisesRegex(ValueError, "Incomplete native target"):
-            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native)
+            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native, self.node_native)
 
     def test_wrong_mobile_linked_name_is_rejected(self):
         self.native["targets"]["android-arm64"]["linkedName"] = "libold-sdk.so"
         with self.assertRaisesRegex(ValueError, "linked name differs"):
-            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native)
+            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native, self.node_native)
 
     def test_node_abi_requirements_are_required_and_preserved(self):
-        results = release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native)
+        results = release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native, self.node_native)
         self.assertEqual(results["node-linux-x64-gnu"]["abi"]["glibcVersions"], ["2.17", "2.34"])
         del self.evidence["platforms"]["node-linux-x64-gnu"]["abi"]
         with self.assertRaisesRegex(ValueError, "Missing reviewed Node ABI"):
-            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native)
+            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native, self.node_native)
 
     def test_symlink_worker_is_rejected(self):
-        binary = self.artifacts / "node-darwin-arm64/utexo-rgb-native"
+        binary = self.artifacts / "node-darwin-arm64/utexo-rgb-native.node"
         saved = self.root / "saved-worker"
         binary.rename(saved)
         binary.symlink_to(saved)
         with self.assertRaisesRegex(ValueError, "Symlink"):
-            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native)
+            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native, self.node_native)
 
     def test_stale_native_source_or_lock_is_rejected(self):
         self.write("native/Cargo.lock", b"changed dependency source\n")
@@ -145,6 +151,28 @@ class ReleasePreparationTests(unittest.TestCase):
         self.write("native/README.md", b"Clearer build instructions\n")
         self.head = self.commit()
         self.assertTrue(release.verify_source(self.producer, self.head)["nativeInputsUnchanged"])
+
+    def test_node_only_sources_do_not_invalidate_bare_artifacts(self):
+        self.write("native/node/binding.c", b"node adapter\n")
+        self.write("native/Cargo.toml", b"node adapter manifest\n")
+        self.head = self.commit()
+        self.assertTrue(release.verify_source(self.producer, self.head, "bare")["nativeInputsUnchanged"])
+        with self.assertRaisesRegex(ValueError, "Native build inputs changed"):
+            release.verify_source(self.producer, self.head, "node")
+        self.write("native/src/engine.rs", b"shared engine changed\n")
+        self.head = self.commit()
+        with self.assertRaisesRegex(ValueError, "Native build inputs changed"):
+            release.verify_source(self.producer, self.head, "bare")
+
+    def test_bare_pin_must_match_the_reviewed_binary(self):
+        self.native["targets"]["android-arm64"]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "Packed Bare pin differs from binary"):
+            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native, self.node_native)
+
+    def test_node_pin_must_match_the_reviewed_binary(self):
+        self.node_native["targets"]["linux-x64-gnu"]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "Packed Node pin differs from binary"):
+            release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native, self.node_native)
 
     def test_runtime_drift_is_reported_separately_from_native_equivalence(self):
         self.write("onchain.js", b"export default 2\n")
@@ -165,7 +193,10 @@ class ReleasePreparationTests(unittest.TestCase):
         self.native.update({"releaseHold": release_hold, "publicationHold": publication_hold,
                             "source": "fixture", "overlayTree": "a" * 40,
                             "integrationTree": "a" * 40, "protocol": 1})
+        self.node_native.update({key: self.native[key] for key in ("releaseHold", "publicationHold", "source", "overlayTree", "integrationTree", "protocol")})
+        self.node_native.update({"runtime": "node-in-process", "nodeApiVersion": 8})
         self.write("src/onchain-bare-native.json", json.dumps(self.native).encode())
+        self.write("src/onchain-node-native.json", json.dumps(self.node_native).encode())
         self.write("qualification/rc4/platforms.json", json.dumps(self.evidence).encode())
         self.head = self.commit()
 
@@ -191,7 +222,7 @@ class ReleasePreparationTests(unittest.TestCase):
         self.assertEqual(len(result["publicationBlockers"]), 2)
         self.assertEqual(len(result["platforms"]), 16)
         self.assertEqual(result["package"]["sha256"], release.file_identity(self.archive)["sha256"])
-        self.assertTrue(result["source"]["nativeInputsUnchanged"])
+        self.assertTrue(result["source"]["node"]["nativeInputsUnchanged"])
         self.assertNotIn("assets", result)
         self.assertEqual(json.loads(release.blob(self.head, "src/onchain-bare-native.json")), self.native)
 
@@ -215,7 +246,7 @@ class ReleasePreparationTests(unittest.TestCase):
 
     def test_qualification_cli_rejects_changed_binary(self):
         self.prepare_cli_source()
-        (self.artifacts / "node-linux-x64-gnu/utexo-rgb-native").write_bytes(b"foreign")
+        (self.artifacts / "node-linux-x64-gnu/utexo-rgb-native.node").write_bytes(b"foreign")
         with self.assertRaisesRegex(ValueError, "identity mismatch"):
             self.run_cli("--verify-qualification")
 
@@ -273,27 +304,27 @@ class ReleasePreparationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Missing package members"):
             self.verify_pack()
 
-    def test_release_archives_are_reproducible_and_executable(self):
+    def test_release_contains_all_addons_in_one_reproducible_archive(self):
         report = {"packageVersion": self.package["version"], "source": release.verify_source(self.producer, self.head),
-                  "platforms": release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native),
+                  "platforms": release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native, self.node_native),
                   "package": self.verify_pack()}
         first, second = self.root / "release-a", self.root / "release-b"
         release.assemble(first, self.archive, self.artifacts, self.evidence, report, self.head)
         release.assemble(second, self.archive, self.artifacts, self.evidence, report, self.head)
         self.assertEqual({p.name: release.file_identity(p) for p in first.iterdir()}, {p.name: release.file_identity(p) for p in second.iterdir()})
-        node_archive = next(first.glob("*-node-linux-x64-gnu.tar.gz"))
-        with tarfile.open(node_archive) as tar:
-            self.assertEqual(tar.getmember("utexo-rgb-native").mode, 0o755)
-            self.assertEqual(tar.extractfile("utexo-rgb-native").read(), b"node-linux-x64-gnu")
+        self.assertEqual({path.name for path in first.iterdir()}, {"sdk.tgz", "release-manifest.json", "SHA256SUMS"})
+        with tarfile.open(first / "sdk.tgz") as tar:
+            self.assertEqual(tar.getmember("package/prebuilds/linux-x64-gnu/utexo-rgb-native.node").mode, 0o644)
+            self.assertEqual(tar.extractfile("package/prebuilds/linux-x64-gnu/utexo-rgb-native.node").read(), b"node-linux-x64-gnu")
         with self.assertRaisesRegex(ValueError, "Output already exists"):
             release.assemble(first, self.archive, self.artifacts, self.evidence, report, self.head)
 
     def test_failed_assembly_leaves_no_partial_release(self):
         report = {"packageVersion": self.package["version"], "source": {},
-                  "platforms": release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native),
+                  "platforms": release.verify_platforms(self.evidence, self.artifacts, self.package["version"], self.native, self.node_native),
                   "package": self.verify_pack()}
         output = self.root / "release"
-        with patch.object(release, "deterministic_tar", side_effect=OSError("disk full")):
+        with patch.object(release.shutil, "copyfile", side_effect=OSError("disk full")):
             with self.assertRaises(OSError):
                 release.assemble(output, self.archive, self.artifacts, self.evidence, report, self.head)
         self.assertFalse(output.exists())

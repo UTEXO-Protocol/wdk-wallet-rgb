@@ -8,7 +8,7 @@ const seed = new Uint8Array(64)
 const core = new WDK(seed)
 const config: CandidateConfig = {
   network: 'regtest', mode: 'btc-only', dataDir: '/private/qualification-wallet',
-  indexerUrl: 'tcp://127.0.0.1:50001', nativeExecutable: '/private/native-worker',
+  indexerUrl: 'tcp://127.0.0.1:50001', nativeAddon: '/private/native-addon.node',
   nativeSha256: '0'.repeat(64), maxFeeSats: '5000', authorize: () => false
 }
 

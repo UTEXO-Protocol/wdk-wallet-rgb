@@ -12,6 +12,10 @@ on:
         description: Build and exercise the complete native target matrix
         type: boolean
         default: false
+      node_only:
+        description: Rebuild only Node addons; retain previously admitted Bare artifacts
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,7 +43,7 @@ jobs:
       - name: Unit tests
         run: npm test
       - name: Verify release artifact admission regressions
-        run: python3 -I -B -m unittest discover -s scripts/tests -p 'test_prepare_release.py'
+        run: python3 -I -B -m unittest discover -s scripts/tests -p 'test_*.py'
       - name: Check public types
         run: npm run check:types
       - name: Bundle WebRGB for Android Bare
@@ -58,13 +62,23 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       enabled: ${{ steps.admit.outputs.enabled }}
+      bare: ${{ steps.admit.outputs.bare }}
+      matrix: ${{ steps.admit.outputs.matrix }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
       - name: Verify the pinned public source
         id: admit
         env:
           GH_TOKEN: ${{ github.token }}
           REQUIRE_NATIVE: ${{ inputs.enable_native == true }}
           MANUAL_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+          NODE_ONLY: ${{ inputs.node_only == true }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           if test "$MANUAL_RUN" = true && test "$REQUIRE_NATIVE" != true; then
             printf 'enabled=false\n' >> "$GITHUB_OUTPUT"
@@ -73,7 +87,14 @@ jobs:
           fi
           revision=a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2
           test "$(gh api "repos/RGB-Tools/rgb-lib/git/commits/$revision" --jq .sha)" = "$revision"
-          printf 'enabled=true\n' >> "$GITHUB_OUTPUT"
+          if test "$MANUAL_RUN" = true; then
+            mode=all
+            if test "$NODE_ONLY" = true; then mode=node; fi
+          else
+            mode=changes
+          fi
+          python3 scripts/native-build-scope.py "$mode" "$BASE_SHA" "$HEAD_SHA" > "$RUNNER_TEMP/native-scope.json"
+          jq -r '"enabled=\(.enabled)\nbare=\(.bare)\nmatrix=\(.matrix | tojson)"' "$RUNNER_TEMP/native-scope.json" >> "$GITHUB_OUTPUT"
 
   desktop:
     name: ${{ matrix.kind }} ${{ matrix.target }}
@@ -83,17 +104,7 @@ jobs:
     timeout-minutes: 90
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - { kind: node, target: darwin-arm64, runner: macos-15 }
-          - { kind: node, target: darwin-x64, runner: macos-15-intel }
-          - { kind: node, target: linux-x64-gnu, runner: ubuntu-22.04 }
-          - { kind: node, target: linux-arm64-gnu, runner: ubuntu-24.04-arm }
-          - { kind: node, target: linux-x64-musl, runner: ubuntu-22.04 }
-          - { kind: bare, target: darwin-arm64, runner: macos-15 }
-          - { kind: bare, target: darwin-x64, runner: macos-15-intel }
-          - { kind: bare, target: linux-x64, runner: ubuntu-22.04 }
-          - { kind: bare, target: linux-arm64, runner: ubuntu-24.04-arm }
+      matrix: ${{ fromJSON(needs.native-admission.outputs.matrix) }}
     env:
       TARGET: ${{ matrix.target }}
       KIND: ${{ matrix.kind }}
@@ -123,11 +134,11 @@ jobs:
           test -z "${GH_TOKEN:-}${ORG_READ_TOKEN:-}"
           rustup toolchain install 1.94.0 --profile minimal
           npm ci --ignore-scripts --no-audit --no-fund
-      - name: Build and test the Node worker
+      - name: Build and test the Node addon
         if: matrix.kind == 'node' && matrix.target != 'linux-x64-musl'
         run: |
           node native/scripts/node-host.mjs build "$TARGET" "$NATIVE_RESULT"
-          cargo +1.94.0 test --locked --release --manifest-path native/Cargo.toml -- --test-threads=1
+          cargo +1.94.0 test --locked --release --lib --manifest-path native/Cargo.toml -- --test-threads=1
       - name: Build and test the Bare engine
         if: matrix.kind == 'bare'
         env:
@@ -161,8 +172,8 @@ jobs:
               git config --global --add safe.directory /wdk
               git config --global --add safe.directory /wdk/native/.sources/rgb-lib-upstream
               npm ci --ignore-scripts --no-audit --no-fund
-              node native/scripts/node-host.mjs build linux-x64-musl /output/native-result
-              cargo +1.94.0 test --locked --release --manifest-path native/Cargo.toml -- --test-threads=1
+              NODE_INCLUDE_DIR=/usr/local/include/node node native/scripts/node-host.mjs build linux-x64-musl /output/native-result
+              cargo +1.94.0 test --locked --release --lib --manifest-path native/Cargo.toml -- --test-threads=1
               bash scripts/qualify-desktop.sh node linux-x64-musl /output/native-result
               chown -R "$OUTPUT_UID:$OUTPUT_GID" /output/native-result
             '
@@ -178,7 +189,7 @@ jobs:
   android:
     name: Bare ${{ matrix.target }}
     needs: native-admission
-    if: needs.native-admission.outputs.enabled == 'true'
+    if: needs.native-admission.outputs.bare == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
@@ -297,7 +308,7 @@ jobs:
   ios:
     name: Bare ${{ matrix.target }}
     needs: native-admission
-    if: needs.native-admission.outputs.enabled == 'true'
+    if: needs.native-admission.outputs.bare == 'true'
     runs-on: macos-26
     timeout-minutes: 90
     strategy:

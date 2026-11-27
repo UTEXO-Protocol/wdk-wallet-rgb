@@ -11,6 +11,7 @@ import fnmatch
 import gzip
 import hashlib
 import io
+import importlib.util
 import json
 from pathlib import Path, PurePosixPath
 import re
@@ -89,10 +90,32 @@ def verify_identity(path, expected):
     return actual
 
 
-def verify_source(producer, head):
+def verify_source(producer, head, runtime=None):
     git("merge-base", "--is-ancestor", producer, head)
     changed = git("diff", "--name-only", producer, head, "--", "native", "src/onchain-dev-services.json", ".github/workflows/build.yml").decode().splitlines()
     changed = [name for name in changed if not name.endswith(".md")]
+    if runtime == "bare":
+        if ".github/workflows/build.yml" in changed:
+            spec = importlib.util.spec_from_file_location("native_scope", Path(__file__).with_name("native-build-scope.py"))
+            scope = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(scope)
+            require(scope.bare_workflow_inputs(blob(producer, ".github/workflows/build.yml").decode()) ==
+                    scope.bare_workflow_inputs(blob(head, ".github/workflows/build.yml").decode()),
+                    "Bare workflow build inputs changed since the reviewed producer")
+        # The retained Bare artifact has its original CI receipt. Node host code
+        # and its Cargo manifest are not build inputs to native/bare/Cargo.toml.
+        # Never exempt shared native/src modules or the Bare dependency lock.
+        changed = [name for name in changed if not (
+            name.startswith("native/node/") or name in (
+                "native/Cargo.toml", "native/Cargo.lock", "native/src/main.rs",
+                "native/scripts/check-dev-signet.py", "native/scripts/node-host.mjs", ".github/workflows/build.yml"))]
+    elif runtime == "node":
+        changed = [name for name in changed if not (
+            name.startswith("native/bare/") or name in (
+                "native/scripts/build-bare.sh", "native/scripts/build-bare-android.sh",
+                "native/scripts/build-bare-ios.sh", "native/scripts/verify-bare-android.mjs"))]
+    elif runtime is not None:
+        raise ValueError("Unknown native runtime")
     require(not changed, "Native build inputs changed since the reviewed producer: " + ", ".join(changed))
     old = committed_json(producer, "package.json")
     new = committed_json(head, "package.json")
@@ -100,7 +123,7 @@ def verify_source(producer, head):
     # admitted artifacts, even if the Rust engine itself did not change.
     require(old["version"] == new["version"], "SDK version differs from native producer")
     runtime_changed = git("diff", "--name-only", producer, head, "--", "src", "onchain.js", "onchain.d.ts", "webrgb-onchain.d.ts").decode().splitlines()
-    runtime_changed = [path for path in runtime_changed if path != "src/onchain-bare-native.json"]
+    runtime_changed = [path for path in runtime_changed if path not in ("src/onchain-bare-native.json", "src/onchain-node-native.json")]
     runtime_package_fields = ("dependencies", "engines", "exports", "imports", "main")
     if any(old.get(key) != new.get(key) for key in runtime_package_fields):
         runtime_changed.append("package.json")
@@ -110,16 +133,19 @@ def verify_source(producer, head):
             "fundedRuntimeEquivalence": "Not evaluated by this artifact verifier; use the separate funded qualification receipt."}
 
 
-def verify_platforms(evidence, artifacts, version, native):
+def verify_platforms(evidence, artifacts, version, native, node_native):
     expected = {"bare-" + name for name in BARE_TARGETS} | {"node-" + name for name in NODE_TARGETS}
     require(set(evidence["platforms"]) == expected and evidence["count"] == 16, "Incomplete native target matrix")
     require(evidence["packageVersion"] == version, "Platform evidence has a different package version")
     require(set(native["targets"]) == set(BARE_TARGETS), "Incomplete packed Bare target admission")
+    require(set(node_native["targets"]) == set(NODE_TARGETS), "Incomplete packed Node target admission")
     results = {}
     for name, reviewed in sorted(evidence["platforms"].items()):
-        require(reviewed["sourceCommit"] == evidence["producerCommit"], "Mixed native producer commits")
+        runtime = name.split("-", 1)[0]
+        producer = evidence.get("producers", {}).get(runtime, evidence.get("producerCommit"))
+        require(reviewed["sourceCommit"] == producer, "Unreviewed native producer commit")
         require(reviewed["receiptMatchedBinary"] is True, "Artifact lacks reviewed receipt admission")
-        binary_name = "utexo-rgb-native" if name.startswith("node-") else "utexo__wdk-wallet-rgb.bare"
+        binary_name = "utexo-rgb-native.node" if name.startswith("node-") else "utexo__wdk-wallet-rgb.bare"
         require(reviewed["binaryFile"] == binary_name, "Unexpected native binary filename")
         binary = regular_file(artifacts, f"{name}/{binary_name}")
         identity = verify_identity(binary, reviewed)
@@ -135,7 +161,7 @@ def verify_platforms(evidence, artifacts, version, native):
     for name in BARE_TARGETS:
         admitted = evidence["packedBareTargets"][name]
         require(admitted["pin"] == native["targets"][name], "Packed Bare pin differs from reviewed qualification")
-        require(admitted["producerCommit"] == evidence["producerCommit"], "Packed Bare producer differs")
+        require(admitted["producerCommit"] == evidence.get("producers", {}).get("bare", evidence.get("producerCommit")), "Packed Bare producer differs")
         pin = admitted["pin"]
         linked = None
         if name.startswith("android-"):
@@ -146,10 +172,22 @@ def verify_platforms(evidence, artifacts, version, native):
         require(set(pin) == ({"sha256", "byteLength", "linkedName"} if linked else {"sha256", "byteLength"}), "Unexpected Bare pin fields")
         require(pin.get("linkedName") == linked, "Mobile linked name differs from SDK version")
         require(re.fullmatch(r"[0-9a-f]{64}", pin["sha256"]) and 0 < pin["byteLength"] <= MAX_FILE, "Invalid Bare pin")
+        binary = results["bare-" + name]
+        require(pin["sha256"] == binary["sha256"] and pin["byteLength"] == binary["bytes"],
+                "Packed Bare pin differs from binary")
+    for name in NODE_TARGETS:
+        admitted = evidence["packedNodeTargets"][name]
+        require(admitted["pin"] == node_native["targets"][name], "Packed Node pin differs from reviewed qualification")
+        require(admitted["producerCommit"] == evidence.get("producers", {}).get("node", evidence.get("producerCommit")), "Packed Node producer differs")
+        pin = admitted["pin"]
+        require(set(pin) == {"sha256", "byteLength"}, "Unexpected Node pin fields")
+        require(re.fullmatch(r"[0-9a-f]{64}", pin["sha256"]) and 0 < pin["byteLength"] <= MAX_FILE, "Invalid Node pin")
+        binary = results["node-" + name]
+        require(pin == {"sha256": binary["sha256"], "byteLength": binary["bytes"]}, "Packed Node pin differs from binary")
     return results
 
 
-def verify_pack(archive, head, package, native):
+def verify_pack(archive, head, package, native, node_native):
     require(archive.is_file() and not archive.is_symlink(), "Package archive must be a regular file")
     require(archive.stat().st_size <= MAX_ARCHIVE, "Package archive is oversized")
     tracked = set(git("ls-tree", "-r", "--name-only", head).decode().splitlines())
@@ -158,6 +196,7 @@ def verify_pack(archive, head, package, native):
         if any(fnmatch.fnmatchcase(path, pattern) or path.startswith(pattern.rstrip("/") + "/") for pattern in package["files"]):
             expected.add(path)
     expected |= {f"prebuilds/{target}/utexo__wdk-wallet-rgb.bare" for target in BARE_TARGETS}
+    expected |= {f"prebuilds/{target}/utexo-rgb-native.node" for target in NODE_TARGETS}
     inventory = {}
     total = 0
     with tarfile.open(archive, "r:gz") as stream:
@@ -174,7 +213,7 @@ def verify_pack(archive, head, package, native):
             require(len(data) == member.size, "Truncated package member")
             if path.startswith("prebuilds/"):
                 target = path.split("/")[1]
-                pin = native["targets"][target]
+                pin = (node_native if path.endswith(".node") else native)["targets"][target]
                 require(len(data) == pin["byteLength"] and sha256(data) == pin["sha256"], "Packed addon identity mismatch: " + target)
             else:
                 require(data == blob(head, path), "Package differs from committed source: " + path)
@@ -210,36 +249,9 @@ def assemble(output, archive, artifacts, evidence, report, head):
         shutil.copyfile(archive, staging / archive.name)
         verify_identity(staging / archive.name, report["package"])
         assets = {archive.name: file_identity(staging / archive.name)}
-        nodes = {}
-        for target in NODE_TARGETS:
-            key = "node-" + target
-            binary = regular_file(artifacts, key + "/utexo-rgb-native")
-            # Recheck bytes immediately before writing to catch changed inputs.
-            verify_identity(binary, evidence["platforms"][key])
-            data = binary.read_bytes()
-            reviewed = evidence["platforms"][key]
-            require(sha256(data) == reviewed["sha256"], "Node worker changed while reading")
-            name = f"utexo-wdk-wallet-rgb-{report['packageVersion']}-node-{target}.tar.gz"
-            receipt = {"target": target, "packageVersion": report["packageVersion"],
-                       "source": report["source"], "binary": report["platforms"][key]}
-            readme = (
-                f"Node worker for @utexo/wdk-wallet-rgb {report['packageVersion']} ({target})\n\n"
-                "Install the matching SDK package separately. Extract this archive into an application-owned directory.\n"
-                "Pass the absolute path of utexo-rgb-native as nativeExecutable and this SHA-256 as nativeSha256:\n"
-                f"{reviewed['sha256']}\n\n"
-                "ABI requirements are recorded in release-receipt.json under binary.abi.\n"
-                "For GNU/Linux, the host must provide every recorded GLIBC symbol version; ARM64 and x64 have different minimums.\n"
-                "Use the separate musl worker on musl systems. macOS must satisfy minimumOS as well as the Node runtime requirement.\n\n"
-                "The SDK verifies the hash and protocol before opening the wallet. Do not select an executable via PATH.\n"
-                "Keep this file and the third-party notices with redistributed copies. No install scripts or downloads run.\n"
-            ).encode()
-            deterministic_tar(staging / name, [
-                ("utexo-rgb-native", data, True), ("release-receipt.json", json_bytes(receipt), False),
-                ("README.txt", readme, False), ("LICENSE", blob(head, "LICENSE"), False), *notices,
-            ])
-            assets[name] = file_identity(staging / name)
-            nodes[target] = {"archive": name, "nativeExecutable": "utexo-rgb-native", "nativeSha256": reviewed["sha256"]}
-        result = {**report, "assets": assets, "nodeWorkers": nodes, "published": False}
+        # All runtimes are present in the same verified npm archive. Separate
+        # executable downloads are no longer part of the delivery contract.
+        result = {**report, "assets": assets, "published": False}
         manifest = staging / "release-manifest.json"
         manifest.write_bytes(json_bytes(result))
         sums = {**assets, manifest.name: file_identity(manifest)}
@@ -268,12 +280,18 @@ def main():
     require(package["name"] == "@utexo/wdk-wallet-rgb", "Wrong package name")
     require(re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", package["version"]), "Unexpected package version")
     native = committed_json(head, "src/onchain-bare-native.json")
+    node_native = committed_json(head, "src/onchain-node-native.json")
     verify_native_admission(native, qualification_only=args.verify_qualification)
+    verify_native_admission(node_native, qualification_only=args.verify_qualification)
+    require(all(node_native[key] == native[key] for key in ("source", "overlayTree", "integrationTree", "protocol")), "Node and Bare RGB identities differ")
+    require(node_native.get("nodeApiVersion") == 8 and node_native.get("runtime") == "node-in-process", "Unexpected Node addon ABI")
     require(native["overlayTree"] == native["integrationTree"], "Source overlays are not admitted for this release")
     evidence = committed_json(head, args.qualification)
-    source = verify_source(evidence["producerCommit"], head)
-    platforms = verify_platforms(evidence, args.artifacts, package["version"], native)
-    pack = verify_pack(args.archive, head, package, native)
+    producers = evidence.get("producers", {"bare": evidence.get("producerCommit"), "node": evidence.get("producerCommit")})
+    require(set(producers) == {"bare", "node"}, "Missing runtime producer identity")
+    source = {runtime: verify_source(producer, head, runtime) for runtime, producer in producers.items()}
+    platforms = verify_platforms(evidence, args.artifacts, package["version"], native, node_native)
+    pack = verify_pack(args.archive, head, package, native, node_native)
     report = {"schemaVersion": 1, "packageVersion": package["version"], "source": source,
               "native": {key: native[key] for key in ("source", "overlayTree", "integrationTree", "protocol")},
               "platforms": platforms, "package": pack,
@@ -283,10 +301,10 @@ def main():
             "qualificationOnly": True,
             "publicationAllowed": False,
             "holds": {"releaseHold": native["releaseHold"],
-                      "publicationHold": native.get("publicationHold") is True},
+                      "publicationHold": native.get("publicationHold") is True or node_native.get("publicationHold") is True},
             "publicationBlockers": ["Qualification verification cannot assemble or authorize a release."] +
                 (["The committed native manifest retains its publication hold."]
-                 if native.get("publicationHold") is True else []),
+                 if native.get("publicationHold") is True or node_native.get("publicationHold") is True else []),
         })
     if args.output:
         report = assemble(args.output, args.archive, args.artifacts, evidence, report, head)

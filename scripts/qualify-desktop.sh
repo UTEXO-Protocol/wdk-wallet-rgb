@@ -57,6 +57,14 @@ native.releaseHold = false
 writeFileSync(manifest, JSON.stringify(native, null, 2) + '\n')
 writeFileSync(join(out, 'build-receipt.json'), JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' })
 JS
+  node --input-type=module - <<'JS'
+import { readFileSync, writeFileSync } from 'node:fs'
+const path = 'src/onchain-node-native.json'
+const manifest = JSON.parse(readFileSync(path, 'utf8'))
+manifest.targets = {}
+manifest.releaseHold = true
+writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n')
+JS
   node scripts/stage-bare.mjs "$binary" "$target"
   node scripts/check-candidate-pack.mjs --require-native
   bare_cli="$(node -p 'require(process.argv[1])("bare")' "$source_root/native/target/bare-toolchain/node_modules/bare-runtime")"
@@ -69,18 +77,27 @@ JS
   grep -Fq 'eight worker teardown/reopens passed' "$out/direct-smoke.log"
 else
   test "$kind" = node
-  binary="$out/utexo-rgb-native"
+  binary="$out/utexo-rgb-native.node"
   node -e 'if (require(process.argv[1]).nativeIdentity.assetIssuance !== 2) process.exitCode = 1' "$out/build-receipt.json"
-  node scripts/check-candidate-pack.mjs
-  # Only the temporary qualification copy is admitted after this worker's
-  # source and binary receipt have been checked. Publication stays on hold.
-  node --input-type=module - <<'JS'
+  # Admit only this freshly checked addon in the private package copy.
+  node --input-type=module - "$target" "$binary" <<'JS'
+import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
-const path = 'src/onchain-bare-native.json'
+const [target, binary] = process.argv.slice(2)
+const path = 'src/onchain-node-native.json'
 const manifest = JSON.parse(readFileSync(path, 'utf8'))
+const bytes = readFileSync(binary)
+manifest.targets = { [target]: { byteLength: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') } }
 manifest.releaseHold = false
 writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n')
+const barePath = 'src/onchain-bare-native.json'
+const bare = JSON.parse(readFileSync(barePath, 'utf8'))
+bare.targets = {}
+bare.releaseHold = true
+writeFileSync(barePath, JSON.stringify(bare, null, 2) + '\n')
 JS
+  node scripts/stage-node.mjs "$binary" "$target"
+  node scripts/check-candidate-pack.mjs --require-native
 fi
 
 sha256() {
@@ -103,6 +120,7 @@ cp "$smoke" "$consumer/packed-smoke.mjs"
     npm install --ignore-scripts --no-audit --no-fund --save-exact bare-type@1.6.0
     "$bare_cli" ./packed-smoke.mjs "$target" "$hash"
   else
+    node ./packed-smoke.mjs "$target" "$hash"
     node ./packed-smoke.mjs "$target" "$hash" "$binary"
   fi
 ) | tee "$out/packed-smoke.log"

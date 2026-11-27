@@ -1,0 +1,11 @@
+{
+  "integrationTree": "a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd",
+  "source": "a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
+  "overlayTree": "a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd",
+  "protocol": 2,
+  "targets": {},
+  "releaseHold": true,
+  "publicationHold": true,
+  "nodeApiVersion": 8,
+  "runtime": "node-in-process"
+}

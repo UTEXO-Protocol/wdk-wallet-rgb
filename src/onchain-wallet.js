@@ -12,7 +12,7 @@ import { WalletRuntimeError } from './onchain-runtime-error.js'
 import { BIP322_CAPABILITIES, bip322MessageBytes, verifyMessageBip322 } from './onchain-message.js'
 import { admitFeeEstimate, admitSendStatus, checkFeeBlocks, checkRgbInvoice, prepareBtcSend, prepareRgbSend, sendRecoveryParams } from './onchain-send.js'
 import devServices from './onchain-dev-services.json' with { type: 'json' }
-import nativeManifest from './onchain-bare-native.json' with { type: 'json' }
+import nativeManifest from '#onchain-native' with { type: 'json' }
 
 const ROUTES = new Map([
   ['eip155:42161', 0],
@@ -230,6 +230,9 @@ function configFor (options) {
       return [url, key]
     }))
   }
+  if (options.nativeExecutable !== undefined) {
+    throw new TypeError('Node now loads its packaged addon; remove nativeExecutable from the wallet configuration')
+  }
   return {
     network,
     mode,
@@ -237,7 +240,7 @@ function configFor (options) {
     genericRgb,
     startupMode,
     dataDir: options.dataDir,
-    nativeExecutable: options.nativeExecutable,
+    nativeAddon: options.nativeAddon,
     nativeSha256: options.nativeSha256,
     androidNativeLibraryDir: options.androidNativeLibraryDir,
     iosNativeFrameworkDir: options.iosNativeFrameworkDir,
@@ -332,7 +335,7 @@ export class WalletAccountRgb {
     let worker
     try {
       worker = await OnchainWorker.start(
-        config.nativeExecutable, config.nativeSha256, config.androidNativeLibraryDir, config.iosNativeFrameworkDir
+        config.nativeAddon, config.nativeSha256, config.androidNativeLibraryDir, config.iosNativeFrameworkDir
       )
       const version = await worker.request('version')
       if (version?.protocol !== nativeManifest.protocol || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 7 || version.source !== nativeManifest.source || version.overlayTree !== nativeManifest.overlayTree ||
@@ -397,7 +400,8 @@ export class WalletAccountRgb {
     this.#prepared = undefined
     // The native worker owns the directory lock. Keep it alive through an
     // admitted journal write or a vanilla submission's pre-dispatch cleanup.
-    // Neither user approval nor a dispatched End request delays shutdown.
+    // Pending human approval is not awaited. Worker close still drains any
+    // already-dispatched native operation before releasing directory ownership.
     this.#closing = (this.#submissionAdmission?.promise ?? this.#journalWrite ?? Promise.resolve()).catch(() => {})
       .then(() => this.#worker.close()).finally(this.#releaseDirectory)
     return this.#closing

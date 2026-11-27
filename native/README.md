@@ -1,6 +1,6 @@
-# On-chain RGB native worker
+# On-chain RGB native engine
 
-The watch-only engine is shared by the Node pipe worker and the Bare addon. The application owns the seed, transaction review and signer. Native code receives public account keys and an exact signed PSBT after approval.
+The watch-only engine is shared by the Node-API and Bare addons. The application owns the seed, transaction review and signer. Native code receives public account keys and an exact signed PSBT after approval.
 
 The build uses unmodified RGB-Tools rgb-lib `0.3.0-beta.7`, commit `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, tree `a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd`. Electrum 0.25.2 and Esplora 0.12.3 are registry sources with Cargo checksums. There are no downstream RGB or client source patches. The RGB protocol crates use the locked registry `0.11.2-rc.2` graph. The `rgb_fs_store_migration` feature retains upstream decoding for earlier RGB file formats; it does not convert an earlier WDK wallet directory. The legacy manifest fields `overlayTree` and `integrationTree` now both identify the unmodified upstream tree.
 
@@ -22,7 +22,7 @@ cargo +1.94.0 test --manifest-path native/Cargo.toml --release --locked
 python3 native/scripts/check-dev-signet.py
 ```
 
-The preparation script verifies the exact upstream commit, tree, index, working files and untracked files. It can accept a local Git directory as its final argument. The qualifier packs an archive of the committed source and installs it into a separate consumer, then tests the exact worker, its source/hash admission and lifecycle. The worker, tested package, build receipt and logs remain in the output directory. Supply the worker's absolute path and SHA-256 through `nativeExecutable` and `nativeSha256`; Node workers are distributed separately from the JavaScript package. The supported matrix is in [CI](../.github/workflows/build.yml) and the [Bare runbook](bare/README.md).
+The preparation script verifies the exact upstream commit, tree, index, working files and untracked files. It can accept a local Git directory as its final argument. The qualifier packs an archive of committed source and installs it into a separate consumer, then tests the exact addon, its source/hash admission and lifecycle. The addon, tested package, build receipt and logs remain in the output directory. Node addons are bundled in the npm archive and resolved automatically; optional `nativeAddon` and `nativeSha256` values must match the admitted target. See the [Node addon runbook](node/README.md), [CI](../.github/workflows/build.yml) and [Bare runbook](bare/README.md).
 
 Format only owned source with `rustfmt +1.94.0 --edition 2024 native/src/main.rs`. Do not run formatting across the prepared upstream path dependency.
 

@@ -37,10 +37,10 @@ if (bare) {
   const installed = await readFile(join(state, 'node_modules/@utexo/wdk-wallet-rgb', manifest.addon))
   assert.strictEqual(digest(installed), nativeConfig.nativeSha256)
 } else {
-  const nativeExecutable = await realpath(join(root, 'artifacts/utexo-rgb-native-darwin-arm64'))
+  const nativeAddon = await realpath(join(root, 'artifacts/utexo-rgb-native-darwin-arm64.node'))
   const nativeManifest = await readJson(join(root, 'artifacts/native-candidate.json'))
-  assert.strictEqual(digest(await readFile(nativeExecutable)), nativeManifest.sha256)
-  nativeConfig = { nativeExecutable, nativeSha256: nativeManifest.sha256 }
+  assert.strictEqual(digest(await readFile(nativeAddon)), nativeManifest.sha256)
+  nativeConfig = { nativeAddon, nativeSha256: nativeManifest.sha256 }
 }
 const asset = action === 'setup' ? undefined : await readJson(join(fixture, 'runtime/issuer-public.json'))
 const assetId = asset?.assetId

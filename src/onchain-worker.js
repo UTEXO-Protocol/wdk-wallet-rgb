@@ -1,57 +1,92 @@
 // Copyright 2026 UTEXO. Licensed under the Apache License, Version 2.0.
-import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { lstat, realpath } from 'node:fs/promises'
 import { isAbsolute } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { Worker } from 'node:worker_threads'
+import manifest from './onchain-node-native.json' with { type: 'json' }
 import { WalletRuntimeError } from './onchain-runtime-error.js'
 
-// Allows a 10 MiB proof in base64 plus the surrounding response.
 const MAX_REQUEST_BYTES = 6 * 1024 * 1024
 const MAX_RESPONSE_BYTES = 14 * 1024 * 1024
 const REQUEST_TIMEOUT_MS = 120_000
 
-export const nativeRuntime = 'node-host-process'
+export const nativeRuntime = 'node-in-process'
+
+function nativeTarget () {
+  if (process.platform === 'darwin') return 'darwin-' + process.arch
+  if (process.platform === 'linux') {
+    const libc = process.report.getReport().header.glibcVersionRuntime ? 'gnu' : 'musl'
+    return 'linux-' + process.arch + '-' + libc
+  }
+  return undefined
+}
 
 export class OnchainWorker {
-  #child
+  #worker
   #stopped
   #pending
   #failure
   #nextId = 1
-  #chunks = []
-  #responseBytes = 0
 
-  static async start (path, expectedSha256) {
-    if (typeof path !== 'string' || !isAbsolute(path) || !/^[a-f0-9]{64}$/.test(expectedSha256)) {
-      throw new TypeError('An absolute native executable path and lowercase SHA-256 pin are required')
+  static async start (nativeAddon, expectedSha256, androidNativeLibraryDir, iosNativeFrameworkDir) {
+    if (manifest.releaseHold !== false) {
+      throw new WalletRuntimeError('NATIVE_BUILD_BLOCKED', 'No Node addon is approved for this SDK revision')
+    }
+    if (androidNativeLibraryDir !== undefined || iosNativeFrameworkDir !== undefined) {
+      throw new TypeError('Node does not use a mobile native library directory')
+    }
+    const target = nativeTarget()
+    const pin = Object.hasOwn(manifest.targets, target) ? manifest.targets[target] : undefined
+    if (!pin) throw new WalletRuntimeError('NATIVE_PLATFORM_UNSUPPORTED', 'No qualified Node addon for this platform')
+    const path = nativeAddon ?? fileURLToPath(new URL('../prebuilds/' + target + '/utexo-rgb-native.node', import.meta.url))
+    if (typeof path !== 'string' || !isAbsolute(path) || !path.endsWith('.node')) {
+      throw new TypeError('Node requires a canonical native addon path ending in .node')
+    }
+    if (expectedSha256 !== undefined && expectedSha256 !== pin.sha256) {
+      throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Node addon does not match the supplied SHA-256 pin')
     }
     const file = await lstat(path)
-    if (!file.isFile() || await realpath(path) !== path || (file.mode & 0o022) !== 0) {
-      throw new TypeError('Native executable must be a regular file at a canonical path')
+    if (!file.isFile() || await realpath(path) !== path || (file.mode & 0o022) !== 0 ||
+        file.size !== pin.byteLength || file.size <= 0 || file.size > 256 * 1024 * 1024) {
+      throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Packaged Node addon failed integrity verification')
     }
     const hash = createHash('sha256')
     for await (const chunk of createReadStream(path)) hash.update(chunk)
-    if (hash.digest('hex') !== expectedSha256) {
-      throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Native executable does not match its SHA-256 pin')
+    if (hash.digest('hex') !== pin.sha256) {
+      throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Packaged Node addon failed integrity verification')
     }
-    return new OnchainWorker(path)
+    const worker = new OnchainWorker(path, pin)
+    try {
+      const version = await worker.request('version')
+      if (version?.runtime !== nativeRuntime || version.indexer !== 'electrum-and-dev-esplora' ||
+          version.integrationTree !== manifest.integrationTree) {
+        throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected Node native build profile')
+      }
+      return worker
+    } catch (error) {
+      await worker.close()
+      throw error
+    }
   }
 
-  constructor (path) {
-    // Never inherit application tokens, node preload hooks or user key material.
-    this.#child = spawn(path, [], {
-      env: { LANG: 'C', PATH: '/usr/bin:/bin' },
-      stdio: ['pipe', 'pipe', 'ignore'],
-      windowsHide: true
+  constructor (addon, pin) {
+    this.#worker = new Worker(new URL('./onchain-node-thread.cjs', import.meta.url), {
+      workerData: { addon, pin },
+      // Native code remains in this process. Do not inherit JavaScript preload
+      // hooks or expose application environment values in the worker's JS context.
+      execArgv: [], env: { LANG: 'C', PATH: '/usr/bin:/bin' }, stdout: true, stderr: true
     })
-    this.#stopped = new Promise(resolve => this.#child.once('close', () => {
-      this.#fail('NATIVE_CLOSED', 'Native wallet process closed')
+    this.#worker.stdout.resume()
+    this.#worker.stderr.resume()
+    this.#stopped = new Promise(resolve => this.#worker.once('exit', () => {
+      this.#fail('NATIVE_CLOSED', 'Native wallet thread closed', false)
       resolve()
     }))
-    this.#child.once('error', () => this.#fail('NATIVE_START_FAILED', 'Native wallet process could not start'))
-    this.#child.stdin.on('error', () => this.#fail('NATIVE_IO_FAILED', 'Native wallet request could not be delivered'))
-    this.#child.stdout.on('data', chunk => this.#receive(chunk))
+    this.#worker.on('message', message => this.#receive(message))
+    this.#worker.on('messageerror', () => this.#fail('NATIVE_PROTOCOL', 'Invalid native wallet message'))
+    this.#worker.on('error', () => this.#fail('NATIVE_IO_FAILED', 'Native wallet thread failed', false))
   }
 
   get available () { return this.#failure === undefined }
@@ -60,64 +95,51 @@ export class OnchainWorker {
     if (this.#failure) return Promise.reject(this.#failure)
     if (this.#pending) return Promise.reject(new WalletRuntimeError('WALLET_BUSY', 'Native wallet is processing a request'))
     const id = String(this.#nextId++)
-    const line = JSON.stringify({ id, method, params }) + '\n'
-    if (Buffer.byteLength(line) > MAX_REQUEST_BYTES) throw new RangeError('Native wallet request is too large')
+    const message = JSON.stringify({ id, method, params })
+    if (Buffer.byteLength(message) > MAX_REQUEST_BYTES) throw new RangeError('Native wallet request is too large')
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => this.#fail('NATIVE_TIMEOUT', 'Native wallet did not respond before the deadline'), REQUEST_TIMEOUT_MS)
       this.#pending = { id, resolve, reject, timer }
-      this.#child.stdin.write(line)
+      try { this.#worker.postMessage(message) } catch {
+        this.#fail('NATIVE_IO_FAILED', 'Native wallet request could not be delivered')
+      }
     })
   }
 
-  async close () {
-    if (!this.#failure) {
-      if (this.#pending) {
-        this.#fail('NATIVE_CLOSED', 'Native wallet process closed')
-      } else {
-        this.#failure = new WalletRuntimeError('NATIVE_CLOSED', 'Native wallet process closed')
-        this.#child.stdin.end()
-      }
-    }
-    const timer = setTimeout(() => this.#child.kill('SIGKILL'), 2_000)
-    try { await this.#stopped } finally { clearTimeout(timer) }
+  close () {
+    // Never terminate a thread while Rust may be committing a mutation. Keep
+    // ownership until the dispatched call returns and the native handle is freed.
+    this.#fail('NATIVE_CLOSED', 'Native wallet thread closed')
+    return this.#stopped
   }
 
-  #receive (chunk) {
+  #receive (message) {
     if (this.#failure) return
-    this.#responseBytes += chunk.length
-    if (this.#responseBytes > MAX_RESPONSE_BYTES) {
-      this.#fail('NATIVE_PROTOCOL', 'Native wallet response exceeds the maximum size')
-      return
-    }
-    this.#chunks.push(chunk)
-    const end = chunk.indexOf(10)
-    if (end === -1) return
     const pending = this.#pending
     let response
-    try { response = JSON.parse(Buffer.concat(this.#chunks, this.#responseBytes).toString('utf8')) } catch {}
-    if (end !== chunk.length - 1 || !pending || response?.id !== pending.id ||
-      (Object.hasOwn(response, 'result') === Object.hasOwn(response, 'error'))) {
+    if (typeof message === 'string' && Buffer.byteLength(message) <= MAX_RESPONSE_BYTES) {
+      try { response = JSON.parse(message) } catch {}
+    }
+    if (!pending || response?.id !== pending.id ||
+        (Object.hasOwn(response, 'result') === Object.hasOwn(response, 'error'))) {
       this.#fail('NATIVE_PROTOCOL', 'Native wallet response did not match the request')
       return
     }
-    this.#chunks = []
-    this.#responseBytes = 0
+    if (Object.hasOwn(response, 'error') &&
+        (typeof response.error?.code !== 'string' || typeof response.error.message !== 'string')) {
+      this.#fail('NATIVE_PROTOCOL', 'Invalid native wallet error')
+      return
+    }
     this.#pending = undefined
     clearTimeout(pending.timer)
     if (Object.hasOwn(response, 'error')) {
-      const { code, message } = response.error ?? {}
-      if (typeof code !== 'string' || typeof message !== 'string') {
-        pending.reject(new WalletRuntimeError('NATIVE_PROTOCOL', 'Invalid native wallet error'))
-        this.#fail('NATIVE_PROTOCOL', 'Invalid native wallet error')
-      } else {
-        pending.reject(new WalletRuntimeError(code, message))
-      }
+      pending.reject(new WalletRuntimeError(response.error.code, response.error.message))
     } else {
       pending.resolve(response.result)
     }
   }
 
-  #fail (code, message) {
+  #fail (code, message, stop = true) {
     if (this.#failure) return
     this.#failure = new WalletRuntimeError(code, message)
     if (this.#pending) {
@@ -125,6 +147,8 @@ export class OnchainWorker {
       this.#pending.reject(this.#failure)
       this.#pending = undefined
     }
-    this.#child.kill()
+    if (stop) {
+      try { this.#worker.postMessage(null) } catch { /* Exit still owns native cleanup. */ }
+    }
   }
 }

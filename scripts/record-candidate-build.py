@@ -55,25 +55,33 @@ def cargo_inventory(manifest, platform):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for role in ("worker", "addon", "tarball", "apk"):
+    for role in ("node-addon", "addon", "tarball", "apk"):
         parser.add_argument(f"--{role}", type=Path, required=True)
+    parser.add_argument("--node-target", choices=("darwin-arm64", "darwin-x64", "linux-arm64-gnu", "linux-x64-gnu", "linux-x64-musl"), required=True)
     args = parser.parse_args()
     if command("git", "status", "--porcelain", "--untracked-files=normal"):
         raise SystemExit("Record evidence from a clean committed source tree")
     command("python3", "native/scripts/prepare-source.py", "--bare")
     artifacts = {
         role: {"filename": path.name, "bytes": path.stat().st_size, "sha256": sha256(path)}
-        for role, path in vars(args).items()
+        for role, path in vars(args).items() if isinstance(path, Path)
     }
     manifest = json.loads((ROOT / "src/onchain-bare-native.json").read_text())
     pin = manifest["targets"]["android-arm64"]
     if (pin["sha256"], pin["byteLength"]) != (artifacts["addon"]["sha256"], artifacts["addon"]["bytes"]):
         raise SystemExit("Addon does not match the committed package manifest")
+    node_manifest = json.loads((ROOT / "src/onchain-node-native.json").read_text())
+    node_pin = node_manifest["targets"][args.node_target]
+    if node_pin != {"sha256": artifacts["node_addon"]["sha256"], "byteLength": artifacts["node_addon"]["bytes"]}:
+        raise SystemExit("Node addon does not match the admitted package manifest")
     expected = artifacts["addon"]["sha256"]
     with tarfile.open(args.tarball, "r:gz") as tar:
         with tar.extractfile("package/prebuilds/android-arm64/utexo__wdk-wallet-rgb.bare") as addon:
             if stream_sha256(addon) != expected:
                 raise SystemExit("Packed addon does not match the admitted build")
+        with tar.extractfile(f"package/prebuilds/{args.node_target}/utexo-rgb-native.node") as node_addon:
+            if stream_sha256(node_addon) != node_pin["sha256"]:
+                raise SystemExit("Packed Node addon does not match the admitted build")
     with zipfile.ZipFile(args.apk) as apk:
         with apk.open("lib/arm64-v8a/" + pin["linkedName"]) as addon:
             if stream_sha256(addon) != expected:
@@ -87,7 +95,7 @@ def main():
         npm.append({"location": location, **{key: pkg[key] for key in ("version", "license", "integrity")}})
     inputs = (
         "package-lock.json", "native/Cargo.lock", "native/bare/Cargo.lock", "native/bare/package-lock.json",
-        "native/scripts/prepare-source.py",
+        "native/scripts/prepare-source.py", "native/node/build.sh", "native/node/binding.c", "native/node/lib.rs",
         *(str(path.relative_to(ROOT)) for path in sorted((ROOT / "native/patches").glob("*.patch"))),
     )
     evidence = {

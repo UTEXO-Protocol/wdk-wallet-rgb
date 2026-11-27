@@ -6,7 +6,6 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { burnDestinationFor, burnDestinationHash, createBurnPackage, WalletAccountRgb, WalletManagerRgb } from '../onchain.js'
 import { OnchainJournal } from '../src/onchain-journal.js'
-import { OnchainWorker } from '../src/onchain-worker.js'
 import { WebRgbProvider } from '../src/onchain-webrgb.js'
 
 const routes = [
@@ -151,28 +150,6 @@ for (const receiveMethod of ['blindReceive', 'witnessReceive']) {
     assert.deepEqual(calls, ['goOnline', receiveMethod, 'goOnline', 'getReceivedMintForInvoice', 'getReceivedMintForInvoice'])
   })
 }
-
-test('worker rejects unpinned binaries and mismatched response identifiers', async t => {
-  const dir = await scratch(t)
-  const file = join(dir, 'worker')
-  const source = `#!${process.execPath}
-require('node:readline').createInterface({ input: process.stdin }).on('line', line => {
-  const request = JSON.parse(line)
-  if (request.method === 'wrong') request.id += 'x'
-  process.stdout.write(JSON.stringify({ id: request.id, result: request.params }) + '\\n')
-})
-`
-  await writeFile(file, source, { mode: 0o700 })
-  await assert.rejects(OnchainWorker.start(file, '0'.repeat(64)), { code: 'NATIVE_IDENTITY_MISMATCH' })
-  const worker = await OnchainWorker.start(file, createHash('sha256').update(source).digest('hex'))
-  try {
-    assert.deepEqual(await worker.request('echo', { a: 1 }), { a: 1 })
-    await assert.rejects(worker.request('wrong'), { code: 'NATIVE_PROTOCOL' })
-    await assert.rejects(worker.request('echo'), { code: 'NATIVE_PROTOCOL' })
-  } finally {
-    await worker.close()
-  }
-})
 
 test('manager requires a loopback fixture profile and owns a copied seed', async () => {
   const seed = Uint8Array.from({ length: 64 }, (_, i) => i + 1)
