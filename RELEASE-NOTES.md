@@ -20,7 +20,7 @@ Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedd
 mobile runtimes. Node workers are separate release downloads; the npm archive
 contains the Bare addons. Mobile applications link the appropriate native artifact.
 
-Follow [MIGRATION.md](MIGRATION.md) when replacing 2.x. Existing RC3 applications
+Follow [MIGRATION.md](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/v3.0.0-rc.4/MIGRATION.md) when replacing 2.x. Existing RC3 applications
 keep their complete wallet directory and keys; RC4 repairs cached BFA metadata
 from retained validated stock. Do not reopen an upgraded directory with an older
 binary. A seed alone cannot restore RGB proofs or WDK journals.
@@ -33,9 +33,9 @@ and progressed receives. Local mint/burn tests do not establish hosted payouts.
 The source is public RGB-Tools `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, with
 no downstream source patches. The stock URL library update resolves
 RUSTSEC-2026-0592. Remaining Esplora TLS findings and maintenance warnings are
-recorded in [DEPENDENCY-POLICY.md](DEPENDENCY-POLICY.md).
+recorded in [DEPENDENCY-POLICY.md](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/v3.0.0-rc.4/DEPENDENCY-POLICY.md).
 
 These notes are prepared for release; publication remains blocked on
 [upstream #138](https://github.com/RGB-Tools/rgb-lib/pull/138) and final review.
-See [QUALIFICATION.md](QUALIFICATION.md) for exact artifact identities, passing
+See [QUALIFICATION.md](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/v3.0.0-rc.4/QUALIFICATION.md) for exact artifact identities, passing
 scopes and the distinction between installed-app, hosted and physical-device tests.

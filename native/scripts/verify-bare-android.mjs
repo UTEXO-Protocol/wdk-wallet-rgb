@@ -35,7 +35,7 @@ const system = resolve(ndk, 'sysroot/usr/lib', platform.sysroot, '26')
 const libraries = ['libc.so', 'libdl.so', 'liblog.so', 'libm.so']
 const exportsExpected = ['bare_get_module_name_v0', 'bare_register_module_v0']
 const soname = `libutexo__wdk-wallet-rgb.${version}.so`
-const expectedCargoLock = '0a564ce89b47b91496057526ece78ba5d63de2710434de93933ff148b8193f35'
+const expectedCargoLock = '72cd67d8ceea1500f82021e06b71c147a2a871daed7b8f045d7345311de17203'
 const expectedIntegrationTree = 'a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd'
 const page = 16 * 1024
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
