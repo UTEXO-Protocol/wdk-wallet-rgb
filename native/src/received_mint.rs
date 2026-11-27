@@ -35,6 +35,15 @@ fn unavailable() -> super::Fault {
     )
 }
 
+// WDK creates one-use invoices with fresh witness addresses. Never pick a mint
+// arbitrarily if an externally produced/reused invoice resolves more than one.
+pub(super) fn single_mint(mut mints: Vec<ReceivedMint>) -> Result<Option<ReceivedMint>> {
+    if mints.len() > 1 {
+        return Err(unavailable());
+    }
+    Ok(mints.pop())
+}
+
 fn now() -> Result<u64> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -192,10 +201,11 @@ impl Session {
             return Err(unavailable());
         }
         let transfer = self.mint_receive(&request, &parsed)?;
-        let Some(mint) = self
-            .wallet
-            .get_received_mint(parsed.recipient_id.clone())
-            .map_err(native)?
+        let Some(mint) = single_mint(
+            self.wallet
+                .get_received_mint(parsed.recipient_id.clone())
+                .map_err(native)?,
+        )?
         else {
             return if transfer.status == TransferStatus::Settled {
                 Err(unavailable())
@@ -276,11 +286,12 @@ impl Session {
         // Nothing is cached as an authorization result. Recheck the receive after inspection
         // and reject a stale/failed receipt even if its old file remains on disk.
         self.mint_receive(&request, &parsed)?;
-        if self
-            .wallet
-            .get_received_mint(parsed.recipient_id.clone())
-            .map_err(native)?
-            .as_ref()
+        if single_mint(
+            self.wallet
+                .get_received_mint(parsed.recipient_id.clone())
+                .map_err(native)?,
+        )?
+        .as_ref()
             != Some(&mint)
         {
             return Err(unavailable());
@@ -345,6 +356,17 @@ mod tests {
             bridge_contract: format!("0x{}", "56".repeat(20)),
         };
         (transfer, parsed, mint)
+    }
+
+    #[test]
+    fn one_use_mint_receipt_does_not_select_from_ambiguous_results() {
+        let (_, _, mint) = fixture();
+        assert!(single_mint(vec![]).unwrap().is_none());
+        assert_eq!(single_mint(vec![mint.clone()]).unwrap(), Some(mint.clone()));
+        assert_eq!(
+            single_mint(vec![mint.clone(), mint]).unwrap_err().code,
+            "MINT_VERIFICATION_UNAVAILABLE"
+        );
     }
 
     #[test]

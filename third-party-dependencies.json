@@ -2,13 +2,13 @@
   "formatVersion": 1,
   "scope": "Union of the locked Node/Bare Cargo resolve graphs (including build and target-conditional packages), plus npm production dependencies. This is an attribution inventory, not a claim every listed package is linked into every target.",
   "inputSha256": {
-    "package-lock.json": "fe38afbc12346968428ff6e45fd51893f14368c8319b8eeb67f7aca1d6dad327",
-    "native/Cargo.lock": "f657009c60ffbc6a9d42b05294f14b5e6a2b4c20252dbf4d8ab2bc91ef2ee072",
-    "native/bare/Cargo.lock": "1bcf8e27fdc8613beec71ebdf8e4553aab46cca37debad9658ac02a2791900ea"
+    "package-lock.json": "bcd727b1fd14abe607f0f3dade0f5a030bbda55f4d3187b3521d0806c51511ae",
+    "native/Cargo.lock": "a15ab208f9d76683f6569c3ce9a18760f819f84f587897f434a94b7ce91aa844",
+    "native/bare/Cargo.lock": "0a564ce89b47b91496057526ece78ba5d63de2710434de93933ff148b8193f35"
   },
-  "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+  "rgbSource": "a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
   "supplementSha256": "5eef4472d15e1d72c9f4e9576e2f4899b111bd5c0e7ebe50372c6b5b4e252b58",
-  "licenseTextsSha256": "3da40b1e2ea018f8c623715c64d3bbd69b9e8cc30e192ada247aa4bbd041f5e6",
+  "licenseTextsSha256": "8e69f1c62bc89f5a07a02d4a90167b18c1b858e4f018b773be2323ef8a9770f5",
   "packageCount": 642,
   "uniqueNoticeTextCount": 333,
   "packages": [
@@ -9573,17 +9573,17 @@
       "standardLicenseText": "Apache-2.0"
     },
     {
-      "id": "cargo:rgb-lib-migration@0.3.0-beta.6:git+https://github.com/UTEXO-Protocol/rgb-lib-bfa#567e5b8308f70a6242137475394be5a82fc15c95",
+      "id": "cargo:rgb-lib-migration@0.3.0-beta.5:git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
       "ecosystem": "cargo",
       "name": "rgb-lib-migration",
-      "version": "0.3.0-beta.6",
+      "version": "0.3.0-beta.5",
       "license": "MIT",
       "authors": [
         "Zoe Faltibà <zoefaltiba@gmail.com>",
         "Nicola Busanello <nicola.busanello@gmail.com>"
       ],
       "repository": "https://github.com/RGB-Tools/rgb-lib",
-      "source": "git+https://github.com/UTEXO-Protocol/rgb-lib-bfa#567e5b8308f70a6242137475394be5a82fc15c95",
+      "source": "git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
       "hosts": [
         "node",
         "bare"
@@ -9598,17 +9598,17 @@
       "noticeCoverage": "supplied-notices"
     },
     {
-      "id": "cargo:rgb-lib@0.3.0-beta.8:git+https://github.com/UTEXO-Protocol/rgb-lib-bfa#567e5b8308f70a6242137475394be5a82fc15c95",
+      "id": "cargo:rgb-lib@0.3.0-beta.7:git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
       "ecosystem": "cargo",
       "name": "rgb-lib",
-      "version": "0.3.0-beta.8",
+      "version": "0.3.0-beta.7",
       "license": "MIT",
       "authors": [
         "Zoe Faltibà <zoefaltiba@gmail.com>",
         "Nicola Busanello <nicola.busanello@gmail.com>"
       ],
       "repository": "https://github.com/RGB-Tools/rgb-lib",
-      "source": "git+https://github.com/UTEXO-Protocol/rgb-lib-bfa#567e5b8308f70a6242137475394be5a82fc15c95",
+      "source": "git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
       "hosts": [
         "node",
         "bare"

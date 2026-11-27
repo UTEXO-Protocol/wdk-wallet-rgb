@@ -260,7 +260,12 @@ export class WalletAccountRgb {
   }
   getAddress(): Promise<string>
   getNewAddress(): Promise<string>
-  getCapabilities(): { contractRegistration: { status: 'unavailable'; reason: string }; receivedMintVerification: { status: 'available' } | { status: 'unavailable'; reason: string }; bip322: { signing: true; verification: true; protocol: 'bip322-simple'; specVersion: '2.0.0'; addressTypes: readonly string[]; verificationAddressTypes: readonly string[] } | { status: 'unavailable'; reason: string } }
+  getCapabilities(): {
+    contractRegistration: { status: 'available' } | { status: 'unavailable'; reason: string }
+    contractExport: { status: 'available' } | { status: 'unavailable'; reason: string }
+    receivedMintVerification: { status: 'available' } | { status: 'unavailable'; reason: string }
+    bip322: { signing: true; verification: true; protocol: 'bip322-simple'; specVersion: '2.0.0'; addressTypes: readonly string[]; verificationAddressTypes: readonly string[] } | { status: 'unavailable'; reason: string }
+  }
   getMessageSigningAddress(): Promise<string>
   signMessageBip322(message: string, address: string): Promise<string>
   verifyMessageBip322(message: string, address: string, signature: string): Promise<boolean>
@@ -295,9 +300,14 @@ export class WalletAccountRgb {
   refresh(assetId?: string): Promise<RefreshResult>
   refreshTransfers(options?: { assetId?: string }): Promise<RefreshResult>
   sync(): Promise<RefreshResult>
-  /** Unavailable with stock BFA.8: rejects with CONTRACT_IMPORT_UNAVAILABLE. */
+  /** Register a binary RGB contract (at most 1 MiB) without receiving an allocation.
+   * Requires its exact asset ID and SHA-256. An existing asset rejects with
+   * ASSET_ALREADY_KNOWN; that error does not validate the supplied bytes. */
   registerAssetContract(options: { contract: Uint8Array; assetId: string; sha256: string }): Promise<{ assetId: string }>
   importRgbContract(options: { contract: Uint8Array; assetId: string; sha256: string }): Promise<{ assetId: string }>
+  /** Export the public binary RGB contract, at most 1 MiB. This is not a transfer
+   * consignment, burn proof, or wallet backup. Does not expose a native path. */
+  exportAssetContract(assetId: string): Promise<Uint8Array>
   /** Issues an ordinary NIA on any supported RGB profile with available confirmed outputs. */
   issueAssetNia(options: IssueAssetNiaRequest): Promise<AssetView>
   /** Issues a text-only CFA on any supported RGB profile with available confirmed outputs. */

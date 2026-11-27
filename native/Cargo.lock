@@ -3079,13 +3079,14 @@ dependencies = [
 
 [[package]]
 name = "rgb-lib"
-version = "0.3.0-beta.8"
+version = "0.3.0-beta.7"
 dependencies = [
  "amplify",
  "base64 0.23.1",
  "bdk_electrum",
  "bdk_esplora",
  "bdk_wallet",
+ "bitcoin",
  "chacha20poly1305",
  "ed25519-dalek",
  "file-format",
@@ -3123,7 +3124,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-lib-migration"
-version = "0.3.0-beta.6"
+version = "0.3.0-beta.5"
 dependencies = [
  "sea-orm-migration",
  "tokio",

@@ -1,6 +1,19 @@
 # Dependency policy for the unmodified upstream candidate
 
-RC3 uses public RGB-Tools rgb-lib `0.3.0-beta.8`, commit
+RC4 pins public RGB-Tools rgb-lib commit
+`a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, tree
+`a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd`. It includes merged contract API
+PR #124 and the pending [BFA metadata upgrade repair in PR #138](https://github.com/RGB-Tools/rgb-lib/pull/138).
+WDK does not patch that source tree. The source package labels itself
+`0.3.0-beta.7`; the exact commit, not that label, identifies this newer graph.
+The locked RGB protocol dependencies remain `0.11.2-rc.2`, with SQLx `0.9.1`
+and bundled `libsqlite3-sys 0.40.0`. This source change does not resolve the
+Esplora TLS findings below. RC4's own audit and platform receipts are required;
+the earlier results are historical evidence, not qualification of new binaries.
+
+## Recorded RC3 graph
+
+RC3 used public RGB-Tools rgb-lib `0.3.0-beta.8`, commit
 `567e5b8308f70a6242137475394be5a82fc15c95`, tree
 `8a887b28bd12625e36cd7cfe2af067ff766ece1d`. The source is unmodified and its
 RGB protocol dependencies are locked registry `0.11.2-rc.2` packages. The RC3
@@ -71,7 +84,8 @@ record any new findings separately; this acceptance is not a blanket waiver for
 future dependency versions. A compatible upstream release can be adopted and
 qualified without maintaining a WDK fork of the affected libraries.
 
-Functional limitations are separate from this dependency decision. In
-particular, a missing upstream contract-import API cannot be made available by
-accepting an audit finding. Runtime capabilities and release notes must continue
-to describe the APIs actually supported by the unmodified library.
+Functional limitations are separate from this dependency decision. RC4 gains
+contract import/export from the pinned public upstream APIs, not from accepting
+an audit finding. Runtime capabilities and release notes must describe the APIs
+actually supported by that exact source. The pending upstream upgrade repair
+and existing-wallet acceptance are separate from the recorded TLS acceptance.

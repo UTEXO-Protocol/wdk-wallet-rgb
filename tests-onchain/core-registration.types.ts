@@ -55,6 +55,14 @@ const signature: string = await account.signMessageBip322('qualification', signi
 const valid: boolean = await account.verifyMessageBip322('qualification', signingAddress, signature)
 const readOnly = await account.toReadOnlyAccount()
 const readBalance: bigint = await readOnly.getBalance()
+const contract: Uint8Array = await account.exportAssetContract('rgb:contract')
+const imported: { assetId: string } = await account.registerAssetContract({
+  contract, assetId: 'rgb:contract', sha256: '0'.repeat(64)
+})
+// @ts-expect-error Contract exports require the requested asset identity.
+account.exportAssetContract()
+// @ts-expect-error Contract import requires the expected content hash.
+account.registerAssetContract({ contract, assetId: 'rgb:contract' })
 // @ts-expect-error The read-only view must not gain send authority through Core.
 readOnly.sendBtc({ operationId: 'read-only-send', address: 'bcrt1p-address', amount: 1n, feeRate: 2n })
 // @ts-expect-error The read-only view must not gain message-signing authority.
@@ -63,4 +71,4 @@ readOnly.signMessageBip322('qualification', signingAddress)
 account.sendBtc({ address: 'bcrt1p-address', amount: 1000n, feeRate: 2n })
 await account.shutdown()
 registered.dispose()
-void [preservesConfig, authorize, balance, txid, status, valid, readBalance]
+void [preservesConfig, authorize, balance, txid, status, valid, readBalance, imported]

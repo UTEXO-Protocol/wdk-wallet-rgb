@@ -46,18 +46,23 @@ mod send;
 #[path = "cancellation.rs"]
 mod cancellation;
 
+#[path = "contract_api.rs"]
+mod contract_api;
+
 #[path = "received_mint.rs"]
 mod received_mint;
 
 #[path = "input_reservations.rs"]
 mod input_reservations;
 
-const SOURCE: &str = "567e5b8308f70a6242137475394be5a82fc15c95";
-const OVERLAY: &str = "8a887b28bd12625e36cd7cfe2af067ff766ece1d";
+const SOURCE: &str = "a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2";
+const OVERLAY: &str = "a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;
 const MAX_PROOF: usize = 10 * 1024 * 1024;
+const MAX_FASCIA: u64 = 10 * 1024 * 1024;
+const MAX_FASCIA_BUNDLES: u32 = 1024;
 const MAX_FEE_RATE: u64 = 100_000;
 const MAX_MONEY: u64 = 2_100_000_000_000_000;
 const LOCK_FILE: &str = ".utexo-rgb-native.lock";
@@ -789,6 +794,8 @@ impl Worker {
                         database_type: DatabaseType::Sqlite,
                         max_allocations_per_utxo: 1,
                         allow_reckless_schemas: false,
+                        address_reuse_vanilla: false,
+                        address_reuse_colored_auto: false,
                         supported_schemas: if mode == journal::Mode::BtcOnly {
                             vec![AssetSchema::Nia]
                         } else if ordinary_rgb {
@@ -1209,6 +1216,7 @@ impl Session {
                 p.transport_endpoints,
                 p.min_confirmations,
                 None,
+                Some(1),
             )
         } else {
             self.wallet.witness_receive(
@@ -1218,6 +1226,8 @@ impl Session {
                 expiry,
                 p.transport_endpoints,
                 p.min_confirmations,
+                None,
+                Some(1),
                 None,
             )
         }
@@ -1266,7 +1276,13 @@ impl Session {
         let admission = (|| {
             let inspection = self
                 .wallet
-                .inspect_rgb_transfer(plan.psbt, plan.details.fascia_path, plan.details.entropy)
+                .inspect_fascia(
+                    plan.psbt,
+                    plan.details.fascia_path,
+                    Some(plan.details.entropy),
+                    MAX_FASCIA,
+                    MAX_FASCIA_BUNDLES,
+                )
                 .map_err(native)?;
             if burn_matches(
                 &inspection,
@@ -1366,29 +1382,6 @@ impl Session {
             "amount":amount.to_string(),
         }))
     }
-    fn import_contract(&mut self, p: Contract) -> Result<Value> {
-        self.idle()?;
-        require_asset(&p.expected_asset_id)?;
-        if !lower_hex(&p.sha256, 64) || p.contract_base64.len() > MAX_CONTRACT.div_ceil(3) * 4 {
-            return Err(input("Invalid contract fingerprint or size."));
-        }
-        let bytes = STANDARD
-            .decode(p.contract_base64)
-            .map_err(|_| input("Invalid contract base64."))?;
-        if bytes.is_empty() || bytes.len() > MAX_CONTRACT || sha256(&bytes) != p.sha256 {
-            return Err(fault(
-                "CONTRACT_DIGEST_MISMATCH",
-                "Contract bytes do not match their expected SHA-256.",
-            ));
-        }
-        // Stock BFA.8 only exposes transfer import, which requires a real
-        // consignment and outpoint. Never fabricate either or write its private
-        // database to imitate standalone contract registration.
-        Err(fault(
-            "CONTRACT_IMPORT_UNAVAILABLE",
-            "This RGB library has no public standalone contract import API.",
-        ))
-    }
     fn dispatch(&mut self, method: &str, params: Value) -> Result<Value> {
         if self.journal_mode == journal::Mode::BtcOnly
             && matches!(
@@ -1405,6 +1398,7 @@ impl Session {
                     | "burnBegin"
                     | "burnEnd"
                     | "importContract"
+                    | "exportContract"
                     | "getConsignment"
                     | "getReceivedMint"
                     | "getReceivedMintForInvoice"
@@ -1624,6 +1618,7 @@ impl Session {
             "discardPrepared" => self.discard_prepared(decode(params)?),
             "getConsignment" => self.proof(decode(params)?),
             "importContract" => self.import_contract(decode(params)?),
+            "exportContract" => self.export_contract(decode(params)?),
             "issueAsset" => self.issue_asset(params),
             "getReceivedMintForInvoice" => self.received_mint_for_invoice(params),
             "getReceivedMint" => {
@@ -1632,7 +1627,7 @@ impl Session {
                 {
                     return Err(input("Invalid invoice recipient ID."));
                 }
-                Ok(self.wallet.get_received_mint(p.recipient_id).map_err(native)?.map(|m| json!({
+                Ok(received_mint::single_mint(self.wallet.get_received_mint(p.recipient_id).map_err(native)?)?.map(|m| json!({
                     "opid":m.opid,"lockId":m.lock_id,"amount":m.amount.to_string(),"beforeBlock":m.before_block.to_string(),
                     "evmChainId":m.evm_chain_id.to_string(),"bridgeContract":m.bridge_contract,
                 })).unwrap_or(Value::Null))
@@ -1690,9 +1685,6 @@ mod tests {
     use rgb_lib::bitcoin::{Amount, ScriptBuf, Transaction, TxIn, TxOut, Witness};
 
     const CONTRACT_ID: &str = "rgb:seHWHNYA-~Fy85Df-sLB28o5-EcqC9F8-HW3mUaM-b7kRJgM";
-    const CONTRACT_SHA256: &str =
-        "60e78d9fc22b69ebd61aafbd37a530f98440cff7b33da5671494790fd3d78be1";
-    const CONTRACT: &str = include_str!("../tests/fixtures/regtest-bfa.6.rgb.base64");
 
     #[test]
     fn missing_receive_allocation_has_a_public_actionable_error() {
@@ -1894,50 +1886,95 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_contract_registration_does_not_block_wallets_or_create_assets() {
-        for (network, profile) in [
-            ("regtest", None),
-            ("mainnet", None),
-            ("signet", Some("public")),
-            ("signet", Some("dev")),
-            ("signet", Some("staging")),
-        ] {
-            let dir = tempfile::tempdir().unwrap();
-            std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
-            let mut params = open_params(dir.path(), network);
-            params["mode"] = json!("rgb");
-            if let Some(profile) = profile {
-                params["profile"] = json!(profile);
-            }
-            if network == "mainnet" || profile == Some("public") {
-                params["transportEndpoint"] = json!("rpcs://proxy.example.com/json-rpc");
-            }
-            let mut worker = Worker::default();
-            worker.dispatch("open", params.clone()).unwrap();
-            let request = json!({"contractBase64":CONTRACT.trim(),"expectedAssetId":CONTRACT_ID,"sha256":CONTRACT_SHA256});
-            let mut invalid = request.clone();
-            invalid["sha256"] = json!("f".repeat(64));
+    fn public_contract_import_export_preserves_identity_and_creates_no_allocations() {
+        const ID: &str = "rgb:mp_lQhFX-fPKiRA8-N_Rcwho-QrMcV1N-U2gI6HE-FL96Hj4";
+        let bytes = STANDARD
+            .decode(include_str!("../tests/fixtures/regtest-public-contract.rgb.base64").trim())
+            .unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let params = open_params(dir.path(), "regtest");
+        let mut worker = Worker::default();
+        worker.dispatch("open", params.clone()).unwrap();
+        let request = json!({"contractBase64": STANDARD.encode(&bytes), "expectedAssetId": ID, "sha256": sha256(&bytes)});
+        let mut wrong_digest = request.clone();
+        wrong_digest["sha256"] = json!("f".repeat(64));
+        assert_eq!(
+            worker
+                .dispatch("importContract", wrong_digest)
+                .unwrap_err()
+                .code,
+            "CONTRACT_DIGEST_MISMATCH"
+        );
+        let mut wrong_asset = request.clone();
+        wrong_asset["expectedAssetId"] = json!(CONTRACT_ID);
+        assert_eq!(
+            worker
+                .dispatch("importContract", wrong_asset)
+                .unwrap_err()
+                .code,
+            "CONTRACT_ASSET_MISMATCH"
+        );
+        assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
+        assert_eq!(
+            worker.dispatch("importContract", request.clone()).unwrap(),
+            json!({"assetId":ID})
+        );
+        for _ in 0..2 {
             assert_eq!(
-                worker.dispatch("importContract", invalid).unwrap_err().code,
-                "CONTRACT_DIGEST_MISMATCH"
+                worker
+                    .dispatch("getAssetBalance", json!({"assetId":ID}))
+                    .unwrap(),
+                json!({"settled":"0","future":"0","spendable":"0"})
             );
-            for _ in 0..2 {
-                assert_eq!(
-                    worker
-                        .dispatch("importContract", request.clone())
-                        .unwrap_err()
-                        .code,
-                    "CONTRACT_IMPORT_UNAVAILABLE"
-                );
-                assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
-                assert_eq!(
-                    worker.dispatch("listTransfers", json!({})).unwrap(),
-                    json!([])
-                );
-                worker.dispatch("close", json!({})).unwrap();
-                worker.dispatch("open", params.clone()).unwrap();
-            }
+            assert_eq!(
+                worker.dispatch("listTransfers", json!({})).unwrap(),
+                json!([])
+            );
+            assert_eq!(
+                worker
+                    .dispatch("importContract", request.clone())
+                    .unwrap_err()
+                    .code,
+                "ASSET_ALREADY_KNOWN"
+            );
+            let output = worker
+                .dispatch("exportContract", json!({"assetId":ID}))
+                .unwrap();
+            assert_eq!(output["assetId"], ID);
+            let exported = STANDARD.decode(output["data"].as_str().unwrap()).unwrap();
+            assert_eq!(output["sha256"], sha256(&exported));
+            assert!(exported.starts_with(b"RGB\0CON"));
+            let receiver_dir = tempfile::tempdir().unwrap();
+            std::fs::set_permissions(receiver_dir.path(), std::fs::Permissions::from_mode(0o700))
+                .unwrap();
+            let mut receiver = Worker::default();
+            receiver
+                .dispatch("open", open_params(receiver_dir.path(), "regtest"))
+                .unwrap();
+            assert_eq!(receiver.dispatch("importContract", json!({"contractBase64":output["data"],"expectedAssetId":ID,"sha256":output["sha256"]})).unwrap(), json!({"assetId":ID}));
+            assert_eq!(
+                receiver.dispatch("listAssets", json!({})).unwrap(),
+                worker.dispatch("listAssets", json!({})).unwrap()
+            );
+            worker.dispatch("close", json!({})).unwrap();
+            worker.dispatch("open", params.clone()).unwrap();
         }
+    }
+
+    #[test]
+    fn public_contract_import_rejects_wrong_chain_without_registering_asset() {
+        let bytes = STANDARD
+            .decode(include_str!("../tests/fixtures/regtest-public-contract.rgb.base64").trim())
+            .unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut params = open_params(dir.path(), "signet");
+        params["profile"] = json!("staging");
+        let mut worker = Worker::default();
+        worker.dispatch("open", params).unwrap();
+        assert_eq!(worker.dispatch("importContract", json!({"contractBase64":STANDARD.encode(&bytes),"sha256":sha256(&bytes),"expectedAssetId":"rgb:mp_lQhFX-fPKiRA8-N_Rcwho-QrMcV1N-U2gI6HE-FL96Hj4"})).unwrap_err().code,"CONTRACT_INVALID");
+        assert_eq!(worker.dispatch("listAssets", json!({})).unwrap(), json!([]));
     }
 
     #[test]

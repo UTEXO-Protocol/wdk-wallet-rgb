@@ -313,7 +313,13 @@ impl Session {
             ))?;
             let inspection = self
                 .wallet
-                .inspect_rgb_transfer(plan.psbt, plan.details.fascia_path, plan.details.entropy)
+                .inspect_fascia(
+                    plan.psbt,
+                    plan.details.fascia_path,
+                    Some(plan.details.entropy),
+                    MAX_FASCIA,
+                    MAX_FASCIA_BUNDLES,
+                )
                 .map_err(native)?;
             if !exact_rgb_send(
                 &inspection,

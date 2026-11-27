@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.0-rc.4 — Unreleased qualification candidate
+
+- Pin public RGB-Tools commit `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, with merged contract import/export and the pending upstream BFA metadata upgrade repair in PR #138; apply no downstream RGB source overlay.
+- Register and export bounded public contracts offline using expected asset ID and SHA-256, without creating allocations or transfers. Existing assets return an explicit duplicate error rather than claiming validation of replacement bytes.
+- Preserve RC3 wallet identities and journals for in-place upgrades. Reconstruct missing BFA metadata from retained validated stock; reject inconsistent storage without inventing balances or allocations.
+- Use the upstream bounded fascia inspector for transaction admission and preserve one-use invoices with fresh witness addresses. Reject ambiguous multi-mint results rather than selecting one arbitrarily.
+- Require rebuilt native artifacts and existing-wallet application qualification; earlier binary and RC3 test receipts do not qualify this candidate. Publication remains on hold.
+
 ## 3.0.0-rc.3 — Unreleased qualification candidate
 
 - Pin unmodified public RGB-Tools rgb-lib `0.3.0-beta.8` and the locked RGB `0.11.2-rc.2` graph without source overlays.

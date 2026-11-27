@@ -15,14 +15,20 @@ Version 3 replaces the 2.x wrapper with an asynchronous Node/Bare wallet, an app
 
 The public configuration and methods are defined in [onchain.d.ts](onchain.d.ts). The [integration guide](CANDIDATE.md) includes Core registration, authorization, network profiles, issuance and recovery examples.
 
-## Wallet data
+## Updating RC3 to RC4
 
-Create a new, private directory for this engine. Use distinct directories for Mainnet, Public Signet, Dev Signet and Regtest. Do not copy a legacy database into a new directory or remove the directory identity marker to bypass admission. Earlier BFA.7/BFA.8 engine directories require their original SDK. The upstream file-codec migration feature does not admit an earlier WDK directory.
+RC4 retains the `rgb-l1-beta8-v1` directory identity, account derivation, network/profile identity and existing journals. Keep the complete RC3 wallet directory and update it in place. Do not reset it, import its seed into a new directory, or recreate pending invoices and operation IDs. This is distinct from the unsupported 2.x and earlier-engine conversions below.
 
-For disposable testing, use a fresh wallet. For an existing funded wallet, retain the original SDK and its complete data until funds have been transferred and independently reconciled. This release makes no same-seed, same-address, database-conversion or RGB seed-only recovery guarantee across engines. There is no production wallet migration implementation in this PR.
+The exact RGB source is `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, which includes the merged public contract APIs and the pending [PR #138 metadata repair](https://github.com/RGB-Tools/rgb-lib/pull/138). The repair restores BFA bridge and reject-list metadata from the wallet's retained validated stock; it does not change balances, allocations or transfers. Missing stock fails the open operation rather than inventing metadata. Upstream also migrates consignment file names and adds invoice storage. Preserve a complete private backup before the first upgrade; do not reopen an upgraded database with the older binary. Exact funded wallet and installed-application upgrade acceptance is recorded in [QUALIFICATION.md](QUALIFICATION.md), separately from source tests.
+
+## Earlier wallet engines
+
+Create a new, private directory when moving from 2.x or an incompatible earlier engine. Use distinct directories for Mainnet, Public Signet, Dev Signet and Regtest. Do not copy a legacy database into a new directory or remove the directory identity marker to bypass admission. Earlier BFA.7/BFA.8 directories with an identity other than `rgb-l1-beta8-v1` require their original SDK. The upstream file-codec migration feature does not bypass WDK directory admission.
+
+For qualification of an incompatible engine, use a fresh disposable wallet. Retain an existing funded wallet's original SDK and complete data until funds have been transferred and independently reconciled. This release makes no same-seed, same-address, database-conversion or RGB seed-only recovery guarantee across incompatible engines. These restrictions do not require resetting the RC3 wallets described above.
 
 ## Interrupted operations
 
 Keep the original operation ID and parameters when reconciling an interrupted send, output setup or burn. Use the corresponding recovery method; do not create a replacement spend merely because a result was lost. Signed-input reservations and operation journals are part of the wallet's financial state. Do not delete them to make an operation retryable.
 
-Standalone contract registration remains unavailable in the pinned public library. Query `getCapabilities()` before offering asset preregistration. Generic receive can learn a new asset from a validated transfer; it does not register a standalone contract export.
+Standalone contract registration and export are available through the pinned upstream APIs. Query `getCapabilities()` before offering them; BTC-only accounts do not admit RGB contract operations. Registration requires the binary contract, expected asset ID and SHA-256, adds no allocations and returns `ASSET_ALREADY_KNOWN` for an existing asset. Do not treat that error as validation of the submitted bytes. Generic receive remains supported. Retrying an existing WebRGB receive must retain its operation ID, request key and expected asset: an already-issued generic invoice is recovered unchanged, even if the asset can now be registered.

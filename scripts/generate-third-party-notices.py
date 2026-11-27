@@ -115,7 +115,7 @@ def generate(npm_root=ROOT):
             source = p["source"]
             source_root = None
             if source is None and (root == rgb_root or rgb_root in root.parents):
-                source = "git+https://github.com/UTEXO-Protocol/rgb-lib-bfa#" + native_source
+                source = "git+https://github.com/RGB-Tools/rgb-lib#" + native_source
                 source_root = rgb_root
             elif source and source.startswith("git+"):
                 source_root = Path(command(["git", "rev-parse", "--show-toplevel"], root))

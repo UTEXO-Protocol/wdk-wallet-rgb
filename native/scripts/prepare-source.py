@@ -10,8 +10,8 @@ import tempfile
 ROOT = Path(__file__).resolve().parent.parent
 DEST = ROOT / ".sources" / "rgb-lib-upstream"
 SOURCE_URL = "https://github.com/RGB-Tools/rgb-lib.git"
-SHA = "567e5b8308f70a6242137475394be5a82fc15c95"
-BASE_TREE = "8a887b28bd12625e36cd7cfe2af067ff766ece1d"
+SHA = "a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2"
+BASE_TREE = "a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd"
 
 def git(repo, *args):
     return subprocess.check_output(["git", "-c", "core.hooksPath=/dev/null", "-C", str(repo), *args], text=True).strip()

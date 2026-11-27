@@ -2,6 +2,49 @@
 
 The candidate is an on-chain SDK for Node and Bare. Mainnet and Public Signet admit Bitcoin and ordinary RGB under the network policies in the [candidate guide](CANDIDATE.md). Regtest, Dev and staging have separate service and bridge policies. This register contains deployment-specific test evidence and stays in the repository outside the package.
 
+## RC4: public contract APIs and existing-wallet upgrade
+
+This in-progress candidate is `3.0.0-rc.4`. It pins upstream source
+`a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, tree
+`a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd`, from
+[RGB-Tools #138](https://github.com/RGB-Tools/rgb-lib/pull/138).
+Its parent `f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d` includes the public
+contract import/export implementation merged through
+[#124](https://github.com/RGB-Tools/rgb-lib/pull/124). PR #103 is superseded.
+The package's upstream crate label is `0.3.0-beta.7`; exact commit and tree
+identify this newer source. The locked RGB protocol remains `0.11.2-rc.2`.
+WDK applies no RGB source overlay. The additional upstream PR remains a merge
+dependency for this candidate, not an already merged upstream release.
+
+The unmodified parent migrates an older BFA database without populating its
+new `bridge_location`, then panics when listing the asset. PR #138 restores
+that metadata and the issuer reject-list cache from the retained validated
+contract during transactional wallet initialization. Missing stock fails with
+a typed inconsistency without a partial backfill. It does not synthesize
+allocations, change keys or replace missing RGB state with seed recovery.
+Upstream validation passes 73 offline wallet tests plus three focused tests
+without `camel_case`, and library/test Clippy with warnings denied. The first
+old-schema panic reproduction used a synthetic database row; the new repair
+regressions use genuinely validated/imported contracts. Funded application
+upgrade evidence is recorded separately after execution.
+
+WDK adds bounded `registerAssetContract()` and `exportAssetContract()` through
+the public upstream APIs. Import validates the exact expected ID and SHA-256,
+then delegates schema, chain and genesis validation upstream; it creates no
+allocation. Duplicate registration is an error, not proof that new bytes were
+validated. Export returns pure public contract bytes, not a burn proof or native
+path. Contracts requiring external media are not supported by the current
+registration envelope. Both APIs are unavailable in BTC-only mode.
+
+The source tests pass 150 JavaScript cases and public types. Existing generic
+invoice journals retain their original operation/request identity after an
+asset becomes registrable. Fresh invoices keep a one-use quota and fresh
+witness addresses. Mint verification rejects ambiguous multi-mint results.
+Runtime, funded, complete-platform and application upgrade qualification are
+still in progress; previous RC3 results below do not qualify the new binaries.
+The native manifest stays on hold until its rebuilt targets are admitted, and
+publication remains on hold.
+
 ## RC3: public RGB upstream and WebRGB 0.1.7 qualification
 
 This Android qualification candidate is `3.0.0-rc.3`, using unmodified public RGB-Tools rgb-lib `0.3.0-beta.8` at `567e5b8308f70a6242137475394be5a82fc15c95`, tree `8a887b28bd12625e36cd7cfe2af067ff766ece1d`. RGB protocol crates are locked registry `0.11.2-rc.2` sources. No RGB, indexer or TLS source patch is applied. Earlier RC2 artifacts remain identified below and do not qualify this graph.

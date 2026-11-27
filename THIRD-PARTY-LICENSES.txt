@@ -12055,8 +12055,8 @@ limitations under the License.
 
 ==============================================================================
 SHA-256: 8295b7e63fbb3db4b2c990752f94e44e41e91fea12b0cd251ba1da9e0f23d5f6
-cargo:rgb-lib-migration@0.3.0-beta.6:git+https://github.com/UTEXO-Protocol/rgb-lib-bfa#567e5b8308f70a6242137475394be5a82fc15c95 | workspace | LICENSE
-cargo:rgb-lib@0.3.0-beta.8:git+https://github.com/UTEXO-Protocol/rgb-lib-bfa#567e5b8308f70a6242137475394be5a82fc15c95 | package | LICENSE
+cargo:rgb-lib-migration@0.3.0-beta.5:git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2 | workspace | LICENSE
+cargo:rgb-lib@0.3.0-beta.7:git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2 | package | LICENSE
 ------------------------------------------------------------------------------
 MIT License
 

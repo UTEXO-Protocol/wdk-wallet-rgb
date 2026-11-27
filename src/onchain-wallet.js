@@ -24,6 +24,7 @@ const ROUTES = new Map([
 const HEX_32 = /^[a-f0-9]{64}$/
 const MAX_U64 = 0xffffffffffffffffn
 const MAX_CONTRACT_BYTES = 1024 * 1024
+const CONTRACT_MAGIC = [82, 71, 66, 0, 67, 79, 78]
 const MAINNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50003'
 const SIGNET_ELECTRUM = 'ssl://electrum.iriswallet.com:50033'
 const STAGING_SERVICES = {
@@ -335,7 +336,7 @@ export class WalletAccountRgb {
       )
       const version = await worker.request('version')
       if (version?.protocol !== nativeManifest.protocol || version.indexer !== 'electrum-and-dev-esplora' || version.networkChecks !== 7 || version.source !== nativeManifest.source || version.overlayTree !== nativeManifest.overlayTree ||
-        version.runtime !== nativeRuntime || version.integrationTree !== nativeManifest.integrationTree || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 2 || version.contractRegistration !== 0 || version.receivedMintVerification !== 1 || version.exposedInputs !== 1) {
+        version.runtime !== nativeRuntime || version.integrationTree !== nativeManifest.integrationTree || version.unsignedRecovery !== 1 || version.journalWrites !== 1 || version.assetIssuance !== 2 || version.contractRegistration !== 1 || version.contractExport !== 1 || version.receivedMintVerification !== 1 || version.exposedInputs !== 1) {
         throw new WalletRuntimeError('NATIVE_IDENTITY_MISMATCH', 'Unexpected RGB native source or protocol')
       }
       const identity = signer.identity
@@ -589,7 +590,12 @@ export class WalletAccountRgb {
   getCapabilities () {
     this.#assertOpen()
     return Object.freeze({
-      contractRegistration: Object.freeze({ status: 'unavailable', reason: 'BFA.8 has no public standalone contract import API' }),
+      contractRegistration: Object.freeze(this.#config.mode === 'btc-only'
+        ? { status: 'unavailable', reason: 'Contract registration requires an RGB wallet' }
+        : { status: 'available' }),
+      contractExport: Object.freeze(this.#config.mode === 'btc-only'
+        ? { status: 'unavailable', reason: 'Contract export requires an RGB wallet' }
+        : { status: 'available' }),
       receivedMintVerification: Object.freeze(this.#config.mode === 'btc-only' || this.#config.genericRgb
         ? { status: 'unavailable', reason: 'Mint verification requires a bridge RGB profile' }
         : { status: 'available' }),
@@ -804,13 +810,47 @@ export class WalletAccountRgb {
   registerAssetContract ({ contract, assetId, sha256: expectedSha256 }) {
     this.#assertRgbMode()
     if (!(contract instanceof Uint8Array) || contract.length === 0 || contract.length > MAX_CONTRACT_BYTES ||
-      typeof expectedSha256 !== 'string' || sha256(contract) !== expectedSha256) {
+      typeof expectedSha256 !== 'string') {
       throw new TypeError('Contract bytes must match the configured SHA-256')
     }
-    return this.#read('importContract', {
-      contractBase64: base64.encode(contract),
+    const bytes = Uint8Array.from(contract)
+    if (sha256(bytes) !== expectedSha256) throw new TypeError('Contract bytes must match the configured SHA-256')
+    const params = Object.freeze({
+      contractBase64: base64.encode(bytes),
       expectedAssetId: checkAsset(assetId),
       sha256: expectedSha256
+    })
+    return this.#run(async () => {
+      const result = await this.#worker.request('importContract', params)
+      this.#assertOpen()
+      if (!result || typeof result !== 'object' || Array.isArray(result) ||
+          Object.keys(result).length !== 1 || !Object.hasOwn(result, 'assetId') || result.assetId !== params.expectedAssetId) {
+        throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Native contract import did not return the expected asset ID')
+      }
+      return { assetId: result.assetId }
+    })
+  }
+
+  exportAssetContract (assetId) {
+    this.#assertRgbMode()
+    const params = Object.freeze({ assetId: checkAsset(assetId) })
+    return this.#run(async () => {
+      const result = await this.#worker.request('exportContract', params)
+      this.#assertOpen()
+      let bytes
+      if (result && typeof result === 'object' && !Array.isArray(result) &&
+          Object.keys(result).length === 3 && ['assetId', 'data', 'sha256'].every(key => Object.hasOwn(result, key)) &&
+          result.assetId === params.assetId &&
+          typeof result.data === 'string' && result.data.length <= Math.ceil(MAX_CONTRACT_BYTES / 3) * 4 &&
+          typeof result.sha256 === 'string' && HEX_32.test(result.sha256)) {
+        try { bytes = base64.decode(result.data) } catch {}
+      }
+      if (!bytes || bytes.length <= CONTRACT_MAGIC.length || bytes.length > MAX_CONTRACT_BYTES ||
+          !CONTRACT_MAGIC.every((byte, index) => byte === bytes[index]) ||
+          base64.encode(bytes) !== result.data || sha256(bytes) !== result.sha256) {
+        throw new WalletRuntimeError('NATIVE_PROTOCOL', 'Native wallet returned an invalid contract export')
+      }
+      return bytes
     })
   }
 

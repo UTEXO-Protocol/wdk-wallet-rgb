@@ -9,6 +9,7 @@ import test from 'node:test'
 import { burnDestinationFor } from '../onchain.js'
 import { importWalletFixture } from './fixtures/native-manifest.js'
 import devServices from '../src/onchain-dev-services.json' with { type: 'json' }
+import nativeManifest from '../src/onchain-bare-native.json' with { type: 'json' }
 
 const { WalletManagerRgb } = await importWalletFixture('network')
 const { WalletManagerRgb: BlockedWalletManagerRgb } = await importWalletFixture('network-hold', true)
@@ -51,10 +52,10 @@ const DEFAULTS = {
 }
 
 async function managerFor (t, {
-  nativeVersion = 7, nativeAssetIssuance = 2, receivedMintVerification = 1, workerIndexerProtocol, receivedMint = null, verifiedMint = null, substituteProxy,
-  cancellationResponse, nativeTrees = {
-    overlayTree: '8a887b28bd12625e36cd7cfe2af067ff766ece1d',
-    integrationTree: '8a887b28bd12625e36cd7cfe2af067ff766ece1d'
+  nativeVersion = 7, nativeAssetIssuance = 2, contractCapabilities = { contractRegistration: 1, contractExport: 1 }, receivedMintVerification = 1, workerIndexerProtocol, receivedMint = null, verifiedMint = null, substituteProxy,
+  cancellationResponse, nativeSource = nativeManifest.source, nativeTrees = {
+    overlayTree: nativeManifest.overlayTree,
+    integrationTree: nativeManifest.integrationTree
   }, ...options
 } = {}) {
   const network = options.network ?? DEFAULTS.network
@@ -77,9 +78,9 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   const { id, method, params } = JSON.parse(line)
   const reply = result => process.stdout.write(JSON.stringify({ id, result }) + '\\n')
   if (method === 'version') return reply({
-    protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance}, contractRegistration: 0, receivedMintVerification: ${receivedMintVerification}, exposedInputs: 1,
+    protocol: 2, networkChecks: ${nativeVersion}, unsignedRecovery: 1, journalWrites: 1, assetIssuance: ${nativeAssetIssuance}, ...${JSON.stringify(contractCapabilities)}, receivedMintVerification: ${receivedMintVerification}, exposedInputs: 1,
     indexer: 'electrum-and-dev-esplora', runtime: 'node-host-process',
-    source: '567e5b8308f70a6242137475394be5a82fc15c95',
+    source: '${nativeSource}',
     ...${JSON.stringify(nativeTrees)}
   })
   if (method === 'open') {
@@ -91,9 +92,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       transportEndpoint: ${JSON.stringify(substituteProxy ?? openProxy)} })
   }
   if (method === 'bindJournal') return reply({ written: true })
-  if (method === 'importContract') return process.stdout.write(JSON.stringify({
-    id, error: { code: 'CONTRACT_IMPORT_UNAVAILABLE', message: 'Standalone import is unavailable' }
-  }) + '\\n')
+  if (method === 'importContract') return reply({ assetId: params.expectedAssetId })
   if (method === 'goOnline') {
     assert.deepEqual(params, ${JSON.stringify(expectedOnline)})
     if (++connectionAttempts === 1) return process.stdout.write(JSON.stringify({
@@ -223,6 +222,11 @@ test('offline open rejects the previous Regtest-only native issuance policy', as
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
 })
 
+test('offline open rejects a native source outside the admitted source identity', async t => {
+  const manager = await managerFor(t, { startupMode: 'offline', nativeSource: 'ff'.repeat(20) })
+  await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
+})
+
 test('offline open rejects the patched alpha.23 native binary identity', async t => {
   const manager = await managerFor(t, {
     startupMode: 'offline',
@@ -234,19 +238,28 @@ test('offline open rejects the patched alpha.23 native binary identity', async t
   await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
 })
 
-test('standalone contract import is unavailable without blocking any supported RGB profile', async t => {
+test('standalone contract import is admitted offline on every supported RGB profile', async t => {
   const contract = new Uint8Array([1, 2, 3])
   const sha256 = createHash('sha256').update(contract).digest('hex')
   for (const options of [{}, ...ORDINARY_RGB, STAGING, DEV]) {
     const manager = await managerFor(t, { ...options, startupMode: 'offline' })
     const account = await manager.getAccount()
     assert.equal(account.getInfo().protocol, 'RGB_L1')
-    assert.equal(account.getCapabilities().contractRegistration.status, 'unavailable')
-    await assert.rejects(account.registerAssetContract({ contract, assetId: 'rgb:fixture', sha256 }), {
-      code: 'CONTRACT_IMPORT_UNAVAILABLE'
-    })
+    assert.equal(account.getCapabilities().contractRegistration.status, 'available')
+    assert.equal(account.getCapabilities().contractExport.status, 'available')
+    assert.deepEqual(await account.registerAssetContract({ contract, assetId: 'rgb:fixture', sha256 }), { assetId: 'rgb:fixture' })
     assert.equal(account.getConnectionStatus(), 'offline')
     await manager.shutdown()
+  }
+})
+
+test('wallet opening rejects absent or incompatible contract capabilities before native open', async t => {
+  for (const contractCapabilities of [
+    { contractRegistration: 0, contractExport: 1 }, { contractExport: 1 }, { contractRegistration: true, contractExport: 1 },
+    { contractRegistration: 1, contractExport: 0 }, { contractRegistration: 1 }, { contractRegistration: 1, contractExport: 2 }
+  ]) {
+    const manager = await managerFor(t, { startupMode: 'offline', contractCapabilities })
+    await assert.rejects(manager.getAccount(), { code: 'NATIVE_IDENTITY_MISMATCH' })
   }
 })
 
