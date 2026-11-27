@@ -3,12 +3,12 @@
   "scope": "Union of the locked Node/Bare Cargo resolve graphs (including build and target-conditional packages), plus npm production dependencies. This is an attribution inventory, not a claim every listed package is linked into every target.",
   "inputSha256": {
     "package-lock.json": "bcd727b1fd14abe607f0f3dade0f5a030bbda55f4d3187b3521d0806c51511ae",
-    "native/Cargo.lock": "a15ab208f9d76683f6569c3ce9a18760f819f84f587897f434a94b7ce91aa844",
-    "native/bare/Cargo.lock": "0a564ce89b47b91496057526ece78ba5d63de2710434de93933ff148b8193f35"
+    "native/Cargo.lock": "8d70a35746ce1dc3d8533d55a0167db3a8fa14b121e2e75f71be80c1adceef4d",
+    "native/bare/Cargo.lock": "72cd67d8ceea1500f82021e06b71c147a2a871daed7b8f045d7345311de17203"
   },
   "rgbSource": "a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
   "supplementSha256": "5eef4472d15e1d72c9f4e9576e2f4899b111bd5c0e7ebe50372c6b5b4e252b58",
-  "licenseTextsSha256": "8e69f1c62bc89f5a07a02d4a90167b18c1b858e4f018b773be2323ef8a9770f5",
+  "licenseTextsSha256": "19b1dc28ebcc956b9fb837dfbbb9586bf4749393731f61ba5ccfe165f8baa357",
   "packageCount": 642,
   "uniqueNoticeTextCount": 333,
   "packages": [
@@ -4545,10 +4545,10 @@
       "noticeCoverage": "supplied-notices"
     },
     {
-      "id": "cargo:form_urlencoded@1.2.2:registry+https://github.com/rust-lang/crates.io-index",
+      "id": "cargo:form_urlencoded@1.2.3:registry+https://github.com/rust-lang/crates.io-index",
       "ecosystem": "cargo",
       "name": "form_urlencoded",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "license": "MIT OR Apache-2.0",
       "authors": [
         "The rust-url developers"
@@ -4571,7 +4571,7 @@
           "origin": "package"
         }
       ],
-      "sourceArchive": "https://static.crates.io/crates/form_urlencoded/form_urlencoded-1.2.2.crate",
+      "sourceArchive": "https://static.crates.io/crates/form_urlencoded/form_urlencoded-1.2.3.crate",
       "noticeCoverage": "supplied-notices"
     },
     {
@@ -13741,10 +13741,10 @@
       "noticeCoverage": "supplied-notices"
     },
     {
-      "id": "cargo:url@2.5.8:registry+https://github.com/rust-lang/crates.io-index",
+      "id": "cargo:url@2.5.9:registry+https://github.com/rust-lang/crates.io-index",
       "ecosystem": "cargo",
       "name": "url",
-      "version": "2.5.8",
+      "version": "2.5.9",
       "license": "MIT OR Apache-2.0",
       "authors": [
         "The rust-url developers"
@@ -13767,7 +13767,7 @@
           "origin": "package"
         }
       ],
-      "sourceArchive": "https://static.crates.io/crates/url/url-2.5.8.crate",
+      "sourceArchive": "https://static.crates.io/crates/url/url-2.5.9.crate",
       "noticeCoverage": "supplied-notices"
     },
     {

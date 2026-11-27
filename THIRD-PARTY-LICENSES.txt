@@ -2832,7 +2832,7 @@ DEALINGS IN THE SOFTWARE.
 
 ==============================================================================
 SHA-256: 20c7855c364d57ea4c97889a5e8d98470a9952dade37bd9248b9a54431670e5e
-cargo:form_urlencoded@1.2.2:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
+cargo:form_urlencoded@1.2.3:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
 ------------------------------------------------------------------------------
 Copyright (c) 2013-2016 The rust-url developers
 
@@ -15949,7 +15949,7 @@ cargo:find-msvc-tools@0.1.15:registry+https://github.com/rust-lang/crates.io-ind
 cargo:fixedbitset@0.5.7:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:fixedbitset@0.5.9:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:fnv@1.0.7:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
-cargo:form_urlencoded@1.2.2:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
+cargo:form_urlencoded@1.2.3:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:fs2@0.4.3:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:glob@0.3.4:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:hashbrown@0.14.5:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
@@ -16023,7 +16023,7 @@ cargo:unicode-bidi@0.3.18:registry+https://github.com/rust-lang/crates.io-index 
 cargo:unicode-normalization@0.1.26:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:unicode-properties@0.1.5:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:unicode-xid@0.2.6:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
-cargo:url@2.5.8:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
+cargo:url@2.5.9:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:uuid@1.29.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:uuid@1.29.3:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
 cargo:version_check@0.9.5:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-APACHE
@@ -18699,7 +18699,7 @@ DEALINGS IN THE SOFTWARE.
 SHA-256: b38f11f6096706e6de553dabe2a7ed142d59b6fa8c97e290c67496154745cdd5
 cargo:idna@1.1.0:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
 cargo:percent-encoding@2.3.2:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
-cargo:url@2.5.8:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
+cargo:url@2.5.9:registry+https://github.com/rust-lang/crates.io-index | package | LICENSE-MIT
 ------------------------------------------------------------------------------
 Copyright (c) 2013-2025 The rust-url developers
 

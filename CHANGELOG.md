@@ -1,64 +1,53 @@
 # Changelog
 
-## 3.0.0-rc.4 — Unreleased qualification candidate
+## 3.0.0-rc.4 — Unreleased
 
-- Pin public RGB-Tools commit `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, with merged contract import/export and the pending upstream BFA metadata upgrade repair in PR #138; apply no downstream RGB source overlay.
-- Register and export bounded public contracts offline using expected asset ID and SHA-256, without creating allocations or transfers. Existing assets return an explicit duplicate error rather than claiming validation of replacement bytes.
-- Preserve RC3 wallet identities and journals for in-place upgrades. Reconstruct missing BFA metadata from retained validated stock; reject inconsistent storage without inventing balances or allocations.
-- Use the upstream bounded fascia inspector for transaction admission and preserve one-use invoices with fresh witness addresses. Reject ambiguous multi-mint results rather than selecting one arbitrarily.
-- Require rebuilt native artifacts and existing-wallet application qualification; earlier binary and RC3 test receipts do not qualify this candidate. Publication remains on hold.
+This is the first planned publication of the on-chain version 3 SDK. Earlier
+alpha and RC builds were qualification candidates; their evidence remains in
+Git history.
 
-## 3.0.0-rc.3 — Unreleased qualification candidate
+### Breaking changes from 2.x
 
-- Pin unmodified public RGB-Tools rgb-lib `0.3.0-beta.8` and the locked RGB `0.11.2-rc.2` graph without source overlays.
-- Use SQLx `0.9.1` and bundled SQLite `3.54.1` for Node and Bare; retain and document the upstream Esplora TLS findings.
-- Give this engine a separate wallet directory identity.
-- Expose immutable public account xpubs and fingerprint through `getPublicKeys()`, including while offline.
-- Reconcile a failed Bitcoin/output submission only when its exact live native guard proves End was never entered; retain unknown outcomes after consumed guards or lost acknowledgements. Keep this cleanup inside the wallet directory lifetime during shutdown.
-- Retry one unavailable indexer response for a closed set of pure getters without reopening the account or replaying mutations; preserve chain checks, account ownership and shutdown boundaries.
-- Align the WebRGB facade with `0.1.7`: one native burn destination, assetless first invoices, a separately persisted asset expectation, and actionable receive-output errors.
-- Update the Public Signet bridge profile to the Sandbox proxy hostname, retaining the public chain checkpoint and exact service admission.
-- Rebuild and admit all five Node and eleven Bare targets from the same reviewed native source; retain publication hold pending final application acceptance.
+- Replace the synchronous wrapper with asynchronous Node/Bare accounts, an
+  application-owned signer, explicit transaction approval and durable operation IDs.
+- Use `sendBtc()`, `sendRgbInvoice()` and BIP-322 signing instead of the legacy
+  send/sign aliases. Await account shutdown before disposing Tether Core.
+- Use an engine-specific wallet directory. There is no 2.x database converter;
+  a seed alone does not restore RGB proofs, allocations or operation journals.
 
-## 3.0.0-rc.2
+### Added
 
-- Add invoice-scoped prepared-mint verification using stock BFA.8's checked receipt and public consignment inspection, including independently committed asset identity.
-- Expose optional WebRGB `getReceivedMint({ invoice })`; bind results to the exact invoice, authenticated wallet, asset policy and current authorization.
-- Persist expected asset identity on first-receive invoices and retain their exact original allocation across retries and restart.
-- Qualify Android ABI against BareKit 3.1.0 / Bare 1.37.1.
+- BTC receive/send; RGB output preparation, approval, creation and recovery;
+  NIA/CFA issuance and transfers on every supported RGB profile.
+- Optional-amount blinded and witness invoices, exact expired ordinary-receive
+  cancellation and durable expected-asset binding for generic receives.
+- WebRGB 0.1.7 prepared-mint verification, explicit V1 burn routes and scoped
+  proof export/recovery. Arbitrum, Ethereum, Polygon, Plasma and Tron routes
+  require application configuration.
+- Offline public contract registration/export with expected asset ID and hash,
+  bounded bytes and no allocations or transfers created by registration.
+- BIP-322, immutable public account keys, Tether Core integration and awaited
+  native shutdown. Pure getters can retry one unavailable indexer response;
+  financial operations retain their original identity and are not replayed.
+- Five Node workers and eleven Bare addons with source, lock, ABI and checksum
+  admission. Node workers are delivered separately from the npm archive.
 
+### Upgrade and dependencies
 
-All notable changes to `@utexo/wdk-wallet-rgb` are documented here.
+- Preserve RC3 wallet directories, keys, pending invoices, balances and proof
+  files. The pinned upstream BFA metadata repair in
+  [RGB-Tools #138](https://github.com/RGB-Tools/rgb-lib/pull/138) remains a release
+  dependency. Duplicate contract registration returns `ASSET_ALREADY_KNOWN`;
+  it does not validate replacement bytes.
+- Pin public RGB-Tools `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, including
+  merged public contract APIs, without a downstream source overlay. RGB protocol
+  dependencies remain `0.11.2-rc.2`; both runtimes use bundled SQLite 3.54.1.
+- Update the stock `url` dependency to 2.5.9 and `form_urlencoded` to 1.2.3 to
+  resolve RUSTSEC-2026-0592. Remaining upstream findings are recorded in
+  [DEPENDENCY-POLICY.md](DEPENDENCY-POLICY.md).
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [3.0.0-rc.1] — Unreleased
-
-### Breaking changes
-
-- Replace the synchronous 2.x wrapper with the on-chain Node/Bare API, explicit transaction authorization and durable operation IDs.
-- Require a new engine-specific wallet directory; no legacy database or seed-only RGB migration is provided.
-- Use `sendBtc`, `sendRgbInvoice` and BIP-322 methods instead of the legacy send/sign aliases. Await wallet shutdown before disposing Core.
-
-### Release preparation
-
-- Allow an RGB recipient's proxy to differ from the configured sender proxy, retaining independent URL admission and the original send identity.
-- Permit the five exact, explicitly configured V1 payout routes on staging as well as Dev and Regtest.
-- Rebuild the complete five-Node and eleven-Bare target matrix with the new native admission capability.
-- Supply verified Node worker archives, complete Bare package checks and third-party notices.
-- Retain the unmodified upstream TLS/SQLite graph under the documented dependency policy; no audit finding is hidden or represented as repaired.
-
-## [2.1.0-alpha.24] — Private qualification candidate
-
-- Use unmodified BFA.8 and stock Electrum/Esplora clients; remove custom upstream API dependencies from the adapter.
-- Enable NIA/CFA issuance on every supported RGB profile and preserve bridge configuration during consistency rescans.
-- Implement exact expired ordinary-invoice cancellation through the public library API.
-- Preserve exposed transaction inputs independently of ambiguous RGB transfer failure.
-- Check the configured Bitcoin chain at WDK network boundaries and retain operation identities across reconnects.
-- Report the missing standalone contract import API without blocking unrelated wallet operations.
-- Add native builds and packed desktop qualification for the supported Node/Bare target matrix.
-- Require Bare 1.37.1 or newer, including embedded mobile runtimes, and verify clean and existing-host dependency installs.
+Publication remains held until upstream #138 is accepted and the final release
+source and artifacts are reviewed. The intended npm tag is `next`.
 
 ## [2.0.3] — 2026-01-28
 

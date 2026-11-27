@@ -2,5 +2,4 @@ node_modules
 coverage
 examples
 tests
-tsconfig.json
 .github

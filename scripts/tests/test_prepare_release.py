@@ -1,7 +1,9 @@
 """Failure-oriented checks for release artifact admission, without native builds."""
 
 import importlib.util
+import io
 import json
+from contextlib import redirect_stdout
 from pathlib import Path
 import subprocess
 import tarfile
@@ -158,6 +160,79 @@ class ReleasePreparationTests(unittest.TestCase):
         release.verify_native_admission({"releaseHold": False})
         with self.assertRaisesRegex(ValueError, "artifact admission is on hold"):
             release.verify_native_admission({"releaseHold": True})
+
+    def prepare_cli_source(self, *, publication_hold=True, release_hold=False):
+        self.native.update({"releaseHold": release_hold, "publicationHold": publication_hold,
+                            "source": "fixture", "overlayTree": "a" * 40,
+                            "integrationTree": "a" * 40, "protocol": 1})
+        self.write("src/onchain-bare-native.json", json.dumps(self.native).encode())
+        self.write("qualification/rc4/platforms.json", json.dumps(self.evidence).encode())
+        self.head = self.commit()
+
+    def run_cli(self, *options):
+        args = [str(SCRIPT), "--archive", str(self.archive), "--artifacts", str(self.artifacts),
+                "--qualification", "qualification/rc4/platforms.json", *options]
+        output = io.StringIO()
+        with patch("sys.argv", args), redirect_stdout(output):
+            release.main()
+        return json.loads(output.getvalue())
+
+    def test_default_cli_rejects_publication_hold_even_without_output(self):
+        self.prepare_cli_source()
+        with self.assertRaisesRegex(ValueError, "publication is on hold"):
+            self.run_cli()
+
+    def test_qualification_cli_verifies_complete_set_and_reports_hold(self):
+        self.prepare_cli_source()
+        result = self.run_cli("--verify-qualification")
+        self.assertTrue(result["qualificationOnly"])
+        self.assertFalse(result["publicationAllowed"])
+        self.assertEqual(result["holds"], {"releaseHold": False, "publicationHold": True})
+        self.assertEqual(len(result["publicationBlockers"]), 2)
+        self.assertEqual(len(result["platforms"]), 16)
+        self.assertEqual(result["package"]["sha256"], release.file_identity(self.archive)["sha256"])
+        self.assertTrue(result["source"]["nativeInputsUnchanged"])
+        self.assertNotIn("assets", result)
+        self.assertEqual(json.loads(release.blob(self.head, "src/onchain-bare-native.json")), self.native)
+
+    def test_qualification_cli_never_allows_output_or_publication(self):
+        output = self.root / "release"
+        for hold in [True, False]:
+            with self.subTest(publication_hold=hold):
+                self.prepare_cli_source(publication_hold=hold)
+                with self.assertRaisesRegex(ValueError, "cannot assemble release assets"):
+                    self.run_cli("--verify-qualification", "--output", str(output))
+                self.assertFalse(output.exists())
+                result = self.run_cli("--verify-qualification")
+                self.assertFalse(result["publicationAllowed"])
+                self.assertEqual(result["holds"]["publicationHold"], hold)
+                self.assertGreaterEqual(len(result["publicationBlockers"]), 1)
+
+    def test_qualification_cli_still_requires_native_admission(self):
+        self.prepare_cli_source(release_hold=True)
+        with self.assertRaisesRegex(ValueError, "artifact admission is on hold"):
+            self.run_cli("--verify-qualification")
+
+    def test_qualification_cli_rejects_changed_binary(self):
+        self.prepare_cli_source()
+        (self.artifacts / "node-linux-x64-gnu/utexo-rgb-native").write_bytes(b"foreign")
+        with self.assertRaisesRegex(ValueError, "identity mismatch"):
+            self.run_cli("--verify-qualification")
+
+    def test_qualification_cli_rejects_native_input_drift(self):
+        self.prepare_cli_source()
+        self.write("native/Cargo.lock", b"changed dependencies\n")
+        self.head = self.commit()
+        with self.assertRaisesRegex(ValueError, "Native build inputs changed"):
+            self.run_cli("--verify-qualification")
+
+    def test_qualification_cli_rejects_changed_pack(self):
+        self.prepare_cli_source()
+        entries = [(path, b"foreign" if path == "package/onchain.js" else data, mode)
+                   for path, data, mode in self.entries]
+        self.replace_tar(entries)
+        with self.assertRaisesRegex(ValueError, "differs from committed source"):
+            self.run_cli("--verify-qualification")
 
     def test_version_change_requires_new_admitted_binaries(self):
         self.package["version"] = "3.0.0-rc.2"

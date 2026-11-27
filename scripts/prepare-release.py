@@ -38,9 +38,10 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def verify_native_admission(native):
+def verify_native_admission(native, *, qualification_only=False):
     require(native["releaseHold"] is False, "Native artifact admission is on hold")
-    require(native.get("publicationHold") is not True, "This artifact is limited to qualification; publication is on hold")
+    require(qualification_only or native.get("publicationHold") is not True,
+            "This artifact is limited to qualification; publication is on hold")
 
 
 def git(*args):
@@ -254,16 +255,20 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path, required=True)
     parser.add_argument("--artifacts", type=Path, required=True, help="Verified CI artifact directories, named node-<target> and bare-<target>")
-    parser.add_argument("--qualification", required=True, help="Committed platform receipt path, for example qualification/rc1/platforms.json")
+    parser.add_argument("--qualification", required=True, help="Repository-relative committed platform receipt path, for example qualification/rc4/platforms.json")
     parser.add_argument("--output", type=Path, help="New output directory for the complete local release set")
+    parser.add_argument("--verify-qualification", action="store_true",
+                        help="Verify all artifacts while publication remains on hold; cannot be combined with --output")
     args = parser.parse_args()
+    require(not (args.verify_qualification and args.output),
+            "Qualification verification cannot assemble release assets; omit --output")
     require(not git("status", "--porcelain", "--untracked-files=normal").strip(), "Commit source changes before recording release evidence")
     head = git("rev-parse", "HEAD").decode().strip()
     package = committed_json(head, "package.json")
     require(package["name"] == "@utexo/wdk-wallet-rgb", "Wrong package name")
     require(re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", package["version"]), "Unexpected package version")
     native = committed_json(head, "src/onchain-bare-native.json")
-    verify_native_admission(native)
+    verify_native_admission(native, qualification_only=args.verify_qualification)
     require(native["overlayTree"] == native["integrationTree"], "Source overlays are not admitted for this release")
     evidence = committed_json(head, args.qualification)
     source = verify_source(evidence["producerCommit"], head)
@@ -273,6 +278,16 @@ def main():
               "native": {key: native[key] for key in ("source", "overlayTree", "integrationTree", "protocol")},
               "platforms": platforms, "package": pack,
               "scope": "Artifact identity and source equivalence; not additional mobile, funded or hosted runtime acceptance."}
+    if args.verify_qualification:
+        report.update({
+            "qualificationOnly": True,
+            "publicationAllowed": False,
+            "holds": {"releaseHold": native["releaseHold"],
+                      "publicationHold": native.get("publicationHold") is True},
+            "publicationBlockers": ["Qualification verification cannot assemble or authorize a release."] +
+                (["The committed native manifest retains its publication hold."]
+                 if native.get("publicationHold") is True else []),
+        })
     if args.output:
         report = assemble(args.output, args.archive, args.artifacts, evidence, report, head)
     print(json_bytes(report).decode(), end="")

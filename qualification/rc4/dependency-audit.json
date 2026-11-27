@@ -1,0 +1,241 @@
+{
+  "formatVersion": 1,
+  "auditedAt": "2026-11-27T11:47:40+00:00",
+  "packageVersion": "3.0.0-rc.4",
+  "sourceBaseCommit": "a6dd195b3988b6fccd70dce9a66c2577ac368853",
+  "sourceIdentity": "The pending release source is identified by the exact lockfile hashes below; sourceBaseCommit is the pre-finalization checkout, not a claim that it contains the updated locks.",
+  "nativeSource": {
+    "repository": "https://github.com/RGB-Tools/rgb-lib",
+    "commit": "a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
+    "tree": "a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd",
+    "sourcePatches": false
+  },
+  "nativeAudit": {
+    "tool": "cargo-audit-audit 0.22.2",
+    "database": {
+      "advisory-count": 1571,
+      "last-commit": "c5279d0b0c9e8b70df666eb6d1edbabcfd1176bd",
+      "last-updated": "2026-11-27T11:35:42+01:00"
+    },
+    "databaseRepository": "https://github.com/RustSec/advisory-db",
+    "databaseFetch": "cargo audit --file native/Cargo.lock --json",
+    "comparison": "Both final audits ran with --no-fetch against the same verified database HEAD; their JSON omits last-commit/last-updated, so identity comes from the initial refreshed audit and git rev-parse HEAD.",
+    "ignoredAdvisories": [],
+    "targetArchitectureFilter": [],
+    "targetOsFilter": [],
+    "graphs": {
+      "node": {
+        "lockfile": "native/Cargo.lock",
+        "lockSha256": "8d70a35746ce1dc3d8533d55a0167db3a8fa14b121e2e75f71be80c1adceef4d",
+        "dependencyCount": 509,
+        "command": "cargo audit --file native/Cargo.lock --no-fetch --json",
+        "exitCode": 1,
+        "findingCount": 7,
+        "findingIds": [
+          "RUSTSEC-2026-0346",
+          "RUSTSEC-2026-0349",
+          "RUSTSEC-2026-0104",
+          "RUSTSEC-2026-0098",
+          "RUSTSEC-2026-0099",
+          "RUSTSEC-2026-0382",
+          "RUSTSEC-2026-0381"
+        ],
+        "warningIds": [
+          "RUSTSEC-2026-0543",
+          "RUSTSEC-2024-0449"
+        ],
+        "before": {
+          "sourceCommit": "a6dd195b3988b6fccd70dce9a66c2577ac368853",
+          "lockSha256": "a15ab208f9d76683f6569c3ce9a18760f819f84f587897f434a94b7ce91aa844",
+          "findingCount": 8,
+          "reportSha256": "b5bc7845a3631f234acf9d9b9170b6f91f0d42d30ac4c98d4257b90d9b369f0b"
+        },
+        "reportSha256": "71267b189899e6e027b530c74befce2891b77c7bb9c44fa153c40a09b04aa3b0",
+        "selectedVersions": {
+          "url": "2.5.9",
+          "form_urlencoded": "1.2.3",
+          "libsqlite3-sys": "0.40.0",
+          "sqlx": "0.9.1",
+          "chrono": "0.4.45",
+          "unsafe-libyaml": "0.2.11"
+        }
+      },
+      "bare": {
+        "lockfile": "native/bare/Cargo.lock",
+        "lockSha256": "72cd67d8ceea1500f82021e06b71c147a2a871daed7b8f045d7345311de17203",
+        "dependencyCount": 512,
+        "command": "cargo audit --file native/bare/Cargo.lock --no-fetch --json",
+        "exitCode": 1,
+        "findingCount": 7,
+        "findingIds": [
+          "RUSTSEC-2026-0346",
+          "RUSTSEC-2026-0349",
+          "RUSTSEC-2026-0104",
+          "RUSTSEC-2026-0098",
+          "RUSTSEC-2026-0099",
+          "RUSTSEC-2026-0382",
+          "RUSTSEC-2026-0381"
+        ],
+        "warningIds": [
+          "RUSTSEC-2026-0543",
+          "RUSTSEC-2024-0449"
+        ],
+        "before": {
+          "sourceCommit": "a6dd195b3988b6fccd70dce9a66c2577ac368853",
+          "lockSha256": "0a564ce89b47b91496057526ece78ba5d63de2710434de93933ff148b8193f35",
+          "findingCount": 8,
+          "reportSha256": "8da32a2b8c59a6f8f61248f2a71f166d595c81eb0af5b17df17c26a203ab2d2a"
+        },
+        "reportSha256": "bab12bd27c5775720169a2686504750b99124e3fb99601aa0dd727df3ac2bc76",
+        "selectedVersions": {
+          "url": "2.5.9",
+          "form_urlencoded": "1.2.3",
+          "libsqlite3-sys": "0.40.0",
+          "sqlx": "0.9.1",
+          "chrono": "0.4.45",
+          "unsafe-libyaml": "0.2.11"
+        }
+      }
+    },
+    "findings": [
+      {
+        "id": "RUSTSEC-2026-0346",
+        "package": "rustls",
+        "version": "0.21.12",
+        "title": "`Debug` impls for client session values expose TLS secrets",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0346.html",
+        "patched": [
+          ">=0.23.46"
+        ]
+      },
+      {
+        "id": "RUSTSEC-2026-0349",
+        "package": "rustls",
+        "version": "0.21.12",
+        "title": "Unauthenticated ServerHello can downgrade later connections to classical key exchange",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0349.html",
+        "patched": [
+          ">=0.23.46"
+        ]
+      },
+      {
+        "id": "RUSTSEC-2026-0104",
+        "package": "rustls-webpki",
+        "version": "0.101.7",
+        "title": "Reachable panic in certificate revocation list parsing",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0104.html",
+        "patched": [
+          ">=0.103.13, <0.104.0-alpha.1",
+          ">=0.104.0-alpha.7"
+        ]
+      },
+      {
+        "id": "RUSTSEC-2026-0098",
+        "package": "rustls-webpki",
+        "version": "0.101.7",
+        "title": "Name constraints for URI names were incorrectly accepted",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0098.html",
+        "patched": [
+          ">=0.103.12, <0.104.0-alpha.1",
+          ">=0.104.0-alpha.6"
+        ]
+      },
+      {
+        "id": "RUSTSEC-2026-0099",
+        "package": "rustls-webpki",
+        "version": "0.101.7",
+        "title": "Name constraints were accepted for certificates asserting a wildcard name",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0099.html",
+        "patched": [
+          ">=0.103.12, <0.104.0-alpha.1",
+          ">=0.104.0-alpha.6"
+        ]
+      },
+      {
+        "id": "RUSTSEC-2026-0382",
+        "package": "rustls-webpki",
+        "version": "0.101.7",
+        "title": "Certificate verification may accept distrusted intermediates",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0382.html",
+        "patched": [
+          ">=0.103.16, <0.104.0-alpha.1",
+          ">=0.104.0-alpha.8"
+        ]
+      },
+      {
+        "id": "RUSTSEC-2026-0381",
+        "package": "webpki-roots",
+        "version": "0.25.4",
+        "title": "Bundled root certificates allow trust in distrusted emSign intermediates",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0381.html",
+        "patched": [
+          ">=1.0.10"
+        ]
+      }
+    ],
+    "warnings": [
+      {
+        "id": "RUSTSEC-2026-0543",
+        "package": "chrono",
+        "version": "0.4.45",
+        "title": "chrono is unmaintained",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0543.html",
+        "patched": [],
+        "kind": "unmaintained"
+      },
+      {
+        "id": "RUSTSEC-2024-0449",
+        "package": "unsafe-libyaml",
+        "version": "0.2.11",
+        "title": "unsafe-libyaml is unmaintained",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2024-0449.html",
+        "patched": [],
+        "kind": "unmaintained"
+      }
+    ],
+    "resolvedFinding": {
+      "id": "RUSTSEC-2026-0592",
+      "package": "url",
+      "version": "2.5.8",
+      "title": "Stack overflow in `Url::origin()` on nested `blob:` URLs",
+      "url": "https://rustsec.org/advisories/RUSTSEC-2026-0592.html",
+      "patched": [
+        ">=2.5.9"
+      ],
+      "resolution": {
+        "url": "2.5.9",
+        "form_urlencoded": "1.2.3"
+      },
+      "scope": "Compatible registry patch updates in both lockfiles; no RGB source changes. All native targets require rebuild and admission against these new locks.",
+      "reachabilityReview": "No Url::origin or url::quirks::origin call site was found outside the url crate in the resolved native package sources. WDK admits bounded configured URL schemes and upstream reject-list requests accept HTTP/HTTPS. This static review is not a non-reachability proof; the affected dependency was updated rather than suppressed."
+    }
+  },
+  "javascriptAudit": {
+    "node": "26.11.1",
+    "npm": "11.20.0",
+    "command": "npm audit --omit=dev --audit-level=moderate --json --registry=https://registry.npmjs.org",
+    "registry": "https://registry.npmjs.org",
+    "packageLockSha256": "bcd727b1fd14abe607f0f3dade0f5a030bbda55f4d3187b3521d0806c51511ae",
+    "reportSha256": "88480fd47335792659eb82c122e33c3bc5a50e992cbd316143a49827e20309c1",
+    "exitCode": 0,
+    "metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "dependencies": {
+        "prod": 95,
+        "dev": 43,
+        "optional": 34,
+        "peer": 0,
+        "peerOptional": 0,
+        "total": 137
+      }
+    }
+  },
+  "interpretation": "Seven retained upstream Esplora TLS findings remain in each native graph. The refreshed database additionally records chrono as unmaintained alongside unsafe-libyaml. The newly found url denial-of-service finding is removed by the compatible lock update, without audit suppression. A zero JavaScript runtime finding count does not clear the native findings."
+}

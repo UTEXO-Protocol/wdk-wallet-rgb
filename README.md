@@ -2,19 +2,21 @@
 
 An on-chain Bitcoin and RGB wallet SDK for Node and Bare. The application owns the signer and approves transactions; the native engine receives public account data and reviewed signed PSBTs. There is no Lightning dependency.
 
-Version `3.0.0-rc.4` is a qualification candidate. It pins public RGB-Tools `rgb-lib` commit `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, including the pending [upstream BFA metadata upgrade repair](https://github.com/RGB-Tools/rgb-lib/pull/138); WDK applies no source overlay. The source package labels itself `0.3.0-beta.7`, but the exact commit follows the previously pinned beta.8 source. See the [upgrade guide](MIGRATION.md) for the in-place RC3 update and the separate breaking change from 2.x.
+Version 3 replaces the 2.x wrapper. See the [upgrade guide](MIGRATION.md) for integration changes and the in-place RC3-to-RC4 wallet update.
 
 ## Installation
 
-Install the reviewed package archive in your application:
+After `3.0.0-rc.4` is published under `next`, install the exact version:
 
 ```sh
-npm install ./utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz
+npm install --save-exact @utexo/wdk-wallet-rgb@3.0.0-rc.4
 ```
 
-Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedded mobile runtimes. The native manifest lists the exact Bare targets admitted in an archive. Qualification archives can contain a subset; a complete SDK release requires all eleven Bare targets. Node applications also need the matching native worker archive for their platform and its recorded SHA-256. There are no native downloads or compilation hooks during installation.
+Until publication, install the reviewed local archive with `npm install ./utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz`. PR #23 remains on publication hold pending [upstream #138](https://github.com/RGB-Tools/rgb-lib/pull/138).
 
-The [integration guide](CANDIDATE.md) covers Node worker configuration, Bare and mobile linking, network selection, transaction approval, Tether Core and error recovery. The repository's [release procedure](RELEASING.md) describes artifact verification and publication.
+Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedded mobile runtimes. The complete npm package contains all eleven Bare targets. Node applications also need the matching worker from the [GitHub release assets](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/releases) and its SHA-256. Configure its absolute path as `nativeExecutable` and hash as `nativeSha256`. Installation does not download or compile native code.
+
+The [integration guide](CANDIDATE.md) covers Bare and mobile linking, network selection, transaction approval, Tether Core and error recovery. The repository's [release procedure](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/RELEASING.md) describes artifact verification and publication.
 
 ## Supported operations
 
@@ -42,7 +44,7 @@ Balance, history, asset, output, fee and chain getters retry one `INDEXER_UNAVAI
 
 GNU hosts must provide the GLIBC symbol versions recorded in each worker or addon receipt. macOS binaries target macOS 11 or newer; the selected Node/Bare host runtime can require a newer OS. Linux musl is available for the Node x64 worker only.
 
-Build and ABI verification, packed desktop execution, funded fixture tests and installed application acceptance have separate scopes. The [qualification register](QUALIFICATION.md) records exact versions and evidence. Windows is not supported.
+Build and ABI verification, packed desktop execution, funded fixture tests and installed application acceptance have separate scopes. The [qualification register](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/QUALIFICATION.md) records exact versions and evidence. Windows is not supported.
 
 ## Current limits
 

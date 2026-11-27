@@ -15,17 +15,29 @@ All binaries must use the exact public RGB-Tools rgb-lib commit and registry pro
 3. Download each artifact from that exact producer commit. Verify GitHub's archive digest, the binary hash and the platform receipt. Record all identities in the committed platform receipt. Admit all eleven Bare hashes in `src/onchain-bare-native.json`; do not rename an older mobile library to impersonate a new version.
 4. Stage all eleven addons with `scripts/stage-bare.mjs`, then run `node scripts/check-candidate-pack.mjs --require-all-targets`. A source-only archive is not the release package. Pack from committed source with `npm pack --ignore-scripts --pack-destination <directory>`.
 5. Install that tarball into clean Node and Bare consumers. Execute the selected worker/addon, verify hash rejection and its native handshake, and run the funded ordinary RGB, BTC, BFA mint/burn/proof recovery and distinct-proxy tests on isolated fixtures. Also upgrade an old RC3 funded wallet in place: verify balances, pending invoices, allocations, interrupted operations and proof bytes after repeated reopen. Install the application update over the distributed baseline using the same package identity and signing key; fresh-wallet tests alone do not qualify that update. Retain evidence for the exact archive and binaries. A funded host pack may qualify the complete archive only when an independent comparison proves identical runtime files, dependency metadata, native manifest identity and host binary bytes; record permitted documentation/target additions and still run fresh consumers of the complete archive. Build/ABI checks on mobile do not substitute for installed-app acceptance.
-6. Generate the complete local delivery set:
+6. While an upstream dependency or publication approval is pending, verify the complete candidate without assembling release assets:
 
 ```sh
 python3 scripts/prepare-release.py \
-  --qualification /absolute/path/verified-rc4-platforms.json \
+  --verify-qualification \
+  --qualification qualification/rc4/platforms.json \
+  --archive /absolute/path/utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz \
+  --artifacts /absolute/path/native-artifacts
+```
+
+This checks committed source, all sixteen binaries and every packed file. It reports `publicationAllowed: false` and rejects `--output`. It still rejects a native artifact admission hold. It cannot clear a hold or publish a package.
+
+7. After upstream acceptance and review of hold removal, generate the complete local delivery set:
+
+```sh
+python3 scripts/prepare-release.py \
+  --qualification qualification/rc4/platforms.json \
   --archive /absolute/path/utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz \
   --artifacts /absolute/path/native-artifacts \
   --output /absolute/path/new-release-directory
 ```
 
-Qualification-only candidates retain `publicationHold: true`; the release tool must reject them. Remove that hold only after the release owner accepts the remaining documented risks and every target and consumer check is complete.
+Qualification-only candidates retain `publicationHold: true`; the release tool must reject them. Remove that hold in a reviewed commit only after upstream #138 is accepted, the release owner accepts the documented dependency policy, and every target and consumer check is complete. Do not temporarily remove it to run a qualification check.
 
 The artifact root contains `node-<target>` and `bare-<target>` directories. The tool requires a clean checkout, committed source identities, exact package inventory, all sixteen targets and unchanged native inputs since the producer. It emits five deterministic Node archives, the npm archive, `SHA256SUMS` and a release manifest. It rejects stale or missing binaries, unadmitted package files and unsafe archive entries. It does not publish anything.
 
@@ -37,13 +49,15 @@ The artifact root contains `node-<target>` and `bare-<target>` directories. The 
 4. Publish the verified `3.0.0-rc.4` archive under `next` and attach the five matching Node worker archives, `SHA256SUMS` and release manifest to the GitHub Release. npm alone does not deliver the Node workers.
 5. Update [Iris #11](https://github.com/UTEXO-Protocol/utexo-mobile/pull/11) from its frozen local archive to the exact published version and integrity. Update the coupled package/source/profile pins, admit the registry package, then rebuild and test that final application integration before merging it into `dev`. Iris #10 is already contained in #11 and needs no separate merge.
 
-The recorded RC3 application qualification uses WebRGB and WalletConnect `0.1.7`, matching the November 25 Sandbox inspection. Their required protocol/session PRs and bridge frontend #192/#197 are already merged. Closed frontend #146 is not a prerequisite. Contract import/export now uses merged RGB-Tools #124, which superseded #103; PR #138 remains an upgrade-safety dependency. Newly published WebRGB/WalletConnect `0.2.0` needs a separate compatibility qualification; this procedure does not silently upgrade the tested wire protocol. The former RLN/LDK/Bare/Node/Lightning PR stack is not part of this SDK's native graph.
+The application qualification uses WebRGB and WalletConnect `0.1.7`; a newer wire protocol needs separate compatibility qualification. The required transport/bridge changes and RGB-Tools public contract API #124 are merged. The former Lightning dependency stack and superseded contract API #103 are not release dependencies.
 
 ## Publication, when authorized
 
 - Obtain the required PR review and merge approval. Revalidate source equivalence and the assembled release set against the reviewed release commit. If native inputs or the package version changed, rebuild affected binaries and repeat admission; do not silently reuse earlier versioned mobile libraries.
-- Verify registry identity/access with the release owner's maintainer account. Registry lookup is not publication authorization. Do not place credentials in source, CI logs or release assets.
-- Publish the verified npm tarball with the `next` tag. Do not publish a checkout containing only JavaScript or promote this release candidate to `latest`.
+- Authenticate with the release owner's npm maintainer account and check `npm whoami`, `npm access list packages`, and `npm view @utexo/wdk-wallet-rgb versions dist-tags --json`. Confirm organization publication rights and that `3.0.0-rc.4` is unused. An anonymous 404 does not establish package ownership or availability. Do not place credentials in source, logs or assets.
+- Resolve the repository's required reviews on the final commit. Use a normal merge; do not rewrite the admitted producer ancestry. Inspect the merged source before making the tag.
+- Use maintainer 2FA or the organization's approved npm publication authentication. No repository workflow publishes this package automatically.
+- Publish only the verified tarball: `npm publish /absolute/path/utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz --access public --tag next`. Do not publish a source-only checkout or promote this release candidate to `latest`.
 - Create the matching Git tag and GitHub Release from the reviewed source, attach the complete verified delivery set and use `RELEASE-NOTES.md`. Record registry integrity, final URLs and checksums.
 - Install the published tarball as a fresh consumer and compare its bytes/integrity with the approved local archive. Verify the downloaded Node worker archives independently. No rebuild should occur during installation.
 
