@@ -17,8 +17,12 @@ from pathlib import Path, PurePosixPath
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
+
+# Artifact verification must not create untracked bytecode in its clean checkout.
+sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parent.parent
 BARE_TARGETS = (

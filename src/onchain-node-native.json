@@ -3,8 +3,29 @@
   "source": "a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
   "overlayTree": "a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd",
   "protocol": 2,
-  "targets": {},
-  "releaseHold": true,
+  "targets": {
+    "darwin-arm64": {
+      "byteLength": 47047880,
+      "sha256": "08e7464baf5095e842c5a20f9d1ab77c2b524d74d16f70ee58b038cf9a71a598"
+    },
+    "darwin-x64": {
+      "byteLength": 50797104,
+      "sha256": "0d7d8ede1396709e1e6f63ab44a70f75b10cd1bad2e4f91ba358942e99893de9"
+    },
+    "linux-arm64-gnu": {
+      "byteLength": 55897288,
+      "sha256": "04351b49c0daaccb78830ea872c5b8e36be458b3555828484a86b80af2999a36"
+    },
+    "linux-x64-gnu": {
+      "byteLength": 58781296,
+      "sha256": "8de2f08cb8fadd1838cd91cbb26f90ba1fb1df9264b0c247525465a3ead06c26"
+    },
+    "linux-x64-musl": {
+      "byteLength": 58899432,
+      "sha256": "41c764696aca100666e9ea022b4f045dfeff76b3fa94387a69b039f5220cb56f"
+    }
+  },
+  "releaseHold": false,
   "publicationHold": true,
   "nodeApiVersion": 8,
   "runtime": "node-in-process"

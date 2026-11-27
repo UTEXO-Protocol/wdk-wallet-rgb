@@ -4,9 +4,9 @@ This register covers `@utexo/wdk-wallet-rgb@3.0.0-rc.4`. Build, packed runtime, 
 
 ## Node addon qualification in progress
 
-Node now uses a bundled Node-API addon on a dedicated thread instead of a separate Rust executable. The Rust engine, upstream sources, database identities and Bare native inputs are unchanged. The five Node targets are on artifact-admission hold until the new builds and packed consumers pass. Publication remains held.
+Node now uses a bundled Node-API addon on a dedicated thread instead of a separate Rust executable. The Rust engine, upstream sources, database identities and Bare native inputs are unchanged. All five Node targets passed [their producer workflow](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/46015918020) and artifact admission. All eleven Bare binaries retain their original source and hashes. Publication remains held; complete-pack funded acceptance is underway.
 
-Local verification passes 165 JavaScript tests and public types, 54 Rust library tests and strict Clippy. The same Darwin ARM64 Node-API v8 binary executes on Node 22, 24 and 26. Lifecycle regressions cover timeout/close during native mutation, retained directory ownership, no automatic replay and result recovery after reopen. These local checks do not qualify the final cross-platform archive; funded upgrade and exact-pack checks are underway.
+Verification passes 165 JavaScript tests and public types, 36 release/scope regressions, 54 Rust library tests plus five network integration tests on every Node platform, and local strict Clippy. The same Darwin ARM64 Node-API v8 binary executes on Node 22, 24 and 26. Lifecycle regressions cover timeout/close during native mutation, retained directory ownership, no automatic replay and result recovery after reopen. These local checks do not qualify the final cross-platform archive; funded upgrade and exact-pack checks are underway.
 
 ## Previous executable-based candidate
 
@@ -29,7 +29,7 @@ The previous candidate had complete native artifact admission. `publicationHold:
 
 | Scope | Result and evidence |
 | --- | --- |
-| CI and native builds | [19/19 producer jobs pass](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/45995455771), plus CodeQL. [Platform admission](qualification/rc4/platforms.json) verifies all five Node workers and eleven Bare addons by ZIP digest, source/tree/locks, binary hash and ABI. |
+| CI and native builds | [19/19 producer jobs pass](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/45995455771), plus CodeQL. [Previous platform admission](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/418b98dddf7b7e71dc6f9bbef3c8e50a89cdb4b5/qualification/rc4/platforms.json) verifies all five Node workers and eleven Bare addons by ZIP digest, source/tree/locks, binary hash and ABI. |
 | Desktop runtime | All nine desktop jobs execute packed consumers, contract import/export/reopen and native Release tests (56 Node / 51 Bare cases). Every packed source member matches the producer. Seven mobile targets have build/ABI acceptance. |
 | Source and release tools | 152 JavaScript tests, public types, runtime npm audit, source-only package checks and 24 release-tool regressions pass. Qualification-only verification rejects output assembly and keeps publication blocked. |
 | Complete package | [Exact archive receipt](qualification/rc4/complete-pack.json): 41 files, 211,940,487 bytes, all eleven Bare targets. Every file matches committed source or an admitted binary. The npm publication dry-run passes locally; registry authentication and server acceptance remain unverified. |
