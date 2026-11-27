@@ -44,7 +44,7 @@ Before an RGB send or burn reaches native `End`, WDK persists its exposed input 
 
 Cancellation uses upstream retention and proxy-loss rules. It does not preserve the removed patch's stronger requirement for authenticated proof of an empty proxy record. Display eligibility is only an observation; the mutation checks current state again.
 
-The pinned upstream library has no public standalone contract registration API. `importContract` checks its bounded byte envelope and SHA-256, then returns `CONTRACT_IMPORT_UNAVAILABLE` without changing RGB state. No fake transfer, outpoint or private database write substitutes for it. This affects preregistering Iris's USDT contract, not wallet opening, NIA/CFA issuance or receipt through a real transfer. Track [RGB-Tools #103](https://github.com/RGB-Tools/rgb-lib/pull/103) separately.
+`importContract` checks bounded bytes, SHA-256 and the expected asset ID, then calls the public upstream validator/importer. It adds no allocation. Duplicate imports remain errors; they do not prove that newly supplied bytes were validated. `exportContract` returns bounded pure genesis bytes and their digest, with no native path. Media attachment inputs are outside this envelope. The pinned source includes merged public API PR #124 and the pending [BFA metadata upgrade repair in #138](https://github.com/RGB-Tools/rgb-lib/pull/138); WDK applies no source overlay. Existing RC3 wallets retain their complete directory and journals during the qualified in-place update.
 
 ## Recovery and qualification
 

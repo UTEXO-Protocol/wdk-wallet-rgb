@@ -3,10 +3,10 @@ import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { createHash, randomBytes } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { chmod, copyFile, lstat, mkdir, mkdtemp, open, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { chmod, copyFile, cp, lstat, mkdir, mkdtemp, open, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const script = fileURLToPath(import.meta.url)
 const root = resolve(dirname(script), '../..')
@@ -88,6 +88,24 @@ async function executableAbi (path, target) {
   return { format: 'ELF', interpreter, needed, glibcVersions }
 }
 
+export async function stageQualificationPackage (sourceRoot, directory) {
+  const staged = join(directory, 'package')
+  const manifestPath = join(sourceRoot, 'src/onchain-bare-native.json')
+  const original = await readFile(manifestPath)
+  const manifest = JSON.parse(original)
+  await mkdir(staged, { mode: 0o700 })
+  await copyFile(join(sourceRoot, 'onchain.js'), join(staged, 'onchain.js'))
+  await copyFile(join(sourceRoot, 'package.json'), join(staged, 'package.json'))
+  await cp(join(sourceRoot, 'src'), join(staged, 'src'), { recursive: true })
+  await symlink(await realpath(join(sourceRoot, 'node_modules')), join(staged, 'node_modules'), 'dir')
+  // Qualification can run before artifact admission. Change only this private
+  // copy: source pins, publication hold and every runtime check stay intact.
+  manifest.releaseHold = false
+  await writeFile(join(staged, 'src/onchain-bare-native.json'), JSON.stringify(manifest, null, 2) + '\n')
+  assert.deepEqual(await readFile(manifestPath), original, 'Source manifest changed during qualification staging')
+  return staged
+}
+
 async function verify (target, executable, expectedSha256, runtime = verifyHost(target)) {
   assert.match(expectedSha256, /^[0-9a-f]{64}$/, 'Supply the independently recorded native SHA-256')
   const path = resolve(executable)
@@ -97,7 +115,6 @@ async function verify (target, executable, expectedSha256, runtime = verifyHost(
   const abi = await executableAbi(path, target)
 
   const { OnchainWorker } = await import('../../src/onchain-worker.js')
-  const { WalletManagerRgb } = await import('../../onchain.js')
   await assert.rejects(OnchainWorker.start(path, '0'.repeat(64)), { code: 'NATIVE_IDENTITY_MISMATCH' })
   const worker = await OnchainWorker.start(path, expectedSha256)
   let nativeIdentity
@@ -120,22 +137,24 @@ async function verify (target, executable, expectedSha256, runtime = verifyHost(
     maxFeeSats: '5000',
     authorize: () => { throw new Error('Offline host smoke cannot authorize a transaction') }
   }
-  async function openWallet () {
-    const manager = new WalletManagerRgb(seed, config)
-    try {
-      const account = await manager.getAccount()
-      assert.equal(account.getConnectionStatus(), 'offline')
-      assert.equal(await account.getBalance(), 0n)
-      assert.deepEqual(await account.listAssets(), [])
-      assert.deepEqual(await account.getTransactions(), [])
-      const address = await account.getMessageSigningAddress()
-      assert.match(address, /^bcrt1p/)
-      return address
-    } finally {
-      await manager.shutdown()
-    }
-  }
   try {
+    const staged = await stageQualificationPackage(root, directory)
+    const { WalletManagerRgb } = await import(pathToFileURL(join(staged, 'onchain.js')).href)
+    async function openWallet () {
+      const manager = new WalletManagerRgb(seed, config)
+      try {
+        const account = await manager.getAccount()
+        assert.equal(account.getConnectionStatus(), 'offline')
+        assert.equal(await account.getBalance(), 0n)
+        assert.deepEqual(await account.listAssets(), [])
+        assert.deepEqual(await account.getTransactions(), [])
+        const address = await account.getMessageSigningAddress()
+        assert.match(address, /^bcrt1p/)
+        return address
+      } finally {
+        await manager.shutdown()
+      }
+    }
     const address = await openWallet()
     assert.equal(await openWallet(), address, 'Reopened wallet identity differs')
   } finally {
@@ -224,7 +243,9 @@ async function main () {
   console.log(JSON.stringify(result, null, 2))
 }
 
-main().catch(error => {
-  console.error(error.message)
-  process.exitCode = 1
-})
+if (process.argv[1] && resolve(process.argv[1]) === script) {
+  main().catch(error => {
+    console.error(error.message)
+    process.exitCode = 1
+  })
+}
