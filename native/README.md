@@ -2,7 +2,7 @@
 
 The watch-only engine is shared by the Node pipe worker and the Bare addon. The application owns the seed, transaction review and signer. Native code receives public account keys and an exact signed PSBT after approval.
 
-The build uses unmodified RGB-Tools rgb-lib `0.3.0-beta.8`, commit `567e5b8308f70a6242137475394be5a82fc15c95`, tree `8a887b28bd12625e36cd7cfe2af067ff766ece1d`. Electrum 0.25.2 and Esplora 0.12.3 are registry sources with Cargo checksums. There are no downstream RGB or client source patches. The RGB protocol crates use the locked registry `0.11.2-rc.2` graph. The `rgb_fs_store_migration` feature retains upstream decoding for earlier RGB file formats; it does not convert an earlier WDK wallet directory. The legacy manifest fields `overlayTree` and `integrationTree` now both identify the unmodified upstream tree.
+The build uses unmodified RGB-Tools rgb-lib `0.3.0-beta.7`, commit `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, tree `a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd`. Electrum 0.25.2 and Esplora 0.12.3 are registry sources with Cargo checksums. There are no downstream RGB or client source patches. The RGB protocol crates use the locked registry `0.11.2-rc.2` graph. The `rgb_fs_store_migration` feature retains upstream decoding for earlier RGB file formats; it does not convert an earlier WDK wallet directory. The legacy manifest fields `overlayTree` and `integrationTree` now both identify the unmodified upstream tree.
 
 ## Build and test
 
