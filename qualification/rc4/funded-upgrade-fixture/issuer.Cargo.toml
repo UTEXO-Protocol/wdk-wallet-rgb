@@ -1,0 +1,8 @@
+[package]
+name = "contract-upgrade-issuer-old"
+version = "0.1.0"
+edition = "2024"
+[dependencies]
+rgb-lib = { path = "../../upstream-upgrade-audit/old", default-features = false, features = ["wallet", "electrum", "camel_case", "rgb_fs_store_migration"] }
+rgb-ops = { version = "=0.11.2-rc.2", default-features = false, features = ["fs", "serde"] }
+serde_json = "1"

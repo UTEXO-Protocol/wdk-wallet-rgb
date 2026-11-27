@@ -1,0 +1,12 @@
+{
+  "sha256": {
+    "fixture.py": "1691e27eadb78c864c7424e6ad0bb67662ef8d2c37b6ec613c9157261604667b",
+    "issuer.Cargo.toml": "ebb01e020494abd7134cdbf7e7875d97cd0fc285cfc53460339d2c2b36efe546",
+    "packed-peer.mjs": "98c0a9b3fd04be6092cc408093600e02ff4fbbe2f1e73d70ef25a8d96228c352",
+    "issuer.rs": "ddb14234212b1e60d2860f2a3161dad598b8cb45c65123b04bc5190ef2ee8ffd",
+    "issuer.Cargo.lock": "716f90ba6178184c9377d4a22d0fb65bdba7afa14115438c08f214ded372e289",
+    "qualify-upgrade.mjs": "8a203763abc25cdcc297708b7b761804ca92189b063dc2cff18beead9191185a",
+    "compose.yaml": "70584caf06a5634d305aec3a9ceb97c02dfa5f96d067165bdfdc551b4512e7f5"
+  },
+  "generatedPrivateStateIncluded": false
+}

@@ -36,14 +36,24 @@ validated. Export returns pure public contract bytes, not a burn proof or native
 path. Contracts requiring external media are not supported by the current
 registration envelope. Both APIs are unavailable in BTC-only mode.
 
-The source tests pass 150 JavaScript cases and public types. Existing generic
+The source tests pass 152 JavaScript cases and public types. Existing generic
 invoice journals retain their original operation/request identity after an
 asset becomes registrable. Fresh invoices keep a one-use quota and fresh
 witness addresses. Mint verification rejects ambiguous multi-mint results.
-Runtime, funded, complete-platform and application upgrade qualification are
-still in progress; previous RC3 results below do not qualify the new binaries.
-The native manifest stays on hold until its rebuilt targets are admitted, and
-publication remains on hold.
+All 19 checks passed for native producer `b765e9b46a3872ab012cbdbc1f1c04ee1a377f4e`
+in [run 45975022979](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/45975022979).
+[Platform admission](qualification/rc4/platforms.json) verifies all five Node
+workers and eleven Bare addons against their archive, source, lock and ABI
+receipts. Nine desktop jobs execute packed contract import/export/reopen;
+seven mobile targets have build/ABI acceptance. Native Release tests pass
+56 Node cases and 51 Bare unit cases; strict adapter Clippy also passes.
+The manifest admits the complete rebuilt Bare matrix. Publication remains held.
+
+[Funded local upgrade evidence](qualification/rc4/README.md) covers both old RC3
+Node and Bare wallets under the new local native builds, including retained
+BFA holdings, pending invoices and proofs. Final complete CI-pack execution
+and installed application upgrade acceptance are recorded separately after
+execution; previous RC3 results do not qualify these binaries.
 
 ## RC3: public RGB upstream and WebRGB 0.1.7 qualification
 

@@ -1,0 +1,25 @@
+name: wdk_contract_upgrade_20261127
+services:
+  bitcoind:
+    image: registry.gitlab.com/hashbeam/docker/bitcoind@sha256:aa7175c1ac87bf9209b8ecf65565ec68b5f25fa62ff27c46331a47e1fa38a52e
+    command: -fallbackfee=0.0002 -blockfilterindex=1
+    ports:
+      - 127.0.0.1:48443:18443
+  electrs:
+    image: registry.gitlab.com/hashbeam/docker/electrs@sha256:560778444e7fa47a718ffaee371de9066e61aab4a674aae9ab90038899c50da6
+    ports:
+      - 127.0.0.1:48001:50001
+    depends_on:
+      - bitcoind
+  proxy:
+    image: ghcr.io/rgb-tools/rgb-proxy-server@sha256:9c0740f1421078a5c4bf243140a4c551a8e4818cb4f2c727d4e429427b8c47ce
+    environment:
+      MAX_POW_DIFFICULTY: 0
+    ports:
+      - 127.0.0.1:48090:3000
+  anvil:
+    image: ghcr.io/foundry-rs/foundry@sha256:3a392c18f9b16e665e932de159fb6fa9ed972c4b4352f2f76a1a8c7ca9b57d39
+    entrypoint: [anvil]
+    command: [--host, 0.0.0.0, --port, '8545', --chain-id, '31337']
+    ports:
+      - 127.0.0.1:48545:8545
