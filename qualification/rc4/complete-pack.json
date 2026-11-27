@@ -1,79 +1,124 @@
 {
-  "source": "80d7af32d2131c7a4133622a733414af8e07a5e7",
-  "sourceTree": "9b3256571d2720256eb03112432e82e452eb2efe",
-  "nativeProducer": "b765e9b46a3872ab012cbdbc1f1c04ee1a377f4e",
+  "source": "2331119dfc48b782dc1ad5af3f32d21ff38319a1",
+  "sourceTree": "2df35de5560429a9ba7d61d995d04f0adbecfb66",
+  "nativeProducer": "c5b4c1f0e15f0fac7f8d05a69734be70aa82825d",
   "packageVersion": "3.0.0-rc.4",
   "archive": "utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz",
-  "sha256": "3513c7b4e02739abe7bfcbd4306054ba2f436ba152aff6aff3b4a462f3f3906f",
-  "bytes": 211960068,
+  "sha256": "c7b42d8bc1bde6ea5f02a66aa1f7927115ac9a3678eaf702a7480c71aa447dbe",
+  "bytes": 211940487,
   "fileCount": 41,
   "node": "v26.11.1",
   "npm": "11.20.0",
   "files": [
+    {
+      "path": "CANDIDATE.md",
+      "bytes": 21592,
+      "sha256": "7e661f9ef03acf441e3527f5f200015e9ee8e34566a2f3c4c476524ff3a12783"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 6411,
+      "sha256": "4b2d6f5133119aa9f20ab15c936d4627493ee66dcb5fa8fe5e8c2a60bdc9f5b8"
+    },
+    {
+      "path": "DEPENDENCY-POLICY.md",
+      "bytes": 4338,
+      "sha256": "ec05935d4543def7fe460ee45c52e7b5d01d2c730de09206953b42d3c97ccc68"
+    },
     {
       "path": "LICENSE",
       "bytes": 10173,
       "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
     },
     {
+      "path": "MIGRATION.md",
+      "bytes": 4664,
+      "sha256": "6fe6f05485260d73f26d87805146a9ee6cfcbd94d5f426e3e5cb7700f14d233b"
+    },
+    {
+      "path": "README.md",
+      "bytes": 5016,
+      "sha256": "454922e9902ff378a274a163b0e5a2d0d4ae2d3d251afe9a7bd429f42e72c5f0"
+    },
+    {
+      "path": "THIRD-PARTY-LICENSES.txt",
+      "bytes": 1393107,
+      "sha256": "19b1dc28ebcc956b9fb837dfbbb9586bf4749393731f61ba5ccfe165f8baa357"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.md",
+      "bytes": 4054,
+      "sha256": "555d4f65cb9fd0931be4a5eb70e4e9d585b57f44bf0d99b33130ad92b587aec6"
+    },
+    {
+      "path": "onchain.d.ts",
+      "bytes": 16386,
+      "sha256": "295788464d8b734a8b52a113aa0ed8f53cf26750f5e1e9a73f016c45a05bbccc"
+    },
+    {
+      "path": "onchain.js",
+      "bytes": 416,
+      "sha256": "a3b64d9d59278fd170f73dd4246c9e2199f5eb8946a68afa5ee44fb93273786c"
+    },
+    {
+      "path": "package.json",
+      "bytes": 2477,
+      "sha256": "1c6f5814339260b6409eca12ab72c3b08275042646fe70ccc86225b0f05d6e5a"
+    },
+    {
       "path": "prebuilds/android-arm/utexo__wdk-wallet-rgb.bare",
-      "bytes": 48479988,
-      "sha256": "0642e263d012b03b3299ea0f6fe7c3824e0369044a2fe68bc59525e041b6e860"
+      "bytes": 48474704,
+      "sha256": "295d5d7e40cc8437dc15ca1fb5d325f32840f75652502783d6ab4653d47d46a9"
     },
     {
       "path": "prebuilds/android-arm64/utexo__wdk-wallet-rgb.bare",
-      "bytes": 68408776,
-      "sha256": "2edfef36e8c254a478fb8b1bca948c5e7b765dcddf5543e5b4f449342dfc0aa7"
+      "bytes": 68427264,
+      "sha256": "9b6921cf111b7ddc6f6c03333be27333436c636df1dc047e4ad8eb21500c91f1"
     },
     {
       "path": "prebuilds/android-ia32/utexo__wdk-wallet-rgb.bare",
-      "bytes": 68814508,
-      "sha256": "87ac42e036c86460d4240f6bd54bf77c79189f48d5d67416d66284f45f2074b4"
+      "bytes": 68812480,
+      "sha256": "9ff1643d3e593e585407f073c902096343b730e4215edf45dcea53bcefbaa1e0"
     },
     {
       "path": "prebuilds/android-x64/utexo__wdk-wallet-rgb.bare",
-      "bytes": 70454624,
-      "sha256": "18487b65fdd032a98105eca4f7bfe365e0d19967e3548c12b288fb2b46a8556a"
+      "bytes": 70455672,
+      "sha256": "817ceea4582be41e6d90dbd5b9e60aa8e8f940e334d4b67b61652f2838861f64"
     },
     {
       "path": "prebuilds/darwin-arm64/utexo__wdk-wallet-rgb.bare",
-      "bytes": 47057616,
-      "sha256": "45c9c68354cba65b8c8ab070f18c599b165d1aa53bdbac90d7c7cff9ab9326b2"
+      "bytes": 47057664,
+      "sha256": "a6d2a4eb956466a7e71dedb6386fc6198e55e9031911c1eb6de74c6b875d7eed"
     },
     {
       "path": "prebuilds/darwin-x64/utexo__wdk-wallet-rgb.bare",
-      "bytes": 50824672,
-      "sha256": "b2fe17d078eaa91b5e5b4a3eaa819e819cc22abbe7735538431a6f240923d995"
+      "bytes": 50814312,
+      "sha256": "520f0eb62042cb0f66b4f4d700fe75daf50712591700582152fc7d9e758e5559"
     },
     {
       "path": "prebuilds/ios-arm64-simulator/utexo__wdk-wallet-rgb.bare",
-      "bytes": 47866704,
-      "sha256": "c337aabb6f8e3b300dbcb2351991aa34b07f27820d3b56e5ff31ecba059e6d8a"
+      "bytes": 47864144,
+      "sha256": "0b1b75223fe9ac7c74856cc6aee7b652d82995de2088fc5108c09edb66df4703"
     },
     {
       "path": "prebuilds/ios-arm64/utexo__wdk-wallet-rgb.bare",
-      "bytes": 47660288,
-      "sha256": "f1d822cb32385c620f8a431f77a3049058cd051d9923e612af61744c6e5d710f"
+      "bytes": 47657088,
+      "sha256": "5d50b0cd3a808988b6860070d255e780e49e9e9a0837e4d23c417090b4542547"
     },
     {
       "path": "prebuilds/ios-x64-simulator/utexo__wdk-wallet-rgb.bare",
-      "bytes": 51670312,
-      "sha256": "fc62dcd315945bf4cb76594adc184811b846a285353736488f71d1e5a4f6a688"
+      "bytes": 51665160,
+      "sha256": "97d384f44086a1c5dfc8b53e5d74eb6214b0125788734d0d2a050c28fe6ad92d"
     },
     {
       "path": "prebuilds/linux-arm64/utexo__wdk-wallet-rgb.bare",
-      "bytes": 55831720,
-      "sha256": "add6034a0ecea87b6e8936c824d98a81cd2bf1fe0b803c652bf5f3f8e767373e"
+      "bytes": 55829888,
+      "sha256": "544421c986b6ca0e9ff20499f3cae3163c5e0ce853f2c0e896a3c6ce2e8b9624"
     },
     {
       "path": "prebuilds/linux-x64/utexo__wdk-wallet-rgb.bare",
-      "bytes": 58778624,
-      "sha256": "9d5fa79492951d1e205509fdb6292b4a79cf0428f2c545aee498e71aa518262c"
-    },
-    {
-      "path": "src/onchain-bare-thread.cjs",
-      "bytes": 413,
-      "sha256": "7fb8fb2ee6f57ec6bebd2c1d1c4bb52a1b6b12837aac9aecb093d6e6948fde54"
+      "bytes": 58780744,
+      "sha256": "f39ef5a74989508ba6f38e5bfcce69bdd9e8f8dd150bf7796e8a082e6ca23a2b"
     },
     {
       "path": "src/burn-destination.js",
@@ -86,9 +131,24 @@
       "sha256": "934c1f81472b78d0b6673e52170cc6fd1e8e588546bb12a2a34dbde1c58adfcf"
     },
     {
+      "path": "src/onchain-bare-native.json",
+      "bytes": 2381,
+      "sha256": "7a3ff6f7212e5de8df48a59d854c09e6c2fff18e4d8dbbfee95720874f2da881"
+    },
+    {
+      "path": "src/onchain-bare-thread.cjs",
+      "bytes": 413,
+      "sha256": "7fb8fb2ee6f57ec6bebd2c1d1c4bb52a1b6b12837aac9aecb093d6e6948fde54"
+    },
+    {
       "path": "src/onchain-bare-worker.js",
       "bytes": 6980,
       "sha256": "3b808b05c3bf0c112508282d5fbc61f3564c2cb94f256d4ab103ef8937494450"
+    },
+    {
+      "path": "src/onchain-dev-services.json",
+      "bytes": 190,
+      "sha256": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393"
     },
     {
       "path": "src/onchain-io-bare.js",
@@ -146,76 +206,29 @@
       "sha256": "24b75892bd90029e76bc4ce43498843c8de1e839bd07648574e8a9fa63ba6d7f"
     },
     {
-      "path": "onchain.js",
-      "bytes": 416,
-      "sha256": "a3b64d9d59278fd170f73dd4246c9e2199f5eb8946a68afa5ee44fb93273786c"
-    },
-    {
-      "path": "src/onchain-bare-native.json",
-      "bytes": 2381,
-      "sha256": "5a965b6f98788ea0caa40408dbd7d5c91b7c58f2a35c42412fdea71c42ff22c2"
-    },
-    {
-      "path": "src/onchain-dev-services.json",
-      "bytes": 190,
-      "sha256": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393"
-    },
-    {
-      "path": "package.json",
-      "bytes": 2477,
-      "sha256": "1c6f5814339260b6409eca12ab72c3b08275042646fe70ccc86225b0f05d6e5a"
-    },
-    {
       "path": "third-party-dependencies.json",
       "bytes": 620099,
-      "sha256": "2e4ca96af1d7b579f2fdce07b546b03c9626ad296311718001940bdf71a042db"
-    },
-    {
-      "path": "CANDIDATE.md",
-      "bytes": 21592,
-      "sha256": "7e661f9ef03acf441e3527f5f200015e9ee8e34566a2f3c4c476524ff3a12783"
-    },
-    {
-      "path": "CHANGELOG.md",
-      "bytes": 8941,
-      "sha256": "04f974fcf621ca46dfb7151e02f55ad298b1c85c5e6fe53385618781c5b44935"
-    },
-    {
-      "path": "DEPENDENCY-POLICY.md",
-      "bytes": 6309,
-      "sha256": "647d0634254a4446351b5a949944ff0f699be816190f3bcbc523e7bdb3054e9b"
-    },
-    {
-      "path": "MIGRATION.md",
-      "bytes": 4578,
-      "sha256": "303d0495d562225ccf5778341d4bbbe5b58ba385904a8d4b9749812123ab5b2c"
-    },
-    {
-      "path": "README.md",
-      "bytes": 5014,
-      "sha256": "cd57ad2e02cd2dddcc8430ea58ea46ed336306d31b3ba7bc7b6016ff2d07c2d8"
-    },
-    {
-      "path": "THIRD-PARTY-NOTICES.md",
-      "bytes": 4054,
-      "sha256": "555d4f65cb9fd0931be4a5eb70e4e9d585b57f44bf0d99b33130ad92b587aec6"
-    },
-    {
-      "path": "onchain.d.ts",
-      "bytes": 16386,
-      "sha256": "295788464d8b734a8b52a113aa0ed8f53cf26750f5e1e9a73f016c45a05bbccc"
+      "sha256": "6cd9219043b994e1f504cd9be70ce0ee8724ce8da75ee337c9d820272604c0ee"
     },
     {
       "path": "webrgb-onchain.d.ts",
       "bytes": 6439,
       "sha256": "82900612e9179f4feda315e3f04316471ec8accc7665fe2b7ce9ca7c7b69cdf1"
-    },
-    {
-      "path": "THIRD-PARTY-LICENSES.txt",
-      "bytes": 1393107,
-      "sha256": "8e69f1c62bc89f5a07a02d4a90167b18c1b858e4f018b773be2323ef8a9770f5"
     }
   ],
   "releaseHold": false,
-  "publicationHold": true
+  "publicationHold": true,
+  "publicationAllowed": false,
+  "npmIntegrity": "sha512-TI8rpZvMV3pb2DwCguZnMi4aGgvXKuChAwBYb+PKX6HGKh91cYFth8vMI+BiQ99GbtMlzYKd4POUkJCReH3VRA==",
+  "npmShasum": "2225445c3711f1a7e447ceb43c5d74c234cd2b06",
+  "npmDryRun": {
+    "passed": true,
+    "access": "public",
+    "tag": "next",
+    "lifecycleScripts": false,
+    "published": false,
+    "registryAuthenticationVerified": false
+  },
+  "verificationMode": "--verify-qualification",
+  "allSixteenArtifactsVerified": true
 }

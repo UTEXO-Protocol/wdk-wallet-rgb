@@ -1,0 +1,330 @@
+{
+  "source": "c5b4c1f0e15f0fac7f8d05a69734be70aa82825d",
+  "packageSha256": "c7b42d8bc1bde6ea5f02a66aa1f7927115ac9a3678eaf702a7480c71aa447dbe",
+  "rows": [
+    {
+      "runtime": "node",
+      "legacyPreparation": false,
+      "mint": {
+        "txid": "d65e066a8055974a8afa042cb944a15ced1422a817cbe75174ca7118c0151e96",
+        "confirmations": 132,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "mintedBaseUnits": "1000000",
+      "evmLockTxid": "0xed635972fc92dd43dcdb3f7970f805626cd6115687a38bdd9a26f7a274ec2646",
+      "evmFinalityDepth": 130,
+      "lockCalldataMatched": true,
+      "burn": {
+        "txid": "c9c27e9b4deaf22add19fb7a3564620d9372d3c0af7660d3dad29498cef0c018",
+        "confirmations": 102,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "100000",
+      "proofSha256": "f7f1bb5935d34785a8226d73df203868a3b6d6a2f1ae670a46e55a512bad8e29",
+      "independentProofDecoded": true,
+      "destinationCommitment": "6d2f5e371093cf7d3a712e09dc151666923be7acc5a084c3f3570f36fafb4987",
+      "commitmentComputedWithFoundry": true,
+      "transfers": [
+        {
+          "kind": "bfa",
+          "txid": "c3dada8c273aa91dea1575e9910a65bb91d66439aaca8a555d46f782efa76999",
+          "confirmations": 126,
+          "feeSats": 309,
+          "vsize": 154
+        },
+        {
+          "kind": "btc",
+          "txid": "e61e2c27af1513857d86aab05f79f7329cca801e4260237d1f6bae005f58761f",
+          "confirmations": 108,
+          "feeSats": 309,
+          "vsize": 154
+        },
+        {
+          "kind": "Nia",
+          "txid": "96ecd79a05cc85c2b4d18f1a1131ca52f9a559c03294cc4232ed064d1bb12f49",
+          "confirmations": 120,
+          "feeSats": 395,
+          "vsize": 197
+        },
+        {
+          "kind": "Cfa",
+          "txid": "82ce659e5b351f99e7fc9f4413cbbb13128a5e16d3438c8ea937449090cf00ec",
+          "confirmations": 114,
+          "feeSats": 395,
+          "vsize": 197
+        }
+      ]
+    },
+    {
+      "runtime": "bare",
+      "legacyPreparation": false,
+      "mint": {
+        "txid": "9c815de06a4afd82f3a6f7f3e0cec00a5008a4f16b1dcbc9f1399f944c14710d",
+        "confirmations": 60,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "mintedBaseUnits": "1000000",
+      "evmLockTxid": "0x6bd20a6e63917af5cf9d12b887487654f20af7b123fb6c74e92e3e7d90cd6692",
+      "evmFinalityDepth": 64,
+      "lockCalldataMatched": true,
+      "burn": {
+        "txid": "2b1b5f31804a14f9e0a91dc989f38bf73c7fdf4f4bb51d4aefb02a42edca6d35",
+        "confirmations": 30,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "100000",
+      "proofSha256": "375194dde9957368213f4cea1706b8289bb78a39c8e4bfd46c7bfc762dfdea59",
+      "independentProofDecoded": true,
+      "destinationCommitment": "6d2f5e371093cf7d3a712e09dc151666923be7acc5a084c3f3570f36fafb4987",
+      "commitmentComputedWithFoundry": true,
+      "transfers": [
+        {
+          "kind": "bfa",
+          "txid": "6bd0b46eaef1e1e2ca7fc5d6443d1c6fe73626275191f639ff6f4a65653356b1",
+          "confirmations": 54,
+          "feeSats": 309,
+          "vsize": 154
+        },
+        {
+          "kind": "btc",
+          "txid": "edff0316e550147dc8c44fe184919f6b04f284c65c36ee7bf40c8d8cd094a66c",
+          "confirmations": 36,
+          "feeSats": 309,
+          "vsize": 154
+        },
+        {
+          "kind": "Nia",
+          "txid": "4e2efc5d03554487c7e9db53a420153a00c8eb178462376e7170de49eaf50da9",
+          "confirmations": 48,
+          "feeSats": 395,
+          "vsize": 197
+        },
+        {
+          "kind": "Cfa",
+          "txid": "dc189cedcd35ace52ff739f7dddb3afa780fae977ccb4d95c26620fd9d2faf8b",
+          "confirmations": 42,
+          "feeSats": 395,
+          "vsize": 197
+        }
+      ]
+    },
+    {
+      "runtime": "node",
+      "legacyPreparation": true,
+      "mint": {
+        "txid": "c75433414a8cc006d6fe2dda28d21355e15e3ec8974ff72639e9d2d63f145d8e",
+        "confirmations": 180,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "mintedBaseUnits": "2000000",
+      "evmLockTxid": "0x99f10b4a1128b11ac38e90b0333f1cc5b151bb411ffbfe57ea971bbbc03c157f",
+      "evmFinalityDepth": 262,
+      "lockCalldataMatched": true,
+      "burn": {
+        "txid": "a0108fca2b27b8dcff2b4842a994ba31d72244d502561e77157e8216c01f2df8",
+        "confirmations": 174,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "500000",
+      "proofSha256": "53ccb5603014f6ae9aeee7040a99f5691ca53e8c4b30cfd63543bda7d6729fc1",
+      "independentProofDecoded": true,
+      "destinationCommitment": "ca4b76c214684cc46cce7f4c5c6e1f51fc5385a146540b26aba3499423f5a918",
+      "commitmentComputedWithFoundry": true,
+      "transfers": []
+    },
+    {
+      "runtime": "bare",
+      "legacyPreparation": true,
+      "mint": {
+        "txid": "af0bcdddb0087329314544327813e5fb3c19e0a1681d42a107de01a02a318595",
+        "confirmations": 156,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "mintedBaseUnits": "2000000",
+      "evmLockTxid": "0x111415aee93fbfe5e0ac684fdcc9a10d136511ab6234bb337df85d0b4ea3fa1f",
+      "evmFinalityDepth": 196,
+      "lockCalldataMatched": true,
+      "burn": {
+        "txid": "3793acb9933857587b4603e48be70d513281d57341aca9006f82874fd2dd9763",
+        "confirmations": 150,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "500000",
+      "proofSha256": "22d1dc6c08cfc22c8bdf016dc18651b3fa6f4c6b2d13a358c71438982cbb6aee",
+      "independentProofDecoded": true,
+      "destinationCommitment": "ca4b76c214684cc46cce7f4c5c6e1f51fc5385a146540b26aba3499423f5a918",
+      "commitmentComputedWithFoundry": true,
+      "transfers": []
+    }
+  ],
+  "additionalRoutes": [
+    {
+      "runtime": "node",
+      "chainId": "eip155:1",
+      "dstEid": 30101,
+      "recipientHex": "0x7777777777777777777777777777777777777777",
+      "bitcoin": {
+        "txid": "801a295023b0a86df4f6d8900c3309f03ead9faa483d20139577cbd77c530874",
+        "confirmations": 96,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "eb7bddfa40c9fcbd08ae686b89f8da712ad0a85abf487be0efab571d6965636b",
+      "independentCommitment": "5bdfad6a600e8bb843b59dcf3530c4d850f59355c633b066f77f87762a8d6b05",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "node",
+      "chainId": "eip155:137",
+      "dstEid": 30109,
+      "recipientHex": "0x8888888888888888888888888888888888888888",
+      "bitcoin": {
+        "txid": "72aeb8ca941b23d64a41ceeba93750b0d99d98f40a3db6da1db68c581c5f5b15",
+        "confirmations": 90,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "ae2d73f396872704b649ccd1f47d4fb213adff97a24f9479e4a6fa93f0b27c94",
+      "independentCommitment": "45ff259fead33f01006ff3e9c667e514a905d4a03b304f2b2844d6ae98237a0e",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "node",
+      "chainId": "eip155:9745",
+      "dstEid": 30383,
+      "recipientHex": "0x9999999999999999999999999999999999999999",
+      "bitcoin": {
+        "txid": "35583f3ff3b6f6661fbaacafd8a5252d7889eeff89e2aa725ac91c218ff3ed9f",
+        "confirmations": 84,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "72361e50f36febab711c15c85b5ca248456902bd2e69227c433950ee361eb10a",
+      "independentCommitment": "de6455ce1d92174faa354c313a6fb2ef10e7c9936169cd4d9abda9e417a0a5a1",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "node",
+      "chainId": "tron:728126428",
+      "dstEid": 30420,
+      "recipientHex": "0x413333333333333333333333333333333333333333",
+      "bitcoin": {
+        "txid": "6d3d9592bb9647cbc28cbc2e3ff5561c22f5280ad3baed65315f6036a8cc4943",
+        "confirmations": 78,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "12e5a9ec01f3605427ce411604c056839ffc2b22332efe8707e1ff9a49563c90",
+      "independentCommitment": "60c369ce30870783c2a8cee9e6018e78650ad4787c2e898c05c35cb85179eac0",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "bare",
+      "chainId": "eip155:1",
+      "dstEid": 30101,
+      "recipientHex": "0x7777777777777777777777777777777777777777",
+      "bitcoin": {
+        "txid": "281ffab8ad37d2fb21bc37bad304cac006f98ad1a6e3c5b3c2c88f09d896338c",
+        "confirmations": 24,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "3d167df96279fa5d234b3b0464ddbb557073da593be45b9fbc9cfab6ce4d7755",
+      "independentCommitment": "5bdfad6a600e8bb843b59dcf3530c4d850f59355c633b066f77f87762a8d6b05",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "bare",
+      "chainId": "eip155:137",
+      "dstEid": 30109,
+      "recipientHex": "0x8888888888888888888888888888888888888888",
+      "bitcoin": {
+        "txid": "7018ad6f03afb5a383e0a0e2426dee5960dc1bafc42d90d9530db082c76f4b42",
+        "confirmations": 18,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "849d5892710302298ccea80d579edddfdfa1b37f4237c09c7a0c4f489791790c",
+      "independentCommitment": "45ff259fead33f01006ff3e9c667e514a905d4a03b304f2b2844d6ae98237a0e",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "bare",
+      "chainId": "eip155:9745",
+      "dstEid": 30383,
+      "recipientHex": "0x9999999999999999999999999999999999999999",
+      "bitcoin": {
+        "txid": "2b0b1d7063747a5d32011ecdb6f99627d7bdd823be8d84d6846e6ef50faa5aeb",
+        "confirmations": 12,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "63faf44b73dc6c5c5b17476ccfabbe58ec719b0d01852d14b828127f90a382cb",
+      "independentCommitment": "de6455ce1d92174faa354c313a6fb2ef10e7c9936169cd4d9abda9e417a0a5a1",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "bare",
+      "chainId": "tron:728126428",
+      "dstEid": 30420,
+      "recipientHex": "0x413333333333333333333333333333333333333333",
+      "bitcoin": {
+        "txid": "542cbf6e104bfa03710a96edd9b3094c4aa0a4d57d9550d186fd4c41de5ca13d",
+        "confirmations": 6,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "37cecf6844123ecefefdf474fe634f8c025c12f586c0db7b9f025fd609896e05",
+      "independentCommitment": "60c369ce30870783c2a8cee9e6018e78650ad4787c2e898c05c35cb85179eac0",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    }
+  ],
+  "retainedAssetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+  "newAssetId": "rgb:ROGpFlOJ-eRFsb7v-pE9BxeR-Y2sRBFX-BR9EXX0-7GV1_qg",
+  "retainedBfaBaseUnits": "14500000",
+  "newAssetFinalBaseUnits": "4720000",
+  "newlyMintedBaseUnits": "6000000",
+  "newlyBurnedBaseUnits": "1280000",
+  "finalBfaBaseUnits": "19220000",
+  "bridgeBackingBaseUnits": "26000000",
+  "independentProofInspectorSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+  "proofInspectorSha256": "ddaadf27ad5500102fbc2fb82f5d86fa3c40532911fd3aa9473e1eef55edf216",
+  "limitations": [
+    "No EVM fundsOut redemption; original and new burned units remain backed in the fixture.",
+    "Isolated Regtest and Anvil host execution; no hosted gateway/TEE, public-network payout or mobile acceptance."
+  ],
+  "packageSourceCommit": "2331119dfc48b782dc1ad5af3f32d21ff38319a1",
+  "qualificationDate": "2026-11-27"
+}

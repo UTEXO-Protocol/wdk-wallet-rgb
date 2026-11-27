@@ -1,4 +1,14 @@
-# RC4 funded contract API upgrade qualification
+# RC4 qualification evidence
+
+## Current release-preparation pack
+
+The complete archive `c7b42d8b…`, package source `2331119…`, uses all sixteen binaries from producer `c5b4c1f…` with stock `url 2.5.9` and `form_urlencoded 1.2.3`. `platforms.json` records 19 passing CI jobs; `complete-pack.json` verifies all 41 files, eleven Bare addons, npm integrity and the local publication dry-run. Publication remains held. `dependency-audit.json` records the current locks and findings.
+
+`funded-release.json` and `financial-release.json` record actual Node/Bare execution of that exact archive: two fresh funded RC3 updates, six retained RC4 wallets, fresh contract registration/mint, BTC/NIA/CFA/BFA transfers, all five configured V1 burn routes and lost-response/restart proof recovery. An independent audit checks four mints, twelve burns and eight transfers; new-asset balances reconcile as 6 − 1.28 = 4.72 units. The earlier asset retains 14.5 units. No EVM burn redemption was performed.
+
+[Reproduction instructions and sanitized runners](funded-upgrade-fixture/release-rerun/README.md) reuse the isolated fixture below with a separate issuer and asset. Generated wallet state, seeds and raw proofs are excluded. The new mobile binaries have build/ABI acceptance; prior Iris app results do not qualify these new hashes.
+
+## Retained earlier RC4 upgrade evidence
 
 `funded-upgrade-final-ci.json` records actual execution of the complete RC4 npm archive `3513c7b4…` with the CI-produced Darwin ARM64 Node worker `2c7b4f00…` and Bare addon `45c9c683…`. All 41 installed archive files were matched to the final tarball. The archive contains eleven Bare targets; this funded receipt exercises the two Darwin ARM64 runtimes. Other platform and mobile-app results have separate receipts.
 
@@ -18,6 +28,6 @@ Passing final-pack scopes:
 
 The fixture uses Bitcoin regtest, an RGB protocol 1.0 proxy and Anvil. Its unmodified old public RGB issuer is pinned to `567e5b83…` with protocol crates `0.11.2-rc.2`. Actual upstream `MinimalBridge`, `TestERC20` and `MockArbSys` test contracts use pinned OpenZeppelin `cab19933…`. Token locks and Bitcoin mint/burn commitments are real within this isolated fixture. EVM redemption of burns, hosted gateway/TEE enforcement, physical-device behavior and Play delivery/signature testing are outside this receipt. The original uploaded AAB was deleted; its exact SDK/native inputs were recovered.
 
-Public runner sources and locked issuer dependencies are under `funded-upgrade-fixture/`, with hashes in `funded-upgrade-harness-sha256.json`. The execution layout is a qualification root containing `baseline/`, `upstream-upgrade-audit/old`, `upstream-upgrade-audit/target` and `fixture/`. Place the runner files in `fixture/`, and the issuer files in `fixture/issuer/{Cargo.toml,Cargo.lock,src/main.rs}`; place `contract-inspect.rs` in `fixture/issuer/src/bin/` for the read-only financial audit. Restore the immutable old source and exact packed baseline, fetch the pinned Solidity dependencies, then prepare the isolated fixture. The `old`/`new` phases produce the comprehensive local results. `ci-old`/`ci-old-ordinary` prepare fresh RC3 wallets; `ci-new` executes the direct final upgrade; `ci-pending` delivers to their original blinded invoices; `final` exercises the final pack again on the retained comprehensive-test wallets.
+Public runner sources and locked issuer dependencies are under `funded-upgrade-fixture/`, with hashes in `funded-upgrade-harness-sha256.json` (the original fixture files; the release-rerun subdirectory has its own hashes in `funded-release.json`). The execution layout is a qualification root containing `baseline/`, `upstream-upgrade-audit/old`, `upstream-upgrade-audit/target` and `fixture/`. Place the runner files in `fixture/`, and the issuer files in `fixture/issuer/{Cargo.toml,Cargo.lock,src/main.rs}`; place `contract-inspect.rs` in `fixture/issuer/src/bin/` for the read-only financial audit. Restore the immutable old source and exact packed baseline, fetch the pinned Solidity dependencies, then prepare the isolated fixture. The `old`/`new` phases produce the comprehensive local results. `ci-old`/`ci-old-ordinary` prepare fresh RC3 wallets; `ci-new` executes the direct final upgrade; `ci-pending` delivers to their original blinded invoices; `final` exercises the final pack again on the retained comprehensive-test wallets.
 
 Never repeat a completed financial phase against the same state; reconcile its durable operation records instead. Generated seeds, native wallet state and private operation files are excluded. Shared stacks and existing app wallets were not touched.
