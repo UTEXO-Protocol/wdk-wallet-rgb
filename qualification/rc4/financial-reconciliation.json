@@ -1,0 +1,291 @@
+{
+  "scope": "Read-only independent chain, proof and amount reconciliation after final CI pack execution.",
+  "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+  "bitcoinHeight": 372,
+  "evmBlock": 531,
+  "mintCount": 8,
+  "mintedBaseUnits": "20000000",
+  "confirmedBurnCount": 8,
+  "burnedBaseUnits": "5500000",
+  "remainingWalletBaseUnits": "14500000",
+  "remainingWalletBalancesFromRestartChecks": {
+    "node/wallet": "4490000",
+    "node/fresh-recipient": "1510000",
+    "node/ci-wallet": "1250000",
+    "bare/wallet": "4490000",
+    "bare/fresh-recipient": "1510000",
+    "bare/ci-wallet": "1250000"
+  },
+  "tokenBalanceOfBridge": "20000000",
+  "bridgeCirculatingSupply": "20000000",
+  "mints": [
+    {
+      "operationId": "upgrade-node-initial-mint-v3",
+      "amount": "6000000",
+      "bitcoin": {
+        "txid": "5d9c1074a01400a34d115a1a87b5586fe6012fcfed7164ca50396deaf2a5f50f",
+        "confirmations": 228,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "evmTransaction": "0x178cb26d10e3795ac8bb3d3c49dfb331331dbe95599481fb4b94f41297700d8d",
+      "evmDepth": 526,
+      "lockBlock": 5,
+      "beforeBlock": 259,
+      "exactLockCalldataMatched": true
+    },
+    {
+      "operationId": "upgrade-node-upgraded-pending-mint",
+      "amount": "1000000",
+      "bitcoin": {
+        "txid": "21c4fc5470d7dc62e1890f2148f423ca7071d7b7f49d97ac43c9548b346c6ceb",
+        "confirmations": 192,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "evmTransaction": "0x3011b76a48d00af5c991cd57071fb6f82e98b50ce5847aabee323c350de92ece",
+      "evmDepth": 394,
+      "lockBlock": 137,
+      "beforeBlock": 391,
+      "exactLockCalldataMatched": true
+    },
+    {
+      "operationId": "upgrade-node-fresh-imported-mint",
+      "amount": "1000000",
+      "bitcoin": {
+        "txid": "908e3f5f1994acf294546ed864be589a148fa824faa5017756c24118630eb6f1",
+        "confirmations": 168,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "evmTransaction": "0x027d7c74dd119c13fdc8d076992e6c06ef127c414431ea645d796516636f055b",
+      "evmDepth": 328,
+      "lockBlock": 203,
+      "beforeBlock": 457,
+      "exactLockCalldataMatched": true
+    },
+    {
+      "operationId": "upgrade-ci-node-before-direct-ci-upgrade",
+      "amount": "2000000",
+      "bitcoin": {
+        "txid": "018fb21ae57b856e0e6d37179e606bb008913a3f2790d0e9003a008f17fed22d",
+        "confirmations": 72,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "evmTransaction": "0x363e583ee700e1e3b85ada0c8b8561585b6f103b8c3a1f92ac2834e37f8304fa",
+      "evmDepth": 130,
+      "lockBlock": 401,
+      "beforeBlock": 655,
+      "exactLockCalldataMatched": true
+    },
+    {
+      "operationId": "upgrade-bare-initial-mint-v3",
+      "amount": "6000000",
+      "bitcoin": {
+        "txid": "72b137660b5e35c52adfeb710e1a1fe16cbd721281240c843b06b36a19c47261",
+        "confirmations": 204,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "evmTransaction": "0xd58ef6b01c4c7a40dcfd30ccaf7d54d848b274bcda053713e34868d5aabddf61",
+      "evmDepth": 460,
+      "lockBlock": 71,
+      "beforeBlock": 325,
+      "exactLockCalldataMatched": true
+    },
+    {
+      "operationId": "upgrade-bare-upgraded-pending-mint",
+      "amount": "1000000",
+      "bitcoin": {
+        "txid": "75251e9a1616c6f186e60faf0e1ee01c0caa3c650c4be5dbf27d647658950779",
+        "confirmations": 138,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "evmTransaction": "0xed7934148511b080f03b2886b8bfb972feda7edfb8c76070ca7dcd191aa27d76",
+      "evmDepth": 262,
+      "lockBlock": 269,
+      "beforeBlock": 523,
+      "exactLockCalldataMatched": true
+    },
+    {
+      "operationId": "upgrade-bare-fresh-imported-mint",
+      "amount": "1000000",
+      "bitcoin": {
+        "txid": "88664db5a820de6bf92314719a1f0378021d9562254c60e1a069317925f4e748",
+        "confirmations": 114,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "evmTransaction": "0x5d314ffc06410ad05622b3807092d832700953b77054b0e35c3929744d586527",
+      "evmDepth": 196,
+      "lockBlock": 335,
+      "beforeBlock": 589,
+      "exactLockCalldataMatched": true
+    },
+    {
+      "operationId": "upgrade-ci-bare-before-direct-ci-upgrade",
+      "amount": "2000000",
+      "bitcoin": {
+        "txid": "b2ca94b48410b0ce5333579e50eea15c56ae7197fa72f58e527b4ca8b2f47039",
+        "confirmations": 48,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "evmTransaction": "0x8cda86c8d3bab8e14eac1126bb8bdba921d746da741fba2566943f99871e33c5",
+      "evmDepth": 64,
+      "lockBlock": 467,
+      "beforeBlock": 721,
+      "exactLockCalldataMatched": true
+    }
+  ],
+  "burns": [
+    {
+      "runtime": "node",
+      "wallet": "wallet",
+      "amount": "1000000",
+      "bitcoin": {
+        "txid": "80bfc3c13e8be54d89239308772bdc34cb2f678cafdbfb1ea9934f8a4731de86",
+        "confirmations": 222,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "proofSha256": "8a942613973496eef8897a181c649ca14cdde32ac29158e44ce022adac9354e6",
+      "proofDecodedByOriginalUpstream": true,
+      "proofMatchesConfirmedOpret": true,
+      "destinationCommitment": "65101fb7d644f69b71360617954850e0c357789253eb373dde3f0d9077f2fbc7",
+      "destinationComputedWithFoundry": true,
+      "burnTransitionCount": 1
+    },
+    {
+      "runtime": "node",
+      "wallet": "wallet",
+      "amount": "1000000",
+      "bitcoin": {
+        "txid": "cef175efe43c9e5c18f9e80e86e2eea2232081a28e0a29d1d486b922c6375adf",
+        "confirmations": 186,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "proofSha256": "a761031705c319bd1330151428b2954047c1b11a26a989347314fde72d29cb1a",
+      "proofDecodedByOriginalUpstream": true,
+      "proofMatchesConfirmedOpret": true,
+      "destinationCommitment": "610f4b627466e94905912b02207cc75dee89781a974de04c9d5422be1540e39f",
+      "destinationComputedWithFoundry": true,
+      "burnTransitionCount": 1
+    },
+    {
+      "runtime": "node",
+      "wallet": "ci-wallet",
+      "amount": "500000",
+      "bitcoin": {
+        "txid": "234b7e3726968532fa5e035342cf042f5ae8b06c91238b544c104c627d48854e",
+        "confirmations": 66,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "proofSha256": "864c98c361e53d6e0439154cc2ef8213d6b9c8f7fba97fd008d4ce891866e581",
+      "proofDecodedByOriginalUpstream": true,
+      "proofMatchesConfirmedOpret": true,
+      "destinationCommitment": "7adb9ae0b42881f4cfc5f6a51a1d9b4db77e2ef14d760c59101751a6b8fc1fe8",
+      "destinationComputedWithFoundry": true,
+      "burnTransitionCount": 1
+    },
+    {
+      "runtime": "node",
+      "wallet": "ci-wallet",
+      "amount": "250000",
+      "bitcoin": {
+        "txid": "e9f7c612c5b0ffa0821995e318697931bbd49bbb48c2ccc773b0459a6f9aa0ef",
+        "confirmations": 36,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "proofSha256": "0e37420c2ae433bd2fd1424493d367b9eb4569e2215b7f6e967431b03041d663",
+      "proofDecodedByOriginalUpstream": true,
+      "proofMatchesConfirmedOpret": true,
+      "destinationCommitment": "c0d7969c2914c9e7d2adbea7bd5b16b592729add6d1f30732695a778f78b2ca9",
+      "destinationComputedWithFoundry": true,
+      "burnTransitionCount": 1
+    },
+    {
+      "runtime": "bare",
+      "wallet": "wallet",
+      "amount": "1000000",
+      "bitcoin": {
+        "txid": "0d0d720a3e07b1e96c39743bf317fdebade3440c9bb853fcfe1cd9098814d015",
+        "confirmations": 198,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "proofSha256": "524f0ed4316cfd0375198090730d77e7ad8de1bfdbe1761416d7a40188e8f3af",
+      "proofDecodedByOriginalUpstream": true,
+      "proofMatchesConfirmedOpret": true,
+      "destinationCommitment": "65101fb7d644f69b71360617954850e0c357789253eb373dde3f0d9077f2fbc7",
+      "destinationComputedWithFoundry": true,
+      "burnTransitionCount": 1
+    },
+    {
+      "runtime": "bare",
+      "wallet": "wallet",
+      "amount": "1000000",
+      "bitcoin": {
+        "txid": "2a34e6b4e78c57bab8e009120ba51ae536475ccb61530487942b6247a14b6632",
+        "confirmations": 132,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "proofSha256": "61c9a1044aadacd0f6ea0221a747eaadbe99a726df4ae68ccca32274a972a80a",
+      "proofDecodedByOriginalUpstream": true,
+      "proofMatchesConfirmedOpret": true,
+      "destinationCommitment": "610f4b627466e94905912b02207cc75dee89781a974de04c9d5422be1540e39f",
+      "destinationComputedWithFoundry": true,
+      "burnTransitionCount": 1
+    },
+    {
+      "runtime": "bare",
+      "wallet": "ci-wallet",
+      "amount": "500000",
+      "bitcoin": {
+        "txid": "d5d3ae35d35f915661cac72b166a559363db80843204aa042ff6a1d4b172f535",
+        "confirmations": 42,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "proofSha256": "873674654687bcf2bfa76908149cf99372fad5e11b98fcf56aa8c42ffb60ab2f",
+      "proofDecodedByOriginalUpstream": true,
+      "proofMatchesConfirmedOpret": true,
+      "destinationCommitment": "7adb9ae0b42881f4cfc5f6a51a1d9b4db77e2ef14d760c59101751a6b8fc1fe8",
+      "destinationComputedWithFoundry": true,
+      "burnTransitionCount": 1
+    },
+    {
+      "runtime": "bare",
+      "wallet": "ci-wallet",
+      "amount": "250000",
+      "bitcoin": {
+        "txid": "bbe765b8ae5a9471d2f1bf1d29672af22ce735173a1ccf581e0167529cd8e93f",
+        "confirmations": 30,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "proofSha256": "8086773e73767d0a464dea6cb85ee9df5a9aa5c1da41b43041747393949cb654",
+      "proofDecodedByOriginalUpstream": true,
+      "proofMatchesConfirmedOpret": true,
+      "destinationCommitment": "c0d7969c2914c9e7d2adbea7bd5b16b592729add6d1f30732695a778f78b2ca9",
+      "destinationComputedWithFoundry": true,
+      "burnTransitionCount": 1
+    }
+  ],
+  "proofInspector": {
+    "rgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+    "binarySha256": "ddaadf27ad5500102fbc2fb82f5d86fa3c40532911fd3aa9473e1eef55edf216",
+    "sourceSha256": "a2cba35b8819eea9176f84da1d7ecb8b308f7b27f54cce01f12b74924fde6108"
+  },
+  "limitations": [
+    "No fundsOut redemption was submitted: the bridge retains backing for the 5.5 burned units, and its circulatingSupply remains 20 units.",
+    "Final remaining RGB balances come from actual SDK restart checks; this audit independently reconciles their sum against confirmed mint and burn proofs.",
+    "This is an isolated upstream MinimalBridge fixture, not hosted gateway/TEE or Play delivery testing."
+  ]
+}

@@ -49,11 +49,37 @@ seven mobile targets have build/ABI acceptance. Native Release tests pass
 56 Node cases and 51 Bare unit cases; strict adapter Clippy also passes.
 The manifest admits the complete rebuilt Bare matrix. Publication remains held.
 
-[Funded local upgrade evidence](qualification/rc4/README.md) covers both old RC3
-Node and Bare wallets under the new local native builds, including retained
-BFA holdings, pending invoices and proofs. Final complete CI-pack execution
-and installed application upgrade acceptance are recorded separately after
-execution; previous RC3 results do not qualify these binaries.
+The complete 41-file archive from `80d7af32d2131c7a4133622a733414af8e07a5e7`
+is 211,960,068 bytes, SHA-256
+`3513c7b4e02739abe7bfcbd4306054ba2f436ba152aff6aff3b4a462f3f3906f`.
+[Archive admission](qualification/rc4/complete-pack.json) matches every source
+file to its committed Git blob and all eleven addons to the native manifest.
+
+[Final funded upgrade evidence](qualification/rc4/funded-upgrade-final-ci.json)
+executes that exact complete archive with the CI-built Node and Bare Darwin
+ARM64 binaries. Fresh RC3 wallets retain keys, BTC/BFA balances, BFA/NIA/CFA
+metadata, every prior transfer field and timestamp, pending generic invoice
+journals and burn proofs across direct upgrade. Both original blinded
+recipients receive real BFA transfers afterward. Lost committed burn replies
+recover repeatedly and across restart without a second burn. Additional
+BFA transfers, BIP-322 and the approved Sandbox contract import/export pass.
+The broader local-host receipt separately covers witness mint, fresh contract
+mint, NIA/CFA and BTC transfers; its binaries are not presented as CI bytes.
+[Scope and fixture](qualification/rc4/README.md) distinguish these funded local
+operations from hosted gateway, TEE and EVM payout settlement. Installed
+application upgrade acceptance is recorded separately below.
+
+[Installed Android update](qualification/rc4/iris-android-update.json) passes on
+a disposable ARM64 Android 37.2 emulator with 16 KiB pages. Iris source
+`38f1059e09447602515b5af3c920d12204af64e3` builds `com.utexo.wallet` 1.0.1/code2.
+The signed APK and locally generated AAB splits retain the old wallet, native
+identities, pending invoice journal, recovery phrase, Bitcoin unit and signing
+address. Fingerprint/PIN, BIP-322, Settings, Connected apps and new pinned
+witness receive pass; fresh import and creation without a screen lock also pass.
+The uploaded original AAB was deleted. The local upgrade baseline reconstructs
+its exact source and recovered SDK/native inputs, rather than claiming the
+original bundle or a Google Play-signed update. Mobile wallets are unfunded;
+the funded financial scope is the independent host fixture above.
 
 ## RC3: public RGB upstream and WebRGB 0.1.7 qualification
 

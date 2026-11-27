@@ -221,8 +221,7 @@
           "txid": "6012eaf6d412ae726bed300d563f48a87ba4853527eb60ba0d7653d0f481b4e0",
           "amount": "10000"
         },
-        "complete": true,
-        "finalCompleteCiNativeAccepted": false
+        "complete": true
       }
     },
     "bare": {
@@ -444,8 +443,7 @@
           "txid": "e9f3d159a36ece92648e458a09b4ed6d0ca2070d15843ed795be770357760096",
           "amount": "10000"
         },
-        "complete": true,
-        "finalCompleteCiNativeAccepted": false
+        "complete": true
       }
     }
   },
@@ -507,7 +505,7 @@
     ],
     "finalLocalNodeBytesEqualTested": true,
     "finalLocalBareBytesEqualTested": true,
-    "finalCompleteCiPackAccepted": false
+    "separateFinalCiAcceptanceReceipt": "funded-upgrade-final-ci.json"
   },
   "baselinePack": {
     "version": "3.0.0-rc.3",
@@ -521,7 +519,7 @@
     "The old npm pack/native bytes are exact; the original distributed AAB was deleted and was not recovered.",
     "The local upstream MinimalBridge verifies token lock records; it does not implement hosted gateway/TEE admission.",
     "V1 burn Bitcoin commitments and saved proof recovery were verified. EVM redemption of these burns was not exercised.",
-    "Final complete target-matrix pack and CI binaries require separate exact artifact acceptance."
+    "Exact complete CI pack execution is recorded separately in funded-upgrade-final-ci.json; the local hashes in this receipt are not CI hashes."
   ],
   "fixture": {
     "rgbIssuerSource": "567e5b8308f70a6242137475394be5a82fc15c95",

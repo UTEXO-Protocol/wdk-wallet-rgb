@@ -74,6 +74,91 @@ if(phase==='old'){
   console.log(runtime+' rc.3 funded mint/burn + pending invoices complete')
  }
  report.contract=await exportContract();await save(evidence,report)
+ } else if(phase==='ci-old') {
+ state.ciRuntimes??={};report.ciDirectUpgrade??={runtimes:{}}
+ for(const runtime of ['node','bare']){
+  assert(!state.ciRuntimes[runtime]?.complete,'CI old baseline already completed; do not replay')
+  const data=state.ciRuntimes[runtime]??={seed:[...randomBytes(64)]};await save(privateFile,state)
+  const p=await peer(runtime,oldConsumer,oldNode)
+  try{
+   await p.open(data,'ci-wallet');data.keys=await p.request('getPublicKeys');data.signingAddress=await p.request('getMessageSigningAddress');data.address=await p.request('getAddress')
+   data.funding=await fund(data.address);data.outputs=await p.request('createUtxos',[{operationId:'ci-'+runtime+'-initial-rgb-outputs',count:8,size:'10000',feeRate:'2'}]);await mine();await p.request('refresh')
+   data.invoice=await p.request('trustedReceive',[],{method:'witnessReceive',operationId:'ci-'+runtime+'-initial-mint-invoice',requestKey:digest('ci-mint-'+runtime),expectedAssetId:aid,options:{amount:'2000000',expirationSeconds:86400,minConfirmations:6}})
+   await save(privateFile,state)
+   data.mint=await mint(p,'ci-'+runtime,data.invoice,'2000000','before-direct-ci-upgrade');await balance(p,'2000000')
+   data.pendingRequest={method:'blindReceive',operationId:'ci-'+runtime+'-pending-generic-invoice',requestKey:digest('ci-pending-'+runtime),expectedAssetId:aid,options:{amount:'1000000',expirationSeconds:86400,minConfirmations:6}}
+   data.pending=await p.request('trustedReceive',[],data.pendingRequest)
+   data.burnId='ci-'+runtime+'-old-burn-before-upgrade'
+   data.burn=await p.request('burn',[],{operationId:data.burnId,assetId:aid,amount:'500000',feeRate:'2',minConfirmations:6,burnRecipient:{chainId:'eip155:42161',address:'0x3333333333333333333333333333333333333333'}});await mine();await balance(p,'1500000')
+   data.proof=await p.request('getConsignment',[{assetId:aid,txid:data.burn.txid}]);data.recovery=await p.request('recoverBurn',[data.burnId]);assert.deepEqual(data.recovery.proof,data.proof)
+   data.btc=await p.request('getBtcBalance');data.balance=await p.request('getAssetBalance',[aid]);data.transfers=await p.request('listTransfers');data.complete=true;await save(privateFile,state)
+   report.ciDirectUpgrade.runtimes[runtime]={old:{version:'3.0.0-rc.3',nativeSha256:p.nativeSha,funding:data.funding,outputs:data.outputs,mint:data.mint,burn:data.burn,balance:data.balance,proofSha256:digest(Buffer.from(data.proof.data,'base64')),pendingInvoice:data.pending,complete:true}}
+   await save(evidence,report);console.log(runtime+' fresh exact rc.3 funded baseline ready for direct final CI upgrade')
+  }finally{await p.stop()}
+ }
+ } else if(phase==='ci-old-ordinary') {
+ for(const runtime of ['node','bare']){
+  const data=state.ciRuntimes[runtime];assert(data.complete&&!data.upgraded,'Only existing old CI wallets may be prepared')
+  const p=await peer(runtime,oldConsumer,oldNode)
+  try{
+   await p.open(data,'ci-wallet');data.ordinary??=[]
+   for(const schema of ['Nia','Cfa']){
+    if(data.ordinary.some(a=>a.schema===schema))continue
+    const issued=await p.request('issueAsset'+schema,[{operationId:'ci-'+runtime+'-old-issue-'+schema.toLowerCase(),name:'Existing '+schema+' Upgrade',...(schema==='Nia'&&{ticker:'VTEST'}),precision:2,amounts:['1000']}])
+    data.ordinary.push({schema,assetId:issued.assetId,amount:'1000'});await save(privateFile,state)
+   }
+   data.assets=await p.request('listAssets');data.transfers=await p.request('listTransfers');data.btc=await p.request('getBtcBalance');await save(privateFile,state)
+   report.ciDirectUpgrade.runtimes[runtime].old.ordinary=data.ordinary;report.ciDirectUpgrade.runtimes[runtime].old.assetMetadata=data.assets;await save(evidence,report)
+   console.log(runtime+' rc.3 NIA/CFA stock and metadata prepared as direct CI upgrade control group')
+  }finally{await p.stop()}
+ }
+ } else if(phase==='ci-new') {
+ assert(newConsumer&&newNode,'ci-new requires exact installed final pack and CI Node worker')
+ for(const runtime of ['node','bare']){
+  const data=state.ciRuntimes[runtime];assert(data.complete&&!data.upgraded,'CI old baseline must be complete and not upgraded')
+  const p=await peer(runtime,resolve(newConsumer),resolve(newNode))
+  const result={nativeSha256:p.nativeSha,version:JSON.parse(await readFile(join(newConsumer,'node_modules/@utexo/wdk-wallet-rgb/package.json'),'utf8')).version}
+  try{
+   await p.open(data,'ci-wallet');await p.request('instrument')
+   assert.deepEqual(await p.request('getPublicKeys'),data.keys);assert.equal(await p.request('getMessageSigningAddress'),data.signingAddress)
+   assert.deepEqual(await p.request('getBtcBalance'),data.btc);assert.deepEqual(await p.request('getAssetBalance',[aid]),data.balance);if(data.assets)assert.deepEqual(await p.request('listAssets'),data.assets,'Existing BFA/NIA/CFA asset metadata must survive')
+   const transfers=await p.request('listTransfers');const stable=rows=>rows.map(({idx,batchTransferIdx,status,kind,txid,recipientId,assignments})=>({idx,batchTransferIdx,status,kind,txid,recipientId,assignments}));assert.deepEqual(stable(transfers),stable(data.transfers));assert.deepEqual(transfers,data.transfers,'All previous transfer fields and timestamps must survive direct CI upgrade')
+   assert.deepEqual(await p.request('getConsignment',[{assetId:aid,txid:data.burn.txid}]),data.proof);assert.deepEqual(await p.request('recoverBurn',[data.burnId]),data.recovery)
+   const journal=join(out,runtime,'ci-wallet/.wdk-onchain-invoices-v1',data.pendingRequest.operationId+'.json');const before=await readFile(journal)
+   assert.deepEqual(await p.request('trustedReceive',[],{...data.pendingRequest,options:{...data.pendingRequest.options,assetId:aid}}),data.pending)
+   assert.deepEqual(await readFile(journal),before);const calls=await p.request('instrumentation');assert(!calls.calls.includes('blindReceive'));assert.equal(calls.reviews.length,0)
+   const contract=Buffer.from((await p.request('export',[aid])).base64,'base64');assert.equal(digest(contract),report.contract.sha256)
+   const message='Direct final CI update '+runtime,sig=await p.request('signMessageBip322',[message,data.signingAddress]);assert.equal(await p.request('verifyMessageBip322',[message,data.signingAddress,sig]),true)
+   const burn={operationId:'ci-'+runtime+'-new-burn-response-loss',assetId:aid,amount:'250000',feeRate:'2',minConfirmations:6,burnRecipient:{chainId:'eip155:42161',address:'0x4444444444444444444444444444444444444444'}}
+   await p.request('close');await p.open(data,'ci-wallet');await p.request('instrument',[],{loseOperation:'burnEnd'})
+   await assert.rejects(p.request('burn',[],burn),{code:'NATIVE_CLOSED'});await p.request('close');await p.open(data,'ci-wallet')
+   const recovered=await p.request('recoverBurn',[burn.operationId]);assert.deepEqual(await p.request('recoverBurn',[burn.operationId]),recovered);await assert.rejects(p.request('burn',[],burn),{code:'OPERATION_EXISTS'})
+   await mine();await balance(p,'1250000');await p.request('close');await p.open(data,'ci-wallet')
+   assert.deepEqual(await p.request('recoverBurn',[burn.operationId]),recovered);assert.deepEqual(await p.request('recoverBurn',[data.burnId]),data.recovery)
+   assert.equal((await p.request('instrumentation')).calls.filter(c=>c==='burnEnd').length,1)
+   Object.assign(result,{directFromExactRc3:true,retainedAccountKeys:true,retainedMessageAddress:true,retainedBtc:true,retainedBfa:true,retainedTransferIdentities:true,retainedOrdinaryAssetMetadata:data.ordinary??[],oldProofSha256:digest(Buffer.from(data.proof.data,'base64')),oldProofRecoveryUnchanged:true,pendingBlindedJournalUnchanged:true,noReceiveReallocation:true,noRepeatedApproval:true,contractExportSha256:digest(contract),bip322Verified:true,newBurn:{txid:recovered.txid,amount:'250000',proofSha256:digest(Buffer.from(recovered.proof.data,'base64')),lostEndReply:true,recoveredTwice:true,recoveredAfterRestart:true,duplicateRejected:true,burnEndCalls:1,remainingBalance:'1250000'},complete:true})
+   data.upgraded=true;await save(privateFile,state);report.ciDirectUpgrade.runtimes[runtime].upgrade=result;await save(evidence,report);console.log(runtime+' direct exact rc.3→final CI rc.4 funded upgrade passed')
+  }finally{await p.stop()}
+ }
+ } else if(phase==='ci-pending') {
+ assert(newConsumer&&newNode,'ci-pending requires final installed pack + CI Node worker')
+ assert(!report.ciDirectUpgrade.pendingTransfers,'Old pending invoice delivery already tested; do not replay')
+ const peers={node:await peer('node',resolve(newConsumer),resolve(newNode)),bare:await peer('bare',resolve(newConsumer),resolve(newNode))}
+ const rows=[]
+ try {
+  for(const runtime of ['node','bare']){assert(state.ciRuntimes[runtime].upgraded);await peers[runtime].open(state.ciRuntimes[runtime],'ci-wallet')}
+  for(const [from,to] of [['node','bare'],['bare','node']]){
+   const invoice=state.ciRuntimes[to].pending
+   const sent=await peers[from].request('sendRgbInvoice',[{operationId:'ci-'+from+'-to-'+to+'-old-pending',assetId:aid,invoice:invoice.invoice,amount:'1000000',feeRate:'2',minConfirmations:6}])
+   await wait('delivery to original blinded recipient',async()=>{await peers[to].request('refresh');await peers[from].request('refresh');const r=spawnSync('python3',['-c',"import fixture,json;print(json.dumps(fixture.rpc(48443,'getrawmempool')))"],{cwd:root,encoding:'utf8'});assert.equal(r.status,0,r.stderr);return JSON.parse(r.stdout).includes(sent.txid)})
+   await mine();await peers[to].request('refresh');await peers[from].request('refresh')
+   const received=await peers[to].request('getInvoiceStatus',[invoice.recipientId]);assert.equal(received.status,'Settled');assert.equal(received.txid,sent.txid)
+   rows.push({from,to,txid:sent.txid,amount:'1000000',originalRecipientId:invoice.recipientId,status:received.status})
+  }
+  for(const runtime of ['node','bare']){assert.equal((await peers[runtime].request('getAssetBalance',[aid])).spendable,'1250000');await peers[runtime].request('close');await peers[runtime].open(state.ciRuntimes[runtime],'ci-wallet');assert.equal((await peers[runtime].request('getAssetBalance',[aid])).spendable,'1250000');assert.deepEqual(await peers[runtime].request('recoverBurn',[state.ciRuntimes[runtime].burnId]),state.ciRuntimes[runtime].recovery)}
+  report.ciDirectUpgrade.pendingTransfers={rows,bothOriginalOldBlindedRecipientsReceived:true,privateRecipientKeysSurvived:true,balancesAndOldBurnProofsPreservedAfterRestart:true};await save(evidence,report)
+  console.log('Both exact final CI runtimes received real BFA sends to original rc.3 blinded invoices after upgrade')
+ }finally{await peers.node.stop();await peers.bare.stop()}
  } else if(phase==='final') {
  assert(newConsumer&&newNode,'final requires exact installed complete pack + CI Node worker')
  const finalPkg=join(newConsumer,'node_modules/@utexo/wdk-wallet-rgb')
