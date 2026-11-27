@@ -172,8 +172,7 @@ async function verify (target, executable, expectedSha256, runtime = verifyHost(
 }
 
 function sourceIdentity () {
-  const paths = ['native/Cargo.lock', 'native/Cargo.toml', 'native/src', 'native/patches', 'native/scripts/prepare-source.py', 'onchain.js', 'src', 'package.json', 'package-lock.json']
-  assert.equal(command('git', ['status', '--porcelain', '--untracked-files=normal', '--', ...paths]), '', 'Build and smoke require committed source inputs')
+  assert.equal(command('git', ['status', '--porcelain', '--untracked-files=normal']), '', 'Build and smoke require a clean committed checkout')
   return {
     commit: command('git', ['rev-parse', 'HEAD']),
     tree: command('git', ['rev-parse', 'HEAD^{tree}'])
@@ -213,6 +212,7 @@ async function build (target, destination, sourceDirectory) {
     await copyFile(worker[0].executable, path)
     await chmod(path, 0o755)
     const checked = await verify(target, path, await sha256(path), runtime)
+    assert.deepEqual(sourceIdentity(), source, 'Committed inputs changed during qualification')
     const packageVersion = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')).version
     const receipt = {
       ...checked,
