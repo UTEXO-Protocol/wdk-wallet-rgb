@@ -34,7 +34,7 @@ no downstream source patches. The stock URL library update resolves
 RUSTSEC-2026-0592. Remaining Esplora TLS findings and maintenance warnings are
 recorded in [DEPENDENCY-POLICY.md](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/v3.0.0-rc.4/DEPENDENCY-POLICY.md).
 
-These notes are prepared for release; publication remains held until the rebuilt
-package passes qualification and final review is complete.
+These notes are prepared for release. Registry publication requires final review
+and release authorization.
 See [QUALIFICATION.md](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/v3.0.0-rc.4/QUALIFICATION.md) for exact artifact identities, passing
 scopes and the distinction between installed-app, hosted and physical-device tests.

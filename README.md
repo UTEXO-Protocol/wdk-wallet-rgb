@@ -12,7 +12,7 @@ After `3.0.0-rc.4` is published under `next`, install the exact version:
 npm install --save-exact @utexo/wdk-wallet-rgb@3.0.0-rc.4
 ```
 
-Until publication, install the reviewed local archive with `npm install ./utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz`. Publication remains on hold until the rebuilt package and final release review are complete.
+Until publication, install the reviewed local archive with `npm install ./utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz`. The archive is unpublished; registry publication requires final review and release authorization.
 
 Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedded mobile runtimes. The complete npm package contains all five Node and eleven Bare addons. Node selects and verifies its packaged addon automatically; no executable path or separate download is needed. Installation does not download or compile native code.
 

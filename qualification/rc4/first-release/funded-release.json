@@ -1,0 +1,520 @@
+{
+  "runId": "first-release-ab3ca36e07a9d8b5",
+  "source": "f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
+  "packageSource": "c1093ff80e2987110d873034439d241a0f8cfeaa",
+  "packageSha256": "64b27875903f9c0ff7f792bc65293052755efb55e91a51964b08331651ca74ab",
+  "releaseVerifierReceiptSha256": "19ce4004bec3eea3c9f78cdcfe3f5a1125a58fabcbb1a9850f639272af448628",
+  "packageAdmission": {
+    "matchedFiles": 48,
+    "everyArchiveFileMatched": true
+  },
+  "nativeProducers": {
+    "node": "60f22b2a62665ee61c4d0898320e29999c9f6209",
+    "bare": "60f22b2a62665ee61c4d0898320e29999c9f6209"
+  },
+  "nativeHashes": {
+    "node": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66",
+    "bare": "684d838bf14e13c2ade76955aa4423c2a11079d771d260db5715b9e67e5abf9a"
+  },
+  "assetId": "rgb:JnPu8Qvp-fHv_Yib-8F1LiKd-NDTAH6a-XJoijfa-IPX9FtE",
+  "runtimes": {
+    "node": {
+      "nativeSha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66",
+      "ordinary": [
+        {
+          "schema": "Nia",
+          "assetId": "rgb:Zf8K~UfK-0Pm~mQQ-TBjNoEq-0a8k8JO-kjFMF0e-i5XLgNE",
+          "issuanceOperationId": "first-release-ab3ca36e07a9d8b5-node-issue-nia",
+          "unexpiredCancellationRejected": true,
+          "operationId": "first-release-ab3ca36e07a9d8b5-node-nia-send",
+          "txid": "497bbf9ae6caa808397b53e2179242795ac27006bd3da0263ce24e85f8a8b993",
+          "sent": "100",
+          "issuerBalance": "900",
+          "recipientBalance": "100",
+          "pendingCancellationRejected": true,
+          "pendingStatus": "WaitingConfirmations",
+          "settledCancellationRejected": true,
+          "proofSha256": "4450ec135ff9b4c5f71d5f1bed6be8936395e690b5eb9b74a9f4aa1a238d28bc",
+          "freshProcessRecoveryUnchanged": true
+        },
+        {
+          "schema": "Cfa",
+          "assetId": "rgb:c68PsUxB-6ed0Q6C-Xqal3AP-62jcPEo-Y_ekJ9e-XBfleKg",
+          "issuanceOperationId": "first-release-ab3ca36e07a9d8b5-node-issue-cfa",
+          "unexpiredCancellationRejected": true,
+          "operationId": "first-release-ab3ca36e07a9d8b5-node-cfa-send",
+          "txid": "faeb58c93f3a219abf55875ad0736e861ba6b49334624f4e2e16e0d9e26b5e76",
+          "sent": "100",
+          "issuerBalance": "900",
+          "recipientBalance": "100",
+          "pendingCancellationRejected": true,
+          "pendingStatus": "WaitingConfirmations",
+          "settledCancellationRejected": true,
+          "proofSha256": "87cd55311da8f27230cd0fe1afb03bd865f879af86f572a8560fac21843bf123",
+          "freshProcessRecoveryUnchanged": true
+        }
+      ],
+      "burns": [
+        {
+          "name": "arbitrum",
+          "chainId": "eip155:42161",
+          "dstEid": 0,
+          "address": "0x5555555555555555555555555555555555555555",
+          "recipientHex": "0x5555555555555555555555555555555555555555",
+          "amount": "100000",
+          "operationId": "first-release-ab3ca36e07a9d8b5-node-burn-arbitrum",
+          "txid": "2262d15d129b4a6baa7754602eeb0908a836f4ebc9b7e03d90dab648735bf133",
+          "lostSuccessfulNativeEndReply": true,
+          "burnEndCalls": 1,
+          "proofSha256": "fec02aec129d016670b73dddbd0261deceff3e908bf404b5fbb2e5270f305b30",
+          "repeatedRecoveryUnchanged": true,
+          "duplicateRejected": true,
+          "freshProcessRecoveryUnchanged": true
+        },
+        {
+          "name": "ethereum",
+          "chainId": "eip155:1",
+          "dstEid": 30101,
+          "address": "0x7777777777777777777777777777777777777777",
+          "recipientHex": "0x7777777777777777777777777777777777777777",
+          "amount": "10000",
+          "operationId": "first-release-ab3ca36e07a9d8b5-node-burn-ethereum",
+          "txid": "9e1e07d9e44bfe71ca9e9cd10e34a9327bbf2d6f9a3bd2ef02f40dc3aac3df18",
+          "lostSuccessfulNativeEndReply": false,
+          "proofSha256": "9f9c2a122fe6243f5f9add8d4b1957b4679d95c4ed7c8c7f91fcce860b5e9445",
+          "repeatedRecoveryUnchanged": true,
+          "duplicateRejected": true,
+          "freshProcessRecoveryUnchanged": true
+        },
+        {
+          "name": "polygon",
+          "chainId": "eip155:137",
+          "dstEid": 30109,
+          "address": "0x8888888888888888888888888888888888888888",
+          "recipientHex": "0x8888888888888888888888888888888888888888",
+          "amount": "10000",
+          "operationId": "first-release-ab3ca36e07a9d8b5-node-burn-polygon",
+          "txid": "ce530a7f2eba1c95dabd2895ac1410be3438960647631108982e5a1e29c080e7",
+          "lostSuccessfulNativeEndReply": false,
+          "proofSha256": "c9d2d1ab3479334c70b3199dd84029a1a970b679000d813632161525783dedde",
+          "repeatedRecoveryUnchanged": true,
+          "duplicateRejected": true,
+          "freshProcessRecoveryUnchanged": true
+        },
+        {
+          "name": "plasma",
+          "chainId": "eip155:9745",
+          "dstEid": 30383,
+          "address": "0x9999999999999999999999999999999999999999",
+          "recipientHex": "0x9999999999999999999999999999999999999999",
+          "amount": "10000",
+          "operationId": "first-release-ab3ca36e07a9d8b5-node-burn-plasma",
+          "txid": "3e05d7f135e79e99a6744dd3ff5d887c8e8e0bcc76d93a5c7f743be0d8d84aaa",
+          "lostSuccessfulNativeEndReply": false,
+          "proofSha256": "bf01e213f3e2dd77e3651ae04425059650f728acdff83818ae28e5ee6b3334e6",
+          "repeatedRecoveryUnchanged": true,
+          "duplicateRejected": true,
+          "freshProcessRecoveryUnchanged": true
+        },
+        {
+          "name": "tron",
+          "chainId": "tron:728126428",
+          "dstEid": 30420,
+          "address": "TEdvoHEatmDKvTh3o9vBRB9Vdtbhn4QFhy",
+          "recipientHex": "0x413333333333333333333333333333333333333333",
+          "amount": "10000",
+          "operationId": "first-release-ab3ca36e07a9d8b5-node-burn-tron",
+          "txid": "f4fe6aeaf50af25e251370639ded3076c138448af7103fe6ca720cc056adab61",
+          "lostSuccessfulNativeEndReply": false,
+          "proofSha256": "bb3aac9f43d041942a8b0e414771c8bfb80410634f19a8f161ede6a2f05bbf85",
+          "repeatedRecoveryUnchanged": true,
+          "duplicateRejected": true,
+          "freshProcessRecoveryUnchanged": true
+        }
+      ],
+      "sender": {
+        "fundingTxid": "db06e4e869b874203ef28b51b59cb1c7b1758d4be5790ce1f4849826fdd5f7c5",
+        "outputs": {
+          "txid": "dea818ec12d98a137ecf9292f7fadfff88cb0dbefbc33e5eb1afd80888bf2dfb",
+          "created": 12
+        }
+      },
+      "receiver": {
+        "fundingTxid": "30c0ced9dd0fd209219b341d4e0b981c9016258cb9bb2762336a92db99699b96",
+        "outputs": {
+          "txid": "25b48a43042fe7a79356ec2958f6b1679438c469c7c45a0b6721d09e821bf6ed",
+          "created": 12
+        }
+      },
+      "bip322Verified": true,
+      "mint": {
+        "operationId": "first-release-ab3ca36e07a9d8b5-node-mint",
+        "prepared": {
+          "operationId": "first-release-ab3ca36e07a9d8b5-node-mint",
+          "state": "prepared",
+          "txid": "e2821e7de4e9476af316e4bbea2f3dc2bf2048ddfce194ebdda3e54653c8c82c",
+          "lockId": "16ea26ac993837dfc58abc0908021a854d25a7416a4cd986474a1effaf5a474c",
+          "opid": "dcd619c6effab99295af6a1d153c2acee7821dd53449343e0b149b605bbeb061",
+          "batchTransferIdx": 2
+        },
+        "checked": {
+          "invoice": "rgb:~/~/FccbW/bcrt:wvout:BSIAfzvO-tnFxw60-FGct85R-v~Q3iYP-uxgfPWq-aBJLo9S-9z_bmqQ?assignment_name=assetOwner&expiry=1795943680&pk=c3d16fb8ebd20dd565794e04c368f18915d9e233e2aa307d6c8e23d71ec32f84&endpoints=rpc://127.0.0.1:48090/json-rpc",
+          "recipientId": "bcrt:wvout:BSIAfzvO-tnFxw60-FGct85R-v~Q3iYP-uxgfPWq-aBJLo9S-9z_bmqQ",
+          "assetId": "rgb:JnPu8Qvp-fHv_Yib-8F1LiKd-NDTAH6a-XJoijfa-IPX9FtE",
+          "network": "regtest",
+          "txid": "e2821e7de4e9476af316e4bbea2f3dc2bf2048ddfce194ebdda3e54653c8c82c",
+          "opid": "dcd619c6effab99295af6a1d153c2acee7821dd53449343e0b149b605bbeb061",
+          "lockId": "16ea26ac993837dfc58abc0908021a854d25a7416a4cd986474a1effaf5a474c",
+          "amount": "2000000",
+          "beforeBlock": "1315",
+          "evmChainId": "31337",
+          "bridgeContract": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0"
+        },
+        "paymentTxid": "0x32c61e95d8cfc411c104439fc35a90206d9e040a9b3fc960ef8725f75681ac9f",
+        "broadcast": {
+          "txid": "e2821e7de4e9476af316e4bbea2f3dc2bf2048ddfce194ebdda3e54653c8c82c",
+          "batchTransferIdx": 2,
+          "entropy": 7792281126710368000
+        }
+      },
+      "senderMetadataAfterMint": {
+        "assetId": "rgb:JnPu8Qvp-fHv_Yib-8F1LiKd-NDTAH6a-XJoijfa-IPX9FtE",
+        "schema": "Bfa",
+        "name": "Upgrade Fixture Dollar",
+        "ticker": "BUSDT",
+        "precision": 6,
+        "nativeAssetListingSucceeded": true
+      },
+      "contract": {
+        "assetId": "rgb:JnPu8Qvp-fHv_Yib-8F1LiKd-NDTAH6a-XJoijfa-IPX9FtE",
+        "sha256": "d9443d77277e05a3f5b8af296918685367ce09bd428f8e6848f7f976c7d77d04"
+      },
+      "receiverMetadataAfterImport": {
+        "assetId": "rgb:JnPu8Qvp-fHv_Yib-8F1LiKd-NDTAH6a-XJoijfa-IPX9FtE",
+        "schema": "Bfa",
+        "name": "Upgrade Fixture Dollar",
+        "ticker": "BUSDT",
+        "precision": 6,
+        "nativeAssetListingSucceeded": true
+      },
+      "contractImport": {
+        "publicApi": true,
+        "duplicateRejected": true,
+        "hashMismatchRejected": true,
+        "exportedBytesIdentical": true,
+        "noInventedAllocations": true
+      },
+      "bfaCancellationRejected": true,
+      "bfaSend": {
+        "txid": "adb79a2b0740c4f47b940e1775a6f1b8f779ce7869dbec9e88f95ed16373f1dc",
+        "batchTransferIdx": 2,
+        "operationId": "first-release-ab3ca36e07a9d8b5-node-bfa-send",
+        "proofSha256": "5a90730ba6447a9e5d1f989b5ce09a226d7818e1efe9e8bcffcbda19310cf30f"
+      },
+      "btcSend": {
+        "txid": "3150ba10261244ac8341596b6188ff21a261b7362b9c7c8189946b32b32f705e",
+        "operationId": "first-release-ab3ca36e07a9d8b5-node-btc-send"
+      },
+      "btcAddress": "bcrt1pem53897e20t9h36ksf0khqwu0sd4tjrj92k8jxwxrs80qe2raxrqu3ad8u",
+      "seedImport": {
+        "samePublicKeysAndSigningAddress": true,
+        "bitcoinFundsDiscovered": true,
+        "metadataImportWithoutInventedRgbBalance": true,
+        "rgbStateRequiresWalletBackup": true
+      },
+      "metadataAfterRestart": {
+        "senderAndReceiverStable": true,
+        "sdkMetadataFields": [
+          "assetId",
+          "schema",
+          "name",
+          "ticker",
+          "precision"
+        ],
+        "bridgeLocationValidatedByReceivedMint": true,
+        "rejectList": "Fixture contract has none; public SDK metadata omits that field."
+      },
+      "restart": {
+        "freshProcesses": true,
+        "retainedPublicKeys": true,
+        "retainedBip322Verification": true,
+        "allTransferRecoveriesMatch": true,
+        "allBurnProofsUnchanged": true,
+        "bfaSender": "1760000",
+        "bfaRecipient": "100000"
+      },
+      "complete": true
+    },
+    "bare": {
+      "nativeSha256": "684d838bf14e13c2ade76955aa4423c2a11079d771d260db5715b9e67e5abf9a",
+      "ordinary": [
+        {
+          "schema": "Nia",
+          "assetId": "rgb:khH2qSnJ-Wa7dxq8-ao1~Gr2-dgaKK2l-ZN_cYSi-sgXpFJA",
+          "issuanceOperationId": "first-release-ab3ca36e07a9d8b5-bare-issue-nia",
+          "unexpiredCancellationRejected": true,
+          "operationId": "first-release-ab3ca36e07a9d8b5-bare-nia-send",
+          "txid": "172cc8c564bb315f892699618c6df689e7cd84616b507debf84450fb2f9ca78d",
+          "sent": "100",
+          "issuerBalance": "900",
+          "recipientBalance": "100",
+          "pendingCancellationRejected": true,
+          "pendingStatus": "WaitingConfirmations",
+          "settledCancellationRejected": true,
+          "proofSha256": "6eb2959a0fcbb3702c3cce263490caf8fcb043e7063dde2f3d1aba65b6f73f11",
+          "freshProcessRecoveryUnchanged": true
+        },
+        {
+          "schema": "Cfa",
+          "assetId": "rgb:yowvbxOq-fPM7VZ6-Z7FT5Ja-7ZeAAad-~FgCMZK-WrmLtsc",
+          "issuanceOperationId": "first-release-ab3ca36e07a9d8b5-bare-issue-cfa",
+          "unexpiredCancellationRejected": true,
+          "operationId": "first-release-ab3ca36e07a9d8b5-bare-cfa-send",
+          "txid": "5db20b1c05902fe9104e2ce15126adc95adc5e5394a31cb719fcc1ab9b8b0879",
+          "sent": "100",
+          "issuerBalance": "900",
+          "recipientBalance": "100",
+          "pendingCancellationRejected": true,
+          "pendingStatus": "WaitingConfirmations",
+          "settledCancellationRejected": true,
+          "proofSha256": "41405a372dbb84a890a2a2e8f1a746ca5ef43edb6a9cdfa743f99761529932bd",
+          "freshProcessRecoveryUnchanged": true
+        }
+      ],
+      "burns": [
+        {
+          "name": "arbitrum",
+          "chainId": "eip155:42161",
+          "dstEid": 0,
+          "address": "0x5555555555555555555555555555555555555555",
+          "recipientHex": "0x5555555555555555555555555555555555555555",
+          "amount": "100000",
+          "operationId": "first-release-ab3ca36e07a9d8b5-bare-burn-arbitrum",
+          "txid": "33c5467701553b797d0fba3c2da0eb203c42205ecd46bb77067afdaa92204f71",
+          "lostSuccessfulNativeEndReply": true,
+          "burnEndCalls": 1,
+          "proofSha256": "769ac59000cc84c85150b99c6154ba451aaa98f7f353af9ae12d95204c9eb5e3",
+          "repeatedRecoveryUnchanged": true,
+          "duplicateRejected": true,
+          "freshProcessRecoveryUnchanged": true
+        },
+        {
+          "name": "ethereum",
+          "chainId": "eip155:1",
+          "dstEid": 30101,
+          "address": "0x7777777777777777777777777777777777777777",
+          "recipientHex": "0x7777777777777777777777777777777777777777",
+          "amount": "10000",
+          "operationId": "first-release-ab3ca36e07a9d8b5-bare-burn-ethereum",
+          "txid": "c2bc69546893d32d1fb7f354fbd6986bda51220de3df6fa06c722315d3128275",
+          "lostSuccessfulNativeEndReply": false,
+          "proofSha256": "030f4fd1e345733ced68866b4092e595eb0c393eee48836acc1c56cf2dbbf2a8",
+          "repeatedRecoveryUnchanged": true,
+          "duplicateRejected": true,
+          "freshProcessRecoveryUnchanged": true
+        },
+        {
+          "name": "polygon",
+          "chainId": "eip155:137",
+          "dstEid": 30109,
+          "address": "0x8888888888888888888888888888888888888888",
+          "recipientHex": "0x8888888888888888888888888888888888888888",
+          "amount": "10000",
+          "operationId": "first-release-ab3ca36e07a9d8b5-bare-burn-polygon",
+          "txid": "c17673bd15694b3e5dff0e77b946b0ca60a667c66041005c91747b5f433dbc9c",
+          "lostSuccessfulNativeEndReply": false,
+          "proofSha256": "a0f4b1a7a6f5029a29087661f8f1c1f1c49c8c91663d7c4115c9d46a76df1089",
+          "repeatedRecoveryUnchanged": true,
+          "duplicateRejected": true,
+          "freshProcessRecoveryUnchanged": true
+        },
+        {
+          "name": "plasma",
+          "chainId": "eip155:9745",
+          "dstEid": 30383,
+          "address": "0x9999999999999999999999999999999999999999",
+          "recipientHex": "0x9999999999999999999999999999999999999999",
+          "amount": "10000",
+          "operationId": "first-release-ab3ca36e07a9d8b5-bare-burn-plasma",
+          "txid": "ab232341678f3cbe76d9f3532cb24890b6cc96cd1d8c7822ec025d4df859fe40",
+          "lostSuccessfulNativeEndReply": false,
+          "proofSha256": "aa501f0dc3720feb967a01e976cf7be55e8359ae148f0ea49a6c3c37bb4c2bf2",
+          "repeatedRecoveryUnchanged": true,
+          "duplicateRejected": true,
+          "freshProcessRecoveryUnchanged": true
+        },
+        {
+          "name": "tron",
+          "chainId": "tron:728126428",
+          "dstEid": 30420,
+          "address": "TEdvoHEatmDKvTh3o9vBRB9Vdtbhn4QFhy",
+          "recipientHex": "0x413333333333333333333333333333333333333333",
+          "amount": "10000",
+          "operationId": "first-release-ab3ca36e07a9d8b5-bare-burn-tron",
+          "txid": "c369214040cc3bd24324b62b1220cad22264952118430bacb6c590535ca2dcb3",
+          "lostSuccessfulNativeEndReply": false,
+          "proofSha256": "dd88630a37b84eab061c32170d893dd6893e31ba95973ce76826ce065ef246b5",
+          "repeatedRecoveryUnchanged": true,
+          "duplicateRejected": true,
+          "freshProcessRecoveryUnchanged": true
+        }
+      ],
+      "sender": {
+        "fundingTxid": "84485e58c086c766212a90527395bc82271e4ce17a80f5c739059fc38603cea3",
+        "outputs": {
+          "txid": "a9514f74989bd254cbd5d14255a6fe301b61ec4d0f1f675ace6d15be6336492e",
+          "created": 12
+        }
+      },
+      "receiver": {
+        "fundingTxid": "a2f81c16f983fed2f007a6d197f46ec9aa1121960be106b90b739042ecd56b6a",
+        "outputs": {
+          "txid": "ddb9608f8f41eef3eb19190514801e75fe7af2fde028a071567a27b2fbf6dbd2",
+          "created": 12
+        }
+      },
+      "bip322Verified": true,
+      "importBeforeMint": true,
+      "senderMetadataAfterImport": {
+        "assetId": "rgb:JnPu8Qvp-fHv_Yib-8F1LiKd-NDTAH6a-XJoijfa-IPX9FtE",
+        "schema": "Bfa",
+        "name": "Upgrade Fixture Dollar",
+        "ticker": "BUSDT",
+        "precision": 6,
+        "nativeAssetListingSucceeded": true
+      },
+      "mint": {
+        "operationId": "first-release-ab3ca36e07a9d8b5-bare-mint",
+        "prepared": {
+          "operationId": "first-release-ab3ca36e07a9d8b5-bare-mint",
+          "state": "prepared",
+          "txid": "5325a06d2d098787cde2f87ca858ef2547b4c68cac475b3daf4f9f82112fb12d",
+          "lockId": "6ef386b30ac6be45994639cf2e5af92f06c61b5972fc28f57b9dfaf862e4629b",
+          "opid": "f12834400a5c7cc807cc80cf9fe0708e3f6a9d1de407ecc6aae09b409c5f6309",
+          "batchTransferIdx": 3
+        },
+        "checked": {
+          "invoice": "rgb:JnPu8Qvp-fHv_Yib-8F1LiKd-NDTAH6a-XJoijfa-IPX9FtE/3I0xZVEQnQxYVk7vDnh5uNtQyUfsmThw6dX9n_Gvb5o/FccbW/bcrt:wvout:BU4ZbD7z-Rv7efQG-G1GIpO5-CGiHC3T-VvsX0qh-HFNx3kk-QZwIClQ?assignment_name=assetOwner&expiry=1795943708&pk=9e81a5b9c1f59024514f9362ebe22dacbf56c2d21759ad78e42500fffa3937ef&endpoints=rpc://127.0.0.1:48090/json-rpc",
+          "recipientId": "bcrt:wvout:BU4ZbD7z-Rv7efQG-G1GIpO5-CGiHC3T-VvsX0qh-HFNx3kk-QZwIClQ",
+          "assetId": "rgb:JnPu8Qvp-fHv_Yib-8F1LiKd-NDTAH6a-XJoijfa-IPX9FtE",
+          "network": "regtest",
+          "txid": "5325a06d2d098787cde2f87ca858ef2547b4c68cac475b3daf4f9f82112fb12d",
+          "opid": "f12834400a5c7cc807cc80cf9fe0708e3f6a9d1de407ecc6aae09b409c5f6309",
+          "lockId": "6ef386b30ac6be45994639cf2e5af92f06c61b5972fc28f57b9dfaf862e4629b",
+          "amount": "2000000",
+          "beforeBlock": "1381",
+          "evmChainId": "31337",
+          "bridgeContract": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0"
+        },
+        "paymentTxid": "0x235d3268e9e2565a8232d66bbb24aa523698b3eaac9b2bce72bbbb587caa5dba",
+        "broadcast": {
+          "txid": "5325a06d2d098787cde2f87ca858ef2547b4c68cac475b3daf4f9f82112fb12d",
+          "batchTransferIdx": 3,
+          "entropy": 8101107048401745000
+        }
+      },
+      "senderMetadataAfterMint": {
+        "assetId": "rgb:JnPu8Qvp-fHv_Yib-8F1LiKd-NDTAH6a-XJoijfa-IPX9FtE",
+        "schema": "Bfa",
+        "name": "Upgrade Fixture Dollar",
+        "ticker": "BUSDT",
+        "precision": 6,
+        "nativeAssetListingSucceeded": true
+      },
+      "contract": {
+        "assetId": "rgb:JnPu8Qvp-fHv_Yib-8F1LiKd-NDTAH6a-XJoijfa-IPX9FtE",
+        "sha256": "d9443d77277e05a3f5b8af296918685367ce09bd428f8e6848f7f976c7d77d04"
+      },
+      "receiverMetadataAfterImport": {
+        "assetId": "rgb:JnPu8Qvp-fHv_Yib-8F1LiKd-NDTAH6a-XJoijfa-IPX9FtE",
+        "schema": "Bfa",
+        "name": "Upgrade Fixture Dollar",
+        "ticker": "BUSDT",
+        "precision": 6,
+        "nativeAssetListingSucceeded": true
+      },
+      "contractImport": {
+        "publicApi": true,
+        "duplicateRejected": true,
+        "hashMismatchRejected": true,
+        "exportedBytesIdentical": true,
+        "noInventedAllocations": true
+      },
+      "bfaCancellationRejected": true,
+      "bfaSend": {
+        "txid": "2411dd11231dc9de9ff732bf43bc3d407c0a975dcf1633e8fa888309ff3d4b46",
+        "batchTransferIdx": 2,
+        "operationId": "first-release-ab3ca36e07a9d8b5-bare-bfa-send",
+        "proofSha256": "5a0c9816a82d535986585b768b00310204343e8515a49b572349fe47290b16d3"
+      },
+      "btcSend": {
+        "txid": "dc5ab133d40b2c968daf4291af3a2f89c6e086a443d3e5c8244d652721a19a44",
+        "operationId": "first-release-ab3ca36e07a9d8b5-bare-btc-send"
+      },
+      "btcAddress": "bcrt1p3evgzfmdca792c86g78vagnad8dk28ez7kj2gyzlzn8tzu6u6dhqazkfuz",
+      "seedImport": {
+        "samePublicKeysAndSigningAddress": true,
+        "bitcoinFundsDiscovered": true,
+        "metadataImportWithoutInventedRgbBalance": true,
+        "rgbStateRequiresWalletBackup": true
+      },
+      "metadataAfterRestart": {
+        "senderAndReceiverStable": true,
+        "sdkMetadataFields": [
+          "assetId",
+          "schema",
+          "name",
+          "ticker",
+          "precision"
+        ],
+        "bridgeLocationValidatedByReceivedMint": true,
+        "rejectList": "Fixture contract has none; public SDK metadata omits that field."
+      },
+      "restart": {
+        "freshProcesses": true,
+        "retainedPublicKeys": true,
+        "retainedBip322Verification": true,
+        "allTransferRecoveriesMatch": true,
+        "allBurnProofsUnchanged": true,
+        "bfaSender": "1760000",
+        "bfaRecipient": "100000"
+      },
+      "complete": true
+    }
+  },
+  "scope": "Fresh wallets using the complete admitted pack, Darwin ARM64 Node and Bare, isolated Regtest/Anvil. No legacy database upgrade, hosted settlement or seed-only RGB recovery claim.",
+  "complete": true,
+  "fixtureStatus": {
+    "bitcoinHeight": 1222,
+    "evmBlock": 1191,
+    "chainId": 31337
+  },
+  "schemaVersion": 1,
+  "packageVersion": "3.0.0-rc.4",
+  "financialReconciliation": "financial-release.json",
+  "financialReconciliationSha256": "4324a486f2a151878f7145f36a0a39519207a5385aeccbdd3c8d0c2d0b228c4b",
+  "runnerIdentities": {
+    "files": {
+      "qualify.mjs": "4ad3a347f9885b475177eafe9571931def72ff95d6b5d62e0039b364934e877c",
+      "packed-peer.mjs": "185407c60143efe25c53b8346c656c383d3b82d0d74816e23e2a5ba5db59dbfc",
+      "local_fixture.py": "fde198646e0aa06e2881c4b9330aef18d77836e978ce0733f6bee880acb27933",
+      "audit.py": "88afb0fe43527482610063ca458a8f29a65e2d50dab7d83b781b48f0f3823ac5",
+      "qualify-stock-cancellation.mjs": "143731d55c9b4db3ac5eff087bdaca4c281e9355891a21b7f134046cddea20ec",
+      "verify-pack-transition.py": "f5fa1056804bca9f2fb7945db871bae5c5699b17856a5fd1356a73fc0dfe96b4"
+    },
+    "frozenBeforeFundedSdkOperations": true,
+    "notes": "Fixture issuer and cancellation preparation already completed; no SDK mint/transfer/burn invoked. Added independent review assertions before first financial invocation."
+  },
+  "fixtureIdentity": {
+    "issuerRgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+    "issuerExecutableSha256": "a91c549f010250b1ccff1fc1a2b6b0f1a679cf77533d33d2d4b072e4a06d19c9",
+    "issuerHelperSourceSha256": "ddb14234212b1e60d2860f2a3161dad598b8cb45c65123b04bc5190ef2ee8ffd",
+    "proofInspectorSha256": "ddaadf27ad5500102fbc2fb82f5d86fa3c40532911fd3aa9473e1eef55edf216",
+    "ownedComposeProject": "wdk_contract_upgrade_20261127",
+    "freshIssuerDirectory": "issuer-fixture/issuer-state",
+    "fixtureFunded": true,
+    "oldWalletsOpened": false,
+    "fixtureHelperSha256": "1691e27eadb78c864c7424e6ad0bb67662ef8d2c37b6ec613c9157261604667b",
+    "composeSha256": "70584caf06a5634d305aec3a9ceb97c02dfa5f96d067165bdfdc551b4512e7f5"
+  }
+}

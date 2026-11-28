@@ -57,5 +57,5 @@
     }
   },
   "releaseHold": false,
-  "publicationHold": true
+  "publicationHold": false
 }
