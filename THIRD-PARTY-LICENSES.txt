@@ -12055,8 +12055,8 @@ limitations under the License.
 
 ==============================================================================
 SHA-256: 8295b7e63fbb3db4b2c990752f94e44e41e91fea12b0cd251ba1da9e0f23d5f6
-cargo:rgb-lib-migration@0.3.0-beta.5:git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2 | workspace | LICENSE
-cargo:rgb-lib@0.3.0-beta.7:git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2 | package | LICENSE
+cargo:rgb-lib-migration@0.3.0-beta.5:git+https://github.com/RGB-Tools/rgb-lib#f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d | workspace | LICENSE
+cargo:rgb-lib@0.3.0-beta.7:git+https://github.com/RGB-Tools/rgb-lib#f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d | package | LICENSE
 ------------------------------------------------------------------------------
 MIT License
 

@@ -55,8 +55,8 @@ mod received_mint;
 #[path = "input_reservations.rs"]
 mod input_reservations;
 
-const SOURCE: &str = "a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2";
-const OVERLAY: &str = "a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd";
+const SOURCE: &str = "f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d";
+const OVERLAY: &str = "0c20cd05eb2899962c152b6ccac324e2a705dc38";
 pub(crate) const MAX_FRAME: usize = 6 * 1024 * 1024;
 const MAX_PSBT: usize = 2 * 1024 * 1024;
 const MAX_CONTRACT: usize = 1024 * 1024;

@@ -26,8 +26,8 @@ const lock = JSON.parse(await readFile(join(consumer, 'package-lock.json'), 'utf
 const installed = lock.packages?.['node_modules/@utexo/wdk-wallet-rgb']
 assert.match(installed?.resolved ?? '', /^file:.*\.tgz$/)
 assert.match(installed?.integrity ?? '', /^sha512-/)
-assert.equal(manifest.source, 'a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2')
-assert.equal(manifest.overlayTree, 'a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd')
+assert.equal(manifest.source, 'f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d')
+assert.equal(manifest.overlayTree, '0c20cd05eb2899962c152b6ccac324e2a705dc38')
 assert.equal(manifest.integrationTree, manifest.overlayTree)
 assert.equal(manifest.releaseHold, false)
 assert.equal(fixture.disposable, true, 'This script mines and funds only an explicitly disposable fixture')

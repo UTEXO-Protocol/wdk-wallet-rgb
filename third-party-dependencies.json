@@ -6,9 +6,9 @@
     "native/Cargo.lock": "8d70a35746ce1dc3d8533d55a0167db3a8fa14b121e2e75f71be80c1adceef4d",
     "native/bare/Cargo.lock": "72cd67d8ceea1500f82021e06b71c147a2a871daed7b8f045d7345311de17203"
   },
-  "rgbSource": "a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
+  "rgbSource": "f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
   "supplementSha256": "5eef4472d15e1d72c9f4e9576e2f4899b111bd5c0e7ebe50372c6b5b4e252b58",
-  "licenseTextsSha256": "19b1dc28ebcc956b9fb837dfbbb9586bf4749393731f61ba5ccfe165f8baa357",
+  "licenseTextsSha256": "ba7d1aa41c24b7d4aacaf56ad93920566d1fc013e124f180f741787049bfd578",
   "packageCount": 642,
   "uniqueNoticeTextCount": 333,
   "packages": [
@@ -9573,7 +9573,7 @@
       "standardLicenseText": "Apache-2.0"
     },
     {
-      "id": "cargo:rgb-lib-migration@0.3.0-beta.5:git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
+      "id": "cargo:rgb-lib-migration@0.3.0-beta.5:git+https://github.com/RGB-Tools/rgb-lib#f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
       "ecosystem": "cargo",
       "name": "rgb-lib-migration",
       "version": "0.3.0-beta.5",
@@ -9583,7 +9583,7 @@
         "Nicola Busanello <nicola.busanello@gmail.com>"
       ],
       "repository": "https://github.com/RGB-Tools/rgb-lib",
-      "source": "git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
+      "source": "git+https://github.com/RGB-Tools/rgb-lib#f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
       "hosts": [
         "node",
         "bare"
@@ -9598,7 +9598,7 @@
       "noticeCoverage": "supplied-notices"
     },
     {
-      "id": "cargo:rgb-lib@0.3.0-beta.7:git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
+      "id": "cargo:rgb-lib@0.3.0-beta.7:git+https://github.com/RGB-Tools/rgb-lib#f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
       "ecosystem": "cargo",
       "name": "rgb-lib",
       "version": "0.3.0-beta.7",
@@ -9608,7 +9608,7 @@
         "Nicola Busanello <nicola.busanello@gmail.com>"
       ],
       "repository": "https://github.com/RGB-Tools/rgb-lib",
-      "source": "git+https://github.com/RGB-Tools/rgb-lib#a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
+      "source": "git+https://github.com/RGB-Tools/rgb-lib#f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
       "hosts": [
         "node",
         "bare"

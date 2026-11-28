@@ -85,7 +85,7 @@ jobs:
             printf '%s\n' 'Native matrix was not requested for this manual run.' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          revision=a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2
+          revision=f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d
           test "$(gh api "repos/RGB-Tools/rgb-lib/git/commits/$revision" --jq .sha)" = "$revision"
           if test "$MANUAL_RUN" = true; then
             mode=all
