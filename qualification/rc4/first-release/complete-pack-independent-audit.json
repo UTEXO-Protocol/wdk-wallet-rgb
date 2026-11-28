@@ -1,0 +1,213 @@
+{
+  "source": "c1093ff80e2987110d873034439d241a0f8cfeaa",
+  "archive": {
+    "filename": "utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz",
+    "bytes": 305291164,
+    "sha256": "64b27875903f9c0ff7f792bc65293052755efb55e91a51964b08331651ca74ab"
+  },
+  "fileCount": 48,
+  "unpackedBytes": 888906359,
+  "nodeAddons": 5,
+  "bareAddons": 11,
+  "sourceMembersMatchCommit": true,
+  "allNativeBytesMatchManifestAndFreshCIReceipt": true,
+  "noExecutableTransportOrInstallerHooks": true,
+  "publicationHold": true,
+  "publicationAllowed": false,
+  "nativeProducer": "60f22b2a62665ee61c4d0898320e29999c9f6209",
+  "githubRun": "https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/46126203212",
+  "files": {
+    "LICENSE": {
+      "bytes": 10173,
+      "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+    },
+    "prebuilds/android-arm/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 48476064,
+      "sha256": "a56c1e49d49d5850bc610d010163d2126a8412893c32d8351af1bfddf7a7b84b"
+    },
+    "prebuilds/android-arm64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 68423864,
+      "sha256": "c5160fa7a3fd5bdb23f095ba3f1507984a8e328ea0f2c276400852410bca88b0"
+    },
+    "prebuilds/android-ia32/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 68805880,
+      "sha256": "0b539481b0e2eeebc69f51ca911bb859b8fad829ed2b43926cab404ffc0f14c5"
+    },
+    "prebuilds/android-x64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 70434216,
+      "sha256": "c4313eae8d8a59d45c85bdeec6b4d1ae697f6896644c0b0867978382ba42246c"
+    },
+    "prebuilds/darwin-arm64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 47056704,
+      "sha256": "684d838bf14e13c2ade76955aa4423c2a11079d771d260db5715b9e67e5abf9a"
+    },
+    "prebuilds/darwin-x64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 50672072,
+      "sha256": "3776a4a9188e51c09b55218b362a523077f8fcc3491d5e9542581bfea8409f32"
+    },
+    "prebuilds/ios-arm64-simulator/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 47845376,
+      "sha256": "940b2588a610e324c0848188a097780552000e767603cf3cb2ed65108fad70ec"
+    },
+    "prebuilds/ios-arm64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 47638392,
+      "sha256": "e7c58ace592d655ce529d2663eb61359d79514eb1971708f6c29635039aab040"
+    },
+    "prebuilds/ios-x64-simulator/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 51519400,
+      "sha256": "556a7c800fa4728e0a594773bece650dae63de9e29f939d84a9c4bef6a3cee3b"
+    },
+    "prebuilds/linux-arm64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 55830960,
+      "sha256": "be4fe05496a9f1ab2897e24231eda3a53516fc432dbdd32130f19c06be448ccc"
+    },
+    "prebuilds/linux-x64/utexo__wdk-wallet-rgb.bare": {
+      "bytes": 58785712,
+      "sha256": "92af045f99721e8339986e68cf5b25f3bf896602941916399db7b92096b08f4e"
+    },
+    "src/onchain-bare-thread.cjs": {
+      "bytes": 413,
+      "sha256": "7fb8fb2ee6f57ec6bebd2c1d1c4bb52a1b6b12837aac9aecb093d6e6948fde54"
+    },
+    "src/onchain-node-thread.cjs": {
+      "bytes": 1339,
+      "sha256": "f8f6b7e27a14329dae24c715630c7a613790ea76ec9a9a2a11e87c2085a65760"
+    },
+    "src/burn-destination.js": {
+      "bytes": 5550,
+      "sha256": "bca77983b922ef834a277c66256f656d21348efbefd5843cc96bbb1954ea5412"
+    },
+    "src/onchain-approval.js": {
+      "bytes": 2930,
+      "sha256": "934c1f81472b78d0b6673e52170cc6fd1e8e588546bb12a2a34dbde1c58adfcf"
+    },
+    "src/onchain-bare-worker.js": {
+      "bytes": 6980,
+      "sha256": "3b808b05c3bf0c112508282d5fbc61f3564c2cb94f256d4ab103ef8937494450"
+    },
+    "src/onchain-io-bare.js": {
+      "bytes": 292,
+      "sha256": "364ec06c073b4a4e35904ce9747a1eb386e485d09f5793137104768f856371e5"
+    },
+    "src/onchain-io-node.js": {
+      "bytes": 281,
+      "sha256": "fa20066d63ecd616106bfd3577e02e0d3158380db64e591b9eb5d02206fc47e1"
+    },
+    "src/onchain-journal.js": {
+      "bytes": 5037,
+      "sha256": "02b326031b7309e14e897cdabbe8813623f78078a4a0ea36ecbc44ff5814deed"
+    },
+    "src/onchain-message.js": {
+      "bytes": 6117,
+      "sha256": "e088e97d44ad4f9183c2d1ceaf758a442970e8580f5d59221ea5ab5ca4bdb5da"
+    },
+    "src/onchain-runtime-error.js": {
+      "bytes": 254,
+      "sha256": "2a840f910aab3b08db46a9959d0eecc8d2912544b842becf7924351d4df248ba"
+    },
+    "src/onchain-send.js": {
+      "bytes": 8916,
+      "sha256": "c8b9ebcecc27af31f1a518e94a72f74d8eea491fc6753a7501657e2fbe4fd167"
+    },
+    "src/onchain-signer.js": {
+      "bytes": 19477,
+      "sha256": "a556eaa2fed6efaa8a8b84adffef9325ecaf09e7f819dbf3e3e95da42cec699d"
+    },
+    "src/onchain-wallet.js": {
+      "bytes": 59938,
+      "sha256": "2a99774ad3031eeeeaadf94ee9b5011d0249e7dc6572c8e6668059087052eae5"
+    },
+    "src/onchain-webrgb-url.js": {
+      "bytes": 181,
+      "sha256": "28882c74c963cc63ed5ca053ea4e4d0bcbc0bac1d0108ebe0ab1511059dd8638"
+    },
+    "src/onchain-webrgb.js": {
+      "bytes": 26965,
+      "sha256": "c6a93195c1e89c9c68ca1ca765a88fd0e7b0459e9ff46403748aadbca1eb93c0"
+    },
+    "src/onchain-worker.js": {
+      "bytes": 6776,
+      "sha256": "8fa6657f20d2590f2fd029bc1f37670729969efbc73ac65be855f14224f00522"
+    },
+    "onchain.js": {
+      "bytes": 416,
+      "sha256": "a3b64d9d59278fd170f73dd4246c9e2199f5eb8946a68afa5ee44fb93273786c"
+    },
+    "src/onchain-bare-native.json": {
+      "bytes": 2381,
+      "sha256": "fd5b958f0f1d0a1afcc97abbf410724948a5d0e261f9690dad9f8e05dd790f12"
+    },
+    "src/onchain-dev-services.json": {
+      "bytes": 190,
+      "sha256": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393"
+    },
+    "src/onchain-node-native.json": {
+      "bytes": 1041,
+      "sha256": "ed3607076ff89ab4f6f305706c88b59a19436355dcf5cef5fc4b03cceb2766a5"
+    },
+    "package.json": {
+      "bytes": 2716,
+      "sha256": "e6c68276a50ea9898b61f6705913f0448ff5eba64ca014b566dc6945eee7ac42"
+    },
+    "third-party-dependencies.json": {
+      "bytes": 620099,
+      "sha256": "37c6a89634ed60fa6c7de0b1626b8657a330bb03f259975e70b73d8acbd8b793"
+    },
+    "CANDIDATE.md": {
+      "bytes": 22101,
+      "sha256": "1da24b96f8b0dd7628e98106023d6117104411799618b3d44d6d1c10ac932123"
+    },
+    "CHANGELOG.md": {
+      "bytes": 6453,
+      "sha256": "e892e4a7e0473bd4082b58292a6a1da06ba4a767e3d784e4c7442a10805e7943"
+    },
+    "DEPENDENCY-POLICY.md": {
+      "bytes": 4360,
+      "sha256": "48655e123b13b7d3525a23907497ca675ebbeb29944b8d337ce88fcf44eb9db8"
+    },
+    "MIGRATION.md": {
+      "bytes": 5375,
+      "sha256": "05d5ca8aaa3993e9bb0703bfe47e0f96f0cb983be25f4ccb05b26da3f2c76951"
+    },
+    "README.md": {
+      "bytes": 4855,
+      "sha256": "327fd8a6a65095c60a5776d8fa0e16a940e35e513ebc521164685322c49e0d5d"
+    },
+    "THIRD-PARTY-NOTICES.md": {
+      "bytes": 4054,
+      "sha256": "555d4f65cb9fd0931be4a5eb70e4e9d585b57f44bf0d99b33130ad92b587aec6"
+    },
+    "prebuilds/darwin-arm64/utexo-rgb-native.node": {
+      "bytes": 47052408,
+      "sha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66"
+    },
+    "prebuilds/darwin-x64/utexo-rgb-native.node": {
+      "bytes": 50704104,
+      "sha256": "20149a31c6d8c5f91d7e23240b06ebc9877a5b78127c896ae8c08cd289efd358"
+    },
+    "prebuilds/linux-arm64-gnu/utexo-rgb-native.node": {
+      "bytes": 55834624,
+      "sha256": "2300c859aa24f86d2d964a4ecfe6e73c1c002d792762cdb47c5864dc9200c735"
+    },
+    "prebuilds/linux-x64-gnu/utexo-rgb-native.node": {
+      "bytes": 58731904,
+      "sha256": "bdeaab1e9e3930b97734788a96c489ef3cb6219dc68a1cd7c44517c3a9371470"
+    },
+    "prebuilds/linux-x64-musl/utexo-rgb-native.node": {
+      "bytes": 58843000,
+      "sha256": "86fc558a19ac6be4e495b8a34dacf59f43794f79293881cac46a03fa3494362a"
+    },
+    "onchain.d.ts": {
+      "bytes": 16473,
+      "sha256": "f6f3a95a199f5231a95fd993859c1b81b7f8ef39b003a331d43a3975861ba641"
+    },
+    "webrgb-onchain.d.ts": {
+      "bytes": 6439,
+      "sha256": "82900612e9179f4feda315e3f04316471ec8accc7665fe2b7ce9ca7c7b69cdf1"
+    },
+    "THIRD-PARTY-LICENSES.txt": {
+      "bytes": 1393107,
+      "sha256": "ba7d1aa41c24b7d4aacaf56ad93920566d1fc013e124f180f741787049bfd578"
+    }
+  }
+}

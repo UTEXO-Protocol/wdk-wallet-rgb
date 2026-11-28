@@ -1,0 +1,117 @@
+{
+  "scope": "Actual Android Release APK replacement over a reconstructed exact-source RC3 baseline; local AAB split install, fresh import and fresh create. No Google Play-delivered update or hosted financial operations.",
+  "source": "38f1059e09447602515b5af3c920d12204af64e3",
+  "sdkVersion": "3.0.0-rc.4",
+  "sdkSource": "80d7af32d2131c7a4133622a733414af8e07a5e7",
+  "sdkArchiveSha256": "3513c7b4e02739abe7bfcbd4306054ba2f436ba152aff6aff3b4a462f3f3906f",
+  "applicationId": "com.utexo.wallet",
+  "versionName": "1.0.1",
+  "versionCode": 2,
+  "artifacts": [
+    {
+      "kind": "apk",
+      "bytes": 302864379,
+      "sha256": "fbfdddd64134ccc74c5190fca258becb313b1b478f6d9cbb23c3bc771d10ebfd"
+    },
+    {
+      "kind": "aab",
+      "bytes": 295468674,
+      "sha256": "9531f6d35f4c7c2e10f8d674b7c456aded3238ef0928a6e2547ee2377a95a2cf"
+    }
+  ],
+  "baseline": {
+    "baselineSource": "e12c589a6c135ff24103ac635516857cf14211f8",
+    "apkSha256": "c1ec4ed566456fe4ea15244df0c9cfc9b0e5180f576f6fb437d943fbb5fe49df",
+    "baseline": "reconstructed, not the deleted uploaded AAB"
+  },
+  "signature": {
+    "sameOriginalUploadCertificate": true,
+    "sha256": "bf5b01bf8ee4dd5e6078b795390b57cb6ba7a37d158c5de99a40d7822107ba21",
+    "playSigningAcceptance": false
+  },
+  "checks": [
+    "replacement installation code1 to code2 without clear/uninstall",
+    "saved biometric preference presented fingerprint unlock immediately",
+    "fingerprint unlock after update",
+    "Settings available after update",
+    "Bitcoin Unit BTC retained",
+    "biometrics preference retained",
+    "Recovery phrase after fresh fingerprint authentication exactly matches original saved phrase in order",
+    "Same signing address and valid native BIP-322 signature after update",
+    "Connected apps available; witness receive offered without outputs, blinded receive correctly requires an output",
+    "RGB output inventory loaded, empty wallet correctly requests Bitcoin funding",
+    "Native identity and pending invoice journal bytes preserved",
+    "All pre-existing transfer/reservation fields retained; no allocation created by registration",
+    "Approved Sandbox BUSDT metadata registered successfully",
+    "All four AAB-derived split APKs installed without clearing wallet",
+    "AAB split build unlocks original wallet through native Use PIN fallback with saved device PIN",
+    "New pinned amountless witness invoice generated automatically after USDT selection; Bitcoin preselected",
+    "Separate fresh AAB install/import and no-lock creation passed; original upgrade user preserved",
+    "Background beyond grace period locked the original wallet",
+    "Brief three-second background resumes existing unlocked session without a new prompt",
+    "Settings remains available after brief background/resume"
+  ],
+  "nativeState": {
+    "databaseIntegrity": "ok",
+    "previousTransferAndReservationFieldsUnchanged": true,
+    "newTransferColumns": {
+      "invoice_idx": null,
+      "receive_dir": null
+    },
+    "counts": {
+      "transfer": 1,
+      "asset_transfer": 1,
+      "batch_transfer": 1,
+      "pending_witness_script": 1,
+      "coloring": 0
+    },
+    "approvedAssetMetadata": {
+      "id": "rgb:uVMNCuVU-U00Y_wv-6~7ZbW7-tEuUMcE-pB0wDzC-nt7Qsdc",
+      "name": "Bridged USDT",
+      "ticker": "BUSDT",
+      "precision": 6,
+      "bridge_location": "{\"Evm\":{\"chainId\":42161,\"address\":\"0x763601d961a17eb4cd6afac496cc27b63b0e1aef\"}}"
+    },
+    "assetCountBefore": 0,
+    "assetCountAfter": 1,
+    "allocationCountAfter": 0
+  },
+  "unchangedJournalFiles": [
+    ".utexo-rgb-native.identity",
+    ".wdk-onchain-journal-v1/identity.json",
+    ".wdk-onchain-invoices-v1/identity.json",
+    ".wdk-onchain-invoices-v1/iris-manual-rx-77fb7a6e-e2e1-4020-aecf-2a597e73b65f.json"
+  ],
+  "freshImport": {
+    "scope": "Fresh isolated Android user10, actual AAB-derived split app, no original wallet data copied",
+    "package": "com.utexo.wallet",
+    "versionCode": 2,
+    "seedEnteredThroughUI": true,
+    "originalSigningAddressRestored": "tb1p6yfvahmlw8p6x06nuvw3wy2lv5q6jrrynkadjewkc7wjwyjljpqq65y578",
+    "settingsAvailable": true,
+    "biometricsNotEnrolled": true,
+    "nativePinConfigured": true,
+    "rgbRecoveryWarningShown": true,
+    "doesNotClaimSeedOnlyRgbRecovery": true,
+    "contractRegistered": true,
+    "nativeTransfers": 0,
+    "nativeAllocations": 0
+  },
+  "freshCreate": {
+    "scope": "Fresh Android user11 with no screen lock/biometric enrollment, actual AAB-derived split app",
+    "package": "com.utexo.wallet",
+    "versionCode": 2,
+    "createdThroughUI": true,
+    "phraseConfirmedThroughUI": true,
+    "noScreenLockCreationPermitted": true,
+    "walletReadyScreen": true,
+    "hostedFinancialOperations": false,
+    "currentPortfolioLoaded": true,
+    "coldRestartWithoutScreenLock": true
+  },
+  "limitations": [
+    "Original uploaded AAB was deleted; this is a reconstructed-source local upgrade",
+    "Mobile test wallets were unfunded; funded BFA upgrade and financial tests are separate exact-package host receipts",
+    "No hosted relay, bridge settlement or physical device claim"
+  ]
+}

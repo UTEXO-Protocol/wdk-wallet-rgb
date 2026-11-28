@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "3.0.0-rc.4",
+  "rgbSource": "f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
+  "finalPackageSource": "16d0e23a32495c738b6689bf98e6e001a5b824ac",
+  "finalPackageSha256": "f0ecf049ca0b108d3338d4be2e360439029ac67ed196f0a0f7c680c9fe57e1f9",
+  "originalFundedPackageSource": "c1093ff80e2987110d873034439d241a0f8cfeaa",
+  "originalFundedPackageSha256": "64b27875903f9c0ff7f792bc65293052755efb55e91a51964b08331651ca74ab",
+  "scope": "Real-expiry ordinary receive cancellation on final packed Node and Bare Darwin ARM64 consumers; scoped packs only prepared the invoices.",
+  "results": {
+    "node": {
+      "acceptance": {
+        "identity": {
+          "version": "3.0.0-rc.4",
+          "integrity": "sha512-07gyA4XfWL0ZYv57XDZqLAVoQZ3tzUXVvQvRYRef5bbFSBqVF8Mp100X0sHoeFykc0d+D2aluyJvz1ldbJgbcQ==",
+          "source": "f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
+          "tree": "0c20cd05eb2899962c152b6ccac324e2a705dc38",
+          "nodeSha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66"
+        },
+        "phase": "passed",
+        "realExpiry": true,
+        "walletStateEdited": false,
+        "machineClockChanged": false,
+        "results": {
+          "node": {
+            "cases": [
+              {
+                "schema": "Nia",
+                "mode": "blind",
+                "cancelled": true,
+                "retryAfterRestart": true,
+                "lostResponseAfterCommit": false
+              },
+              {
+                "schema": "Nia",
+                "mode": "witness",
+                "cancelled": true,
+                "retryAfterRestart": true,
+                "lostResponseAfterCommit": false
+              },
+              {
+                "schema": "Cfa",
+                "mode": "blind",
+                "cancelled": true,
+                "retryAfterRestart": true,
+                "lostResponseAfterCommit": false
+              },
+              {
+                "schema": "Cfa",
+                "mode": "witness",
+                "cancelled": true,
+                "retryAfterRestart": true,
+                "lostResponseAfterCommit": true
+              }
+            ],
+            "arbitraryAssetExcluded": true,
+            "unrelatedLiveInvoicesPreserved": true,
+            "blindedReservationsReleased": true
+          }
+        },
+        "completedAt": "2026-11-28T09:54:25.600Z"
+      },
+      "scopedPreparationPackageSha256": "0d40f13940a490f671565f307bcba580ecec3f5b021baebc258f2470f7439f56",
+      "finalPackEquivalence": {
+        "preparedIdentity": {
+          "version": "3.0.0-rc.4",
+          "integrity": "sha512-F1e71qwBHDzFM2es7uNWoWnC0CJ6O2m9fLVhSWtf+UdsCNn5Wv3Ek/RK22dlyqhIdr9pfDJ5mtqWhoFlUhjSjw==",
+          "source": "f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
+          "tree": "0c20cd05eb2899962c152b6ccac324e2a705dc38",
+          "nodeSha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66"
+        },
+        "finalIdentity": {
+          "version": "3.0.0-rc.4",
+          "integrity": "sha512-07gyA4XfWL0ZYv57XDZqLAVoQZ3tzUXVvQvRYRef5bbFSBqVF8Mp100X0sHoeFykc0d+D2aluyJvz1ldbJgbcQ==",
+          "source": "f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
+          "tree": "0c20cd05eb2899962c152b6ccac324e2a705dc38",
+          "nodeSha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66"
+        },
+        "finalPackageSha256": "f0ecf049ca0b108d3338d4be2e360439029ac67ed196f0a0f7c680c9fe57e1f9",
+        "runtimeAndNativeBytesIdentical": true,
+        "allowedDifferencesOnly": true,
+        "allowedDifferences": [
+          "Additional separately admitted native targets",
+          "Native manifest publication hold and target matrix",
+          "Non-executable documentation"
+        ],
+        "runtimeFiles": {
+          "onchain.js": "a3b64d9d59278fd170f73dd4246c9e2199f5eb8946a68afa5ee44fb93273786c",
+          "onchain.d.ts": "f6f3a95a199f5231a95fd993859c1b81b7f8ef39b003a331d43a3975861ba641",
+          "package.json": "e6c68276a50ea9898b61f6705913f0448ff5eba64ca014b566dc6945eee7ac42",
+          "webrgb-onchain.d.ts": "82900612e9179f4feda315e3f04316471ec8accc7665fe2b7ce9ca7c7b69cdf1",
+          "src/onchain-send.js": "c8b9ebcecc27af31f1a518e94a72f74d8eea491fc6753a7501657e2fbe4fd167",
+          "src/onchain-worker.js": "8fa6657f20d2590f2fd029bc1f37670729969efbc73ac65be855f14224f00522",
+          "src/onchain-dev-services.json": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393",
+          "src/onchain-webrgb.js": "c6a93195c1e89c9c68ca1ca765a88fd0e7b0459e9ff46403748aadbca1eb93c0",
+          "src/onchain-bare-thread.cjs": "7fb8fb2ee6f57ec6bebd2c1d1c4bb52a1b6b12837aac9aecb093d6e6948fde54",
+          "src/onchain-node-thread.cjs": "f8f6b7e27a14329dae24c715630c7a613790ea76ec9a9a2a11e87c2085a65760",
+          "src/onchain-approval.js": "934c1f81472b78d0b6673e52170cc6fd1e8e588546bb12a2a34dbde1c58adfcf",
+          "src/onchain-io-node.js": "fa20066d63ecd616106bfd3577e02e0d3158380db64e591b9eb5d02206fc47e1",
+          "src/onchain-io-bare.js": "364ec06c073b4a4e35904ce9747a1eb386e485d09f5793137104768f856371e5",
+          "src/onchain-journal.js": "02b326031b7309e14e897cdabbe8813623f78078a4a0ea36ecbc44ff5814deed",
+          "src/onchain-webrgb-url.js": "28882c74c963cc63ed5ca053ea4e4d0bcbc0bac1d0108ebe0ab1511059dd8638",
+          "src/onchain-signer.js": "a556eaa2fed6efaa8a8b84adffef9325ecaf09e7f819dbf3e3e95da42cec699d",
+          "src/onchain-wallet.js": "2a99774ad3031eeeeaadf94ee9b5011d0249e7dc6572c8e6668059087052eae5",
+          "src/onchain-bare-worker.js": "3b808b05c3bf0c112508282d5fbc61f3564c2cb94f256d4ab103ef8937494450",
+          "src/onchain-message.js": "e088e97d44ad4f9183c2d1ceaf758a442970e8580f5d59221ea5ab5ca4bdb5da",
+          "src/onchain-runtime-error.js": "2a840f910aab3b08db46a9959d0eecc8d2912544b842becf7924351d4df248ba",
+          "src/burn-destination.js": "bca77983b922ef834a277c66256f656d21348efbefd5843cc96bbb1954ea5412"
+        }
+      }
+    },
+    "bare": {
+      "acceptance": {
+        "identity": {
+          "version": "3.0.0-rc.4",
+          "integrity": "sha512-07gyA4XfWL0ZYv57XDZqLAVoQZ3tzUXVvQvRYRef5bbFSBqVF8Mp100X0sHoeFykc0d+D2aluyJvz1ldbJgbcQ==",
+          "source": "f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
+          "tree": "0c20cd05eb2899962c152b6ccac324e2a705dc38",
+          "nodeSha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66",
+          "bareSha256": "684d838bf14e13c2ade76955aa4423c2a11079d771d260db5715b9e67e5abf9a"
+        },
+        "phase": "passed",
+        "realExpiry": true,
+        "walletStateEdited": false,
+        "machineClockChanged": false,
+        "results": {
+          "bare": {
+            "cases": [
+              {
+                "schema": "Nia",
+                "mode": "blind",
+                "cancelled": true,
+                "retryAfterRestart": true,
+                "lostResponseAfterCommit": false
+              },
+              {
+                "schema": "Nia",
+                "mode": "witness",
+                "cancelled": true,
+                "retryAfterRestart": true,
+                "lostResponseAfterCommit": false
+              },
+              {
+                "schema": "Cfa",
+                "mode": "blind",
+                "cancelled": true,
+                "retryAfterRestart": true,
+                "lostResponseAfterCommit": false
+              },
+              {
+                "schema": "Cfa",
+                "mode": "witness",
+                "cancelled": true,
+                "retryAfterRestart": true,
+                "lostResponseAfterCommit": true
+              }
+            ],
+            "arbitraryAssetExcluded": true,
+            "unrelatedLiveInvoicesPreserved": true,
+            "blindedReservationsReleased": true
+          }
+        },
+        "completedAt": "2026-11-28T10:01:51.914Z"
+      },
+      "scopedPreparationPackageSha256": "599d1260476680c550edeb9fbf035967361a834697674c98ca5e9c916443ef4f",
+      "finalPackEquivalence": {
+        "preparedIdentity": {
+          "version": "3.0.0-rc.4",
+          "integrity": "sha512-TNtpwM+ChaQCPmbnjI8AfUyCT/Bil5GOeGvOBw3vqXFBhaD3mSmLXTdCOSHP8jmpviyTjdUN2AgZ0tDShNkqAg==",
+          "source": "f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
+          "tree": "0c20cd05eb2899962c152b6ccac324e2a705dc38",
+          "nodeSha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66",
+          "bareSha256": "684d838bf14e13c2ade76955aa4423c2a11079d771d260db5715b9e67e5abf9a"
+        },
+        "finalIdentity": {
+          "version": "3.0.0-rc.4",
+          "integrity": "sha512-07gyA4XfWL0ZYv57XDZqLAVoQZ3tzUXVvQvRYRef5bbFSBqVF8Mp100X0sHoeFykc0d+D2aluyJvz1ldbJgbcQ==",
+          "source": "f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
+          "tree": "0c20cd05eb2899962c152b6ccac324e2a705dc38",
+          "nodeSha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66",
+          "bareSha256": "684d838bf14e13c2ade76955aa4423c2a11079d771d260db5715b9e67e5abf9a"
+        },
+        "finalPackageSha256": "f0ecf049ca0b108d3338d4be2e360439029ac67ed196f0a0f7c680c9fe57e1f9",
+        "runtimeAndNativeBytesIdentical": true,
+        "allowedDifferencesOnly": true,
+        "allowedDifferences": [
+          "Additional separately admitted native targets",
+          "Native manifest publication hold and target matrix",
+          "Non-executable documentation"
+        ],
+        "runtimeFiles": {
+          "onchain.js": "a3b64d9d59278fd170f73dd4246c9e2199f5eb8946a68afa5ee44fb93273786c",
+          "onchain.d.ts": "f6f3a95a199f5231a95fd993859c1b81b7f8ef39b003a331d43a3975861ba641",
+          "package.json": "e6c68276a50ea9898b61f6705913f0448ff5eba64ca014b566dc6945eee7ac42",
+          "webrgb-onchain.d.ts": "82900612e9179f4feda315e3f04316471ec8accc7665fe2b7ce9ca7c7b69cdf1",
+          "src/onchain-send.js": "c8b9ebcecc27af31f1a518e94a72f74d8eea491fc6753a7501657e2fbe4fd167",
+          "src/onchain-worker.js": "8fa6657f20d2590f2fd029bc1f37670729969efbc73ac65be855f14224f00522",
+          "src/onchain-dev-services.json": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393",
+          "src/onchain-webrgb.js": "c6a93195c1e89c9c68ca1ca765a88fd0e7b0459e9ff46403748aadbca1eb93c0",
+          "src/onchain-bare-thread.cjs": "7fb8fb2ee6f57ec6bebd2c1d1c4bb52a1b6b12837aac9aecb093d6e6948fde54",
+          "src/onchain-node-thread.cjs": "f8f6b7e27a14329dae24c715630c7a613790ea76ec9a9a2a11e87c2085a65760",
+          "src/onchain-approval.js": "934c1f81472b78d0b6673e52170cc6fd1e8e588546bb12a2a34dbde1c58adfcf",
+          "src/onchain-io-node.js": "fa20066d63ecd616106bfd3577e02e0d3158380db64e591b9eb5d02206fc47e1",
+          "src/onchain-io-bare.js": "364ec06c073b4a4e35904ce9747a1eb386e485d09f5793137104768f856371e5",
+          "src/onchain-journal.js": "02b326031b7309e14e897cdabbe8813623f78078a4a0ea36ecbc44ff5814deed",
+          "src/onchain-webrgb-url.js": "28882c74c963cc63ed5ca053ea4e4d0bcbc0bac1d0108ebe0ab1511059dd8638",
+          "src/onchain-signer.js": "a556eaa2fed6efaa8a8b84adffef9325ecaf09e7f819dbf3e3e95da42cec699d",
+          "src/onchain-wallet.js": "2a99774ad3031eeeeaadf94ee9b5011d0249e7dc6572c8e6668059087052eae5",
+          "src/onchain-bare-worker.js": "3b808b05c3bf0c112508282d5fbc61f3564c2cb94f256d4ab103ef8937494450",
+          "src/onchain-message.js": "e088e97d44ad4f9183c2d1ceaf758a442970e8580f5d59221ea5ab5ca4bdb5da",
+          "src/onchain-runtime-error.js": "2a840f910aab3b08db46a9959d0eecc8d2912544b842becf7924351d4df248ba",
+          "src/burn-destination.js": "bca77983b922ef834a277c66256f656d21348efbefd5843cc96bbb1954ea5412"
+        }
+      }
+    }
+  },
+  "runnerSha256": "143731d55c9b4db3ac5eff087bdaca4c281e9355891a21b7f134046cddea20ec",
+  "transitionVerifierSha256": "f5fa1056804bca9f2fb7945db871bae5c5699b17856a5fd1356a73fc0dfe96b4",
+  "machineClockChanged": false,
+  "walletRowsEdited": false
+}

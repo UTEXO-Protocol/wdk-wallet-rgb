@@ -1,0 +1,30 @@
+{
+  "rgbSource": "f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d",
+  "locksUnchangedFrom": "1323731494ec83b87a54d415ea942deaee04e52d",
+  "lockSha256": {
+    "package-lock.json": "bcd727b1fd14abe607f0f3dade0f5a030bbda55f4d3187b3521d0806c51511ae",
+    "native/Cargo.lock": "8d70a35746ce1dc3d8533d55a0167db3a8fa14b121e2e75f71be80c1adceef4d",
+    "native/bare/Cargo.lock": "72cd67d8ceea1500f82021e06b71c147a2a871daed7b8f045d7345311de17203"
+  },
+  "npm-audit.json": {
+    "sha256": "88480fd47335792659eb82c122e33c3bc5a50e992cbd316143a49827e20309c1"
+  },
+  "cargo-node-audit.json": {
+    "sha256": "5bc5eb30a07995839e0033c9f11578de0b2540d6f7c4f3a301e9fc0381242233"
+  },
+  "cargo-bare-audit.json": {
+    "sha256": "95aee25432e0895a0ea3e3c7754f93b2810da747962dd26af7dbe3e093cec6b8"
+  },
+  "scope": "Exact unchanged dependency locks, refreshed for merged RGB source; no source overlays or audit suppression",
+  "npmProductionFindings": 0,
+  "rustAdvisories": [
+    "RUSTSEC-2026-0346",
+    "RUSTSEC-2026-0349",
+    "RUSTSEC-2026-0104",
+    "RUSTSEC-2026-0098",
+    "RUSTSEC-2026-0099",
+    "RUSTSEC-2026-0382",
+    "RUSTSEC-2026-0381"
+  ],
+  "sameDocumentedUpstreamPolicy": true
+}

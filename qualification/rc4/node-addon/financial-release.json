@@ -1,0 +1,646 @@
+{
+  "source": "ca2deb62b68272f037fa22d543625c2af93f24b3",
+  "packageSha256": "b6054baafa939a0cdbda1f127d666b6ef9a46661c14873204822875350bb3b6d",
+  "rows": [
+    {
+      "runtime": "node",
+      "legacyPreparation": false,
+      "funding": {
+        "txid": "efd4b3c00f3f79e32d566d71a8cf32171bb60015d5efd9e3ba3e8686b191c49f",
+        "confirmations": 168,
+        "feeSats": 331,
+        "vsize": 165
+      },
+      "outputs": {
+        "txid": "e6fd8f8ef16bbba5401338eae8739cc693f515155d4fb33c88722b2cfa14a163",
+        "confirmations": 162,
+        "feeSats": 911,
+        "vsize": 455
+      },
+      "mint": {
+        "txid": "0e95c0be444db27d9a4c4618712e29d27942b31d84c65522b2482da7bdb29287",
+        "confirmations": 156,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "mintedBaseUnits": "1000000",
+      "evmLockTxid": "0x795efdc48786e75a8972a22c84cb7f16878e4d926724bf0aebed23f89824d453",
+      "evmFinalityDepth": 130,
+      "lockCalldataMatched": true,
+      "burn": {
+        "txid": "4b36f6d64ccd16617c07e8f823241311370ce30f30085a2e887247b34b12dd8f",
+        "confirmations": 114,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "100000",
+      "proofSha256": "57045c1de77f4e3a4730dc6c2651f177f4d2d8dbb0a2f76e183f63fa086c8af5",
+      "independentProofDecoded": true,
+      "destinationCommitment": "6d2f5e371093cf7d3a712e09dc151666923be7acc5a084c3f3570f36fafb4987",
+      "commitmentComputedWithFoundry": true,
+      "transfers": [
+        {
+          "kind": "bfa",
+          "txid": "4bc876e6e1b5e71d6401c7877e4100179151b633b91af9c6873dec25326d91ae",
+          "confirmations": 150,
+          "feeSats": 309,
+          "vsize": 154,
+          "rgb": {
+            "assetId": "rgb:mzw0QSeh-47HaEq_-Eg8_5M3-HaiB9tA-rx3eXBG-GCGVwqc",
+            "schema": "Bfa",
+            "proofSha256": "e934cd2975165457302dea177f27acf8cd6f7574060105ff477dfa2bb688b49a",
+            "rgbInputAmount": "1500000",
+            "rgbOutputs": [
+              "100000",
+              "1400000"
+            ],
+            "independentProofDecoded": true,
+            "bitcoinCommitmentMatched": true
+          }
+        },
+        {
+          "kind": "btc",
+          "txid": "f3acdafc7ff407ebee924220d910c033714b0bef5c7826dc9a42d04648ee255e",
+          "confirmations": 120,
+          "feeSats": 309,
+          "vsize": 154
+        },
+        {
+          "kind": "Nia",
+          "txid": "1cd9b3d97b92bebe87e6e40e845ad3d21c317973a0b0ca03c2fc51faadd6a34c",
+          "confirmations": 144,
+          "feeSats": 395,
+          "vsize": 197,
+          "rgb": {
+            "assetId": "rgb:I3m0FYed-yaTlnoD-CZwxoPC-N2~Excj-4xt60K2-wI0_qv4",
+            "schema": "Nia",
+            "proofSha256": "007a447bf9342931417d91dc7b4f42741661ae788bcf39734eb78ed52ab18bf9",
+            "rgbInputAmount": "1000",
+            "rgbOutputs": [
+              "100",
+              "900"
+            ],
+            "independentProofDecoded": true,
+            "bitcoinCommitmentMatched": true,
+            "issuedSupply": "1000",
+            "finalIssuerBalance": "900",
+            "finalRecipientBalance": "100",
+            "issuanceAnchors": [
+              {
+                "txid": "8b881bf9eec13bb328688ee2a0c95382b8b6a9880b3736520375f54b4e03cc42",
+                "vout": 1,
+                "confirmations": 210
+              }
+            ],
+            "issuanceAndTransferConserved": true
+          }
+        },
+        {
+          "kind": "Cfa",
+          "txid": "90ee3e03453c85ada91e7fe533afb33098da0266d99d22b2069ae7a4750b0f3a",
+          "confirmations": 138,
+          "feeSats": 395,
+          "vsize": 197,
+          "rgb": {
+            "assetId": "rgb:Wu2N6NSw-1ALJLuo-XAuzGvQ-T_jcMYU-XsXkH1y-VdHtY10",
+            "schema": "Cfa",
+            "proofSha256": "6546bc9c3e42eb09636b997f2e2ff777f2a198b79cb6c5b2072363adef045ecf",
+            "rgbInputAmount": "1000",
+            "rgbOutputs": [
+              "100",
+              "900"
+            ],
+            "independentProofDecoded": true,
+            "bitcoinCommitmentMatched": true,
+            "issuedSupply": "1000",
+            "finalIssuerBalance": "900",
+            "finalRecipientBalance": "100",
+            "issuanceAnchors": [
+              {
+                "txid": "8b881bf9eec13bb328688ee2a0c95382b8b6a9880b3736520375f54b4e03cc42",
+                "vout": 2,
+                "confirmations": 210
+              }
+            ],
+            "issuanceAndTransferConserved": true
+          }
+        },
+        {
+          "kind": "new-Nia",
+          "txid": "006db7213c7c42a23e07a1fce3fe7d1547de53d1653fe3b7c954744b4e124a52",
+          "confirmations": 132,
+          "feeSats": 395,
+          "vsize": 197,
+          "rgb": {
+            "assetId": "rgb:CtqBRoQB-N_zK05r-qQdM4pj-DiNPrwM-CN0HtKQ-FQhZ~sA",
+            "schema": "Nia",
+            "proofSha256": "d740573054c7cb30568a51c2ee25a0a63f320e0e4a4bba3d7adf96818793d2d8",
+            "rgbInputAmount": "1000",
+            "rgbOutputs": [
+              "100",
+              "900"
+            ],
+            "independentProofDecoded": true,
+            "bitcoinCommitmentMatched": true,
+            "issuedSupply": "1000",
+            "finalIssuerBalance": "900",
+            "finalRecipientBalance": "100",
+            "issuanceAnchors": [
+              {
+                "txid": "e6fd8f8ef16bbba5401338eae8739cc693f515155d4fb33c88722b2cfa14a163",
+                "vout": 2,
+                "confirmations": 162
+              }
+            ],
+            "issuanceAndTransferConserved": true
+          }
+        },
+        {
+          "kind": "new-Cfa",
+          "txid": "c45b2540a13190155522f32b21a1418544ec68f06728e8cc23ea5b1a701ee3ca",
+          "confirmations": 126,
+          "feeSats": 395,
+          "vsize": 197,
+          "rgb": {
+            "assetId": "rgb:TtEzeAyP-uuABZp~-mMEIRaF-tR0MxLR-i9ZnoN0-Ldpb47A",
+            "schema": "Cfa",
+            "proofSha256": "659d54b30016aa2eb4c4baf05417cba7e7c8a8bd8e2eaaa13c228b868920c860",
+            "rgbInputAmount": "1000",
+            "rgbOutputs": [
+              "100",
+              "900"
+            ],
+            "independentProofDecoded": true,
+            "bitcoinCommitmentMatched": true,
+            "issuedSupply": "1000",
+            "finalIssuerBalance": "900",
+            "finalRecipientBalance": "100",
+            "issuanceAnchors": [
+              {
+                "txid": "e6fd8f8ef16bbba5401338eae8739cc693f515155d4fb33c88722b2cfa14a163",
+                "vout": 3,
+                "confirmations": 162
+              }
+            ],
+            "issuanceAndTransferConserved": true
+          }
+        }
+      ]
+    },
+    {
+      "runtime": "bare",
+      "legacyPreparation": false,
+      "funding": {
+        "txid": "8fc58ca543cc9c60e1c7f2f2fe5eb7d3c0f6f173bc9c847d5a8a86aafda89cda",
+        "confirmations": 84,
+        "feeSats": 331,
+        "vsize": 165
+      },
+      "outputs": {
+        "txid": "52a623553333b11da1275dddd75408c4c302ee681a6c8ce004c3158ac0930501",
+        "confirmations": 78,
+        "feeSats": 911,
+        "vsize": 455
+      },
+      "mint": {
+        "txid": "e9b5cce619a2691b11e4f1541dcc8926985fd08655cc503dfcc0e6370319102c",
+        "confirmations": 72,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "mintedBaseUnits": "1000000",
+      "evmLockTxid": "0xe04dfa5bf7341868aface44b758647423e6c112d865d7a78715901634e580e8d",
+      "evmFinalityDepth": 64,
+      "lockCalldataMatched": true,
+      "burn": {
+        "txid": "443db59f00b9d4fe3d8ea2c69d38acfad407defe47d1a4ab5f09425f35a32535",
+        "confirmations": 30,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "100000",
+      "proofSha256": "2a43f6c2a91c708ec24888da1cf9b498937b1cc1fc499b11c061cb739c27d1e5",
+      "independentProofDecoded": true,
+      "destinationCommitment": "6d2f5e371093cf7d3a712e09dc151666923be7acc5a084c3f3570f36fafb4987",
+      "commitmentComputedWithFoundry": true,
+      "transfers": [
+        {
+          "kind": "bfa",
+          "txid": "5f7235bda58aca8b7b79d0a8ad8373ebe75102179da4843677f7dcf83137ecd4",
+          "confirmations": 66,
+          "feeSats": 309,
+          "vsize": 154,
+          "rgb": {
+            "assetId": "rgb:mzw0QSeh-47HaEq_-Eg8_5M3-HaiB9tA-rx3eXBG-GCGVwqc",
+            "schema": "Bfa",
+            "proofSha256": "618a2251f7797e94f174d216e21d00b64809750eda903baa613c266e34566f34",
+            "rgbInputAmount": "1500000",
+            "rgbOutputs": [
+              "100000",
+              "1400000"
+            ],
+            "independentProofDecoded": true,
+            "bitcoinCommitmentMatched": true
+          }
+        },
+        {
+          "kind": "btc",
+          "txid": "1b72ce9a142883602bd5aeedf1192b2e5575cf7c856b19b8c343c40600e10753",
+          "confirmations": 36,
+          "feeSats": 309,
+          "vsize": 154
+        },
+        {
+          "kind": "Nia",
+          "txid": "253b6ceb1b0d1a468445178b4d7fa8d3824be594c4403a853dba12646e7bf4f7",
+          "confirmations": 60,
+          "feeSats": 395,
+          "vsize": 197,
+          "rgb": {
+            "assetId": "rgb:2IvFk71j-vwRAQOq-yxl52nD-RzDgVO4-boHkgnA-Ne1_yvY",
+            "schema": "Nia",
+            "proofSha256": "50283594f18d32281600266a7f937678f126c9497d481de72bec0eb80e5eba88",
+            "rgbInputAmount": "1000",
+            "rgbOutputs": [
+              "100",
+              "900"
+            ],
+            "independentProofDecoded": true,
+            "bitcoinCommitmentMatched": true,
+            "issuedSupply": "1000",
+            "finalIssuerBalance": "900",
+            "finalRecipientBalance": "100",
+            "issuanceAnchors": [
+              {
+                "txid": "0299525ad11da84f6e7a3ab02bf40be5715c56ec9cea7a97d8f68bface869c8e",
+                "vout": 2,
+                "confirmations": 186
+              }
+            ],
+            "issuanceAndTransferConserved": true
+          }
+        },
+        {
+          "kind": "Cfa",
+          "txid": "0c20aff18d1d00eb81fbfeda7e4227cf49716d54f16b3b9a9b19d5811553eb05",
+          "confirmations": 54,
+          "feeSats": 395,
+          "vsize": 197,
+          "rgb": {
+            "assetId": "rgb:OjhQeWcU-zQxKKdA-0sWHXuI-I90SyIr-SoFJKRu-Rviyn2c",
+            "schema": "Cfa",
+            "proofSha256": "d6303ed0f32f239529cb463d99be83286993c1d0b3f0eebc7766734350f56d4a",
+            "rgbInputAmount": "1000",
+            "rgbOutputs": [
+              "100",
+              "900"
+            ],
+            "independentProofDecoded": true,
+            "bitcoinCommitmentMatched": true,
+            "issuedSupply": "1000",
+            "finalIssuerBalance": "900",
+            "finalRecipientBalance": "100",
+            "issuanceAnchors": [
+              {
+                "txid": "0299525ad11da84f6e7a3ab02bf40be5715c56ec9cea7a97d8f68bface869c8e",
+                "vout": 3,
+                "confirmations": 186
+              }
+            ],
+            "issuanceAndTransferConserved": true
+          }
+        },
+        {
+          "kind": "new-Nia",
+          "txid": "bfa3f53ff7ddde7c41f2335419436bb6be334649fd520025bcaf8ad0d730ef59",
+          "confirmations": 48,
+          "feeSats": 395,
+          "vsize": 197,
+          "rgb": {
+            "assetId": "rgb:K_6cByqj-xOTyo5k-XRH0S8V-ywlls6N-JNwCVh2-K3Cn1FY",
+            "schema": "Nia",
+            "proofSha256": "b160c4472df78657c09399c91cab402dafee8a587954ee7d663aad58bfc69ed2",
+            "rgbInputAmount": "1000",
+            "rgbOutputs": [
+              "100",
+              "900"
+            ],
+            "independentProofDecoded": true,
+            "bitcoinCommitmentMatched": true,
+            "issuedSupply": "1000",
+            "finalIssuerBalance": "900",
+            "finalRecipientBalance": "100",
+            "issuanceAnchors": [
+              {
+                "txid": "52a623553333b11da1275dddd75408c4c302ee681a6c8ce004c3158ac0930501",
+                "vout": 2,
+                "confirmations": 78
+              }
+            ],
+            "issuanceAndTransferConserved": true
+          }
+        },
+        {
+          "kind": "new-Cfa",
+          "txid": "6243517e22003af95c50546cbf92935ef953572540231e92aec18393bd960124",
+          "confirmations": 42,
+          "feeSats": 395,
+          "vsize": 197,
+          "rgb": {
+            "assetId": "rgb:kQvsqdqH-SZlMY2r-aFxkTHE-S8Wrfar-HzL94lA-hqAPAEo",
+            "schema": "Cfa",
+            "proofSha256": "138bc149edcc32070f9ee184427eadc8665e9cdc4017e3c5321255982b4b1e41",
+            "rgbInputAmount": "1000",
+            "rgbOutputs": [
+              "100",
+              "900"
+            ],
+            "independentProofDecoded": true,
+            "bitcoinCommitmentMatched": true,
+            "issuedSupply": "1000",
+            "finalIssuerBalance": "900",
+            "finalRecipientBalance": "100",
+            "issuanceAnchors": [
+              {
+                "txid": "52a623553333b11da1275dddd75408c4c302ee681a6c8ce004c3158ac0930501",
+                "vout": 3,
+                "confirmations": 78
+              }
+            ],
+            "issuanceAndTransferConserved": true
+          }
+        }
+      ]
+    },
+    {
+      "runtime": "node",
+      "legacyPreparation": true,
+      "funding": {
+        "txid": "c652f62364a501be5df94bb3d0422331a180f7aebdbe945a08faacd0eaab0dea",
+        "confirmations": 216,
+        "feeSats": 331,
+        "vsize": 165
+      },
+      "outputs": {
+        "txid": "8b881bf9eec13bb328688ee2a0c95382b8b6a9880b3736520375f54b4e03cc42",
+        "confirmations": 210,
+        "feeSats": 911,
+        "vsize": 455
+      },
+      "mint": {
+        "txid": "f8a3b363a9a3f8b7b7e23fd497145d634138cbedae5be6ade1e83b682aed085e",
+        "confirmations": 204,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "mintedBaseUnits": "2000000",
+      "evmLockTxid": "0xe347c47f133f75bf0f52b7e9ad56c689401d2e1b88352601a2c73e80e1bf522b",
+      "evmFinalityDepth": 262,
+      "lockCalldataMatched": true,
+      "burn": {
+        "txid": "a158ec35f9e08497e1dc58600855b7e821feb8043535a0475c04d26da8b6ab0c",
+        "confirmations": 198,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "500000",
+      "proofSha256": "ef6ac629d7f2367282282aaed917b28e02bf35d661f66dac9872fe858ed58e97",
+      "independentProofDecoded": true,
+      "destinationCommitment": "ca4b76c214684cc46cce7f4c5c6e1f51fc5385a146540b26aba3499423f5a918",
+      "commitmentComputedWithFoundry": true,
+      "transfers": []
+    },
+    {
+      "runtime": "bare",
+      "legacyPreparation": true,
+      "funding": {
+        "txid": "207b393c853b561ac43b51e24cfd9de4876f90aabf65265cee22a5b0d47d3f1c",
+        "confirmations": 192,
+        "feeSats": 331,
+        "vsize": 165
+      },
+      "outputs": {
+        "txid": "0299525ad11da84f6e7a3ab02bf40be5715c56ec9cea7a97d8f68bface869c8e",
+        "confirmations": 186,
+        "feeSats": 911,
+        "vsize": 455
+      },
+      "mint": {
+        "txid": "2d1a1622e33631be960faff033bba316d549d83f842302fe37707ea9ae5462b8",
+        "confirmations": 180,
+        "feeSats": 395,
+        "vsize": 197
+      },
+      "mintedBaseUnits": "2000000",
+      "evmLockTxid": "0x162f85889c8b5670124e38c3106e3cf99a837cf281fac7664e76ca419b12f63d",
+      "evmFinalityDepth": 196,
+      "lockCalldataMatched": true,
+      "burn": {
+        "txid": "a00b5239a4046f3bd28df06d16e401763d739f268a71e63504fcab3daa538a2f",
+        "confirmations": 174,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "500000",
+      "proofSha256": "eb8953e6ade214e167df4a0bc5a65fb0a223599acbcd11a02c1d9a2636a1a34c",
+      "independentProofDecoded": true,
+      "destinationCommitment": "ca4b76c214684cc46cce7f4c5c6e1f51fc5385a146540b26aba3499423f5a918",
+      "commitmentComputedWithFoundry": true,
+      "transfers": []
+    }
+  ],
+  "additionalRoutes": [
+    {
+      "runtime": "node",
+      "chainId": "eip155:1",
+      "dstEid": 30101,
+      "recipientHex": "0x7777777777777777777777777777777777777777",
+      "bitcoin": {
+        "txid": "d19d185b43604232facbabdeb968d884e16ac69eb01b2e2ee98f6f25025a7d6e",
+        "confirmations": 108,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "d527e94c974d2061d4f08fd8386a77294a4c3d396a125fd657dc7266939b84db",
+      "independentCommitment": "5bdfad6a600e8bb843b59dcf3530c4d850f59355c633b066f77f87762a8d6b05",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "node",
+      "chainId": "eip155:137",
+      "dstEid": 30109,
+      "recipientHex": "0x8888888888888888888888888888888888888888",
+      "bitcoin": {
+        "txid": "38f571e89ae419500feef25f8a3e2ee3088c941dba26665ce091cb7dd6268d87",
+        "confirmations": 102,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "f57c4dd21302af0f2abab594e9f7180bbf626b5b9e7cd4c7cb8029d72a52dbec",
+      "independentCommitment": "45ff259fead33f01006ff3e9c667e514a905d4a03b304f2b2844d6ae98237a0e",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "node",
+      "chainId": "eip155:9745",
+      "dstEid": 30383,
+      "recipientHex": "0x9999999999999999999999999999999999999999",
+      "bitcoin": {
+        "txid": "9809a4e30c3b22f66835a6318ac0bf3dc853d46782e058ace57851483a98452c",
+        "confirmations": 96,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "2db614c6bfbe8bd1eba5f2e701fa98da5d51f5404852d7fa2a6e4bac72f8fb9c",
+      "independentCommitment": "de6455ce1d92174faa354c313a6fb2ef10e7c9936169cd4d9abda9e417a0a5a1",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "node",
+      "chainId": "tron:728126428",
+      "dstEid": 30420,
+      "recipientHex": "0x413333333333333333333333333333333333333333",
+      "bitcoin": {
+        "txid": "9f0d72cf3c381ffd4f3bdbf53feea907cad9682d77d8c37d8874e305ec7c158b",
+        "confirmations": 90,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "4c9dc496eae65681e93d6e8daa0e9c1101b9ec50a9164d8eecb218bf62c3f154",
+      "independentCommitment": "60c369ce30870783c2a8cee9e6018e78650ad4787c2e898c05c35cb85179eac0",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "bare",
+      "chainId": "eip155:1",
+      "dstEid": 30101,
+      "recipientHex": "0x7777777777777777777777777777777777777777",
+      "bitcoin": {
+        "txid": "d4930bb9a32f6147a17b2f3d1a6004cefb76037402892fa6217ab545c1bb1b65",
+        "confirmations": 24,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "ab95b21460efdb0c8cb3bdb64905f8cf615a5a015f38f6c9022cf28631d3a194",
+      "independentCommitment": "5bdfad6a600e8bb843b59dcf3530c4d850f59355c633b066f77f87762a8d6b05",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "bare",
+      "chainId": "eip155:137",
+      "dstEid": 30109,
+      "recipientHex": "0x8888888888888888888888888888888888888888",
+      "bitcoin": {
+        "txid": "6b46cd3f8cec3955892896204a00f253de9e01862683b03257c702cb0182160d",
+        "confirmations": 18,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "ccbdb30abce4d375eb0ae26c0b1dbe2ca9880a8d7d159714bc88fafaad32422d",
+      "independentCommitment": "45ff259fead33f01006ff3e9c667e514a905d4a03b304f2b2844d6ae98237a0e",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "bare",
+      "chainId": "eip155:9745",
+      "dstEid": 30383,
+      "recipientHex": "0x9999999999999999999999999999999999999999",
+      "bitcoin": {
+        "txid": "1ed8a831c680170c94a3977a42c6e40d5631720d79b0be1c88581c55d389c44a",
+        "confirmations": 12,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "3bbccb76c157a2e72a7483c7c1f06b43217b33380004d56aa19a18d4d4a2672e",
+      "independentCommitment": "de6455ce1d92174faa354c313a6fb2ef10e7c9936169cd4d9abda9e417a0a5a1",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    },
+    {
+      "runtime": "bare",
+      "chainId": "tron:728126428",
+      "dstEid": 30420,
+      "recipientHex": "0x413333333333333333333333333333333333333333",
+      "bitcoin": {
+        "txid": "c8921220ef0bba31c2d37c39f06666dd1f93cc12b27ce32a68e27199c6f145d8",
+        "confirmations": 6,
+        "feeSats": 309,
+        "vsize": 154
+      },
+      "burnedBaseUnits": "10000",
+      "proofSha256": "04f26f0cf08631e05f3c0f1f5ecfd319ddc07e27d0cc6c215df3eda04d9b09f9",
+      "independentCommitment": "60c369ce30870783c2a8cee9e6018e78650ad4787c2e898c05c35cb85179eac0",
+      "proofDecodedAndMatchesBitcoin": true,
+      "recoveredAfterFullProcessRestart": true,
+      "duplicateRejected": true
+    }
+  ],
+  "retainedAssetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+  "newAssetId": "rgb:mzw0QSeh-47HaEq_-Eg8_5M3-HaiB9tA-rx3eXBG-GCGVwqc",
+  "retainedBfaBaseUnits": "14500000",
+  "newAssetFinalBaseUnits": "4720000",
+  "newlyMintedBaseUnits": "6000000",
+  "newlyBurnedBaseUnits": "1280000",
+  "finalBfaBaseUnits": "23940000",
+  "previousUrlAssetId": "rgb:ROGpFlOJ-eRFsb7v-pE9BxeR-Y2sRBFX-BR9EXX0-7GV1_qg",
+  "previousUrlAssetBaseUnits": "4720000",
+  "bridgeBackingBaseUnits": "32000000",
+  "independentProofInspectorSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+  "proofInspectorSha256": "ddaadf27ad5500102fbc2fb82f5d86fa3c40532911fd3aa9473e1eef55edf216",
+  "limitations": [
+    "No EVM fundsOut redemption; original and new burned units remain backed in the fixture.",
+    "Isolated Regtest and Anvil host execution; no hosted gateway/TEE, public-network payout or mobile acceptance."
+  ],
+  "schemaVersion": 1,
+  "packageVersion": "3.0.0-rc.4",
+  "packageSource": "1323731494ec83b87a54d415ea942deaee04e52d",
+  "nativeProducers": {
+    "bare": "c5b4c1f0e15f0fac7f8d05a69734be70aa82825d",
+    "node": "ca2deb62b68272f037fa22d543625c2af93f24b3"
+  },
+  "counts": {
+    "existingRetainedWallets": 10,
+    "freshOldExecutableBaselineWalletsUpgraded": 2,
+    "newRecipientWallets": 2,
+    "newPackNiaCfaIssuances": 4,
+    "baselineNiaCfaIssuances": 4,
+    "confirmedBtcTransfers": 2,
+    "confirmedBfaTransfers": 2,
+    "confirmedNiaCfaTransfers": 8,
+    "newPackMints": 2,
+    "baselineMints": 2,
+    "newPackBurns": 10,
+    "baselineBurns": 2,
+    "routesPerRuntime": 5
+  },
+  "harnessCorrection": {
+    "reason": "Public getConsignment intentionally exposes burn proofs only; the fixture now reads exact saved normal-transfer consignments for independent audit.",
+    "resumedOperationId": "nodeaddon-7a03829614fcc13c-node-bfa-send",
+    "originalTxid": "4bc876e6e1b5e71d6401c7877e4100179151b633b91af9c6873dec25326d91ae",
+    "confirmedBeforeContinuation": 6,
+    "journalStage": "submitted",
+    "journalSha256": "8f72cf4261ea95cee3604704f22c7d568fc34572795da5fbbd12f7d70a62b167",
+    "originalOperationReplayed": false,
+    "originalRunIdPreserved": true
+  }
+}

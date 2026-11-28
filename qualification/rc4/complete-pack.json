@@ -1,0 +1,234 @@
+{
+  "source": "2331119dfc48b782dc1ad5af3f32d21ff38319a1",
+  "sourceTree": "2df35de5560429a9ba7d61d995d04f0adbecfb66",
+  "nativeProducer": "c5b4c1f0e15f0fac7f8d05a69734be70aa82825d",
+  "packageVersion": "3.0.0-rc.4",
+  "archive": "utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz",
+  "sha256": "c7b42d8bc1bde6ea5f02a66aa1f7927115ac9a3678eaf702a7480c71aa447dbe",
+  "bytes": 211940487,
+  "fileCount": 41,
+  "node": "v26.11.1",
+  "npm": "11.20.0",
+  "files": [
+    {
+      "path": "CANDIDATE.md",
+      "bytes": 21592,
+      "sha256": "7e661f9ef03acf441e3527f5f200015e9ee8e34566a2f3c4c476524ff3a12783"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 6411,
+      "sha256": "4b2d6f5133119aa9f20ab15c936d4627493ee66dcb5fa8fe5e8c2a60bdc9f5b8"
+    },
+    {
+      "path": "DEPENDENCY-POLICY.md",
+      "bytes": 4338,
+      "sha256": "ec05935d4543def7fe460ee45c52e7b5d01d2c730de09206953b42d3c97ccc68"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 10173,
+      "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+    },
+    {
+      "path": "MIGRATION.md",
+      "bytes": 4664,
+      "sha256": "6fe6f05485260d73f26d87805146a9ee6cfcbd94d5f426e3e5cb7700f14d233b"
+    },
+    {
+      "path": "README.md",
+      "bytes": 5016,
+      "sha256": "454922e9902ff378a274a163b0e5a2d0d4ae2d3d251afe9a7bd429f42e72c5f0"
+    },
+    {
+      "path": "THIRD-PARTY-LICENSES.txt",
+      "bytes": 1393107,
+      "sha256": "19b1dc28ebcc956b9fb837dfbbb9586bf4749393731f61ba5ccfe165f8baa357"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.md",
+      "bytes": 4054,
+      "sha256": "555d4f65cb9fd0931be4a5eb70e4e9d585b57f44bf0d99b33130ad92b587aec6"
+    },
+    {
+      "path": "onchain.d.ts",
+      "bytes": 16386,
+      "sha256": "295788464d8b734a8b52a113aa0ed8f53cf26750f5e1e9a73f016c45a05bbccc"
+    },
+    {
+      "path": "onchain.js",
+      "bytes": 416,
+      "sha256": "a3b64d9d59278fd170f73dd4246c9e2199f5eb8946a68afa5ee44fb93273786c"
+    },
+    {
+      "path": "package.json",
+      "bytes": 2477,
+      "sha256": "1c6f5814339260b6409eca12ab72c3b08275042646fe70ccc86225b0f05d6e5a"
+    },
+    {
+      "path": "prebuilds/android-arm/utexo__wdk-wallet-rgb.bare",
+      "bytes": 48474704,
+      "sha256": "295d5d7e40cc8437dc15ca1fb5d325f32840f75652502783d6ab4653d47d46a9"
+    },
+    {
+      "path": "prebuilds/android-arm64/utexo__wdk-wallet-rgb.bare",
+      "bytes": 68427264,
+      "sha256": "9b6921cf111b7ddc6f6c03333be27333436c636df1dc047e4ad8eb21500c91f1"
+    },
+    {
+      "path": "prebuilds/android-ia32/utexo__wdk-wallet-rgb.bare",
+      "bytes": 68812480,
+      "sha256": "9ff1643d3e593e585407f073c902096343b730e4215edf45dcea53bcefbaa1e0"
+    },
+    {
+      "path": "prebuilds/android-x64/utexo__wdk-wallet-rgb.bare",
+      "bytes": 70455672,
+      "sha256": "817ceea4582be41e6d90dbd5b9e60aa8e8f940e334d4b67b61652f2838861f64"
+    },
+    {
+      "path": "prebuilds/darwin-arm64/utexo__wdk-wallet-rgb.bare",
+      "bytes": 47057664,
+      "sha256": "a6d2a4eb956466a7e71dedb6386fc6198e55e9031911c1eb6de74c6b875d7eed"
+    },
+    {
+      "path": "prebuilds/darwin-x64/utexo__wdk-wallet-rgb.bare",
+      "bytes": 50814312,
+      "sha256": "520f0eb62042cb0f66b4f4d700fe75daf50712591700582152fc7d9e758e5559"
+    },
+    {
+      "path": "prebuilds/ios-arm64-simulator/utexo__wdk-wallet-rgb.bare",
+      "bytes": 47864144,
+      "sha256": "0b1b75223fe9ac7c74856cc6aee7b652d82995de2088fc5108c09edb66df4703"
+    },
+    {
+      "path": "prebuilds/ios-arm64/utexo__wdk-wallet-rgb.bare",
+      "bytes": 47657088,
+      "sha256": "5d50b0cd3a808988b6860070d255e780e49e9e9a0837e4d23c417090b4542547"
+    },
+    {
+      "path": "prebuilds/ios-x64-simulator/utexo__wdk-wallet-rgb.bare",
+      "bytes": 51665160,
+      "sha256": "97d384f44086a1c5dfc8b53e5d74eb6214b0125788734d0d2a050c28fe6ad92d"
+    },
+    {
+      "path": "prebuilds/linux-arm64/utexo__wdk-wallet-rgb.bare",
+      "bytes": 55829888,
+      "sha256": "544421c986b6ca0e9ff20499f3cae3163c5e0ce853f2c0e896a3c6ce2e8b9624"
+    },
+    {
+      "path": "prebuilds/linux-x64/utexo__wdk-wallet-rgb.bare",
+      "bytes": 58780744,
+      "sha256": "f39ef5a74989508ba6f38e5bfcce69bdd9e8f8dd150bf7796e8a082e6ca23a2b"
+    },
+    {
+      "path": "src/burn-destination.js",
+      "bytes": 5550,
+      "sha256": "bca77983b922ef834a277c66256f656d21348efbefd5843cc96bbb1954ea5412"
+    },
+    {
+      "path": "src/onchain-approval.js",
+      "bytes": 2930,
+      "sha256": "934c1f81472b78d0b6673e52170cc6fd1e8e588546bb12a2a34dbde1c58adfcf"
+    },
+    {
+      "path": "src/onchain-bare-native.json",
+      "bytes": 2381,
+      "sha256": "7a3ff6f7212e5de8df48a59d854c09e6c2fff18e4d8dbbfee95720874f2da881"
+    },
+    {
+      "path": "src/onchain-bare-thread.cjs",
+      "bytes": 413,
+      "sha256": "7fb8fb2ee6f57ec6bebd2c1d1c4bb52a1b6b12837aac9aecb093d6e6948fde54"
+    },
+    {
+      "path": "src/onchain-bare-worker.js",
+      "bytes": 6980,
+      "sha256": "3b808b05c3bf0c112508282d5fbc61f3564c2cb94f256d4ab103ef8937494450"
+    },
+    {
+      "path": "src/onchain-dev-services.json",
+      "bytes": 190,
+      "sha256": "6bbf1c47b384adcf25702e206e4fd4a3a7bb22489c8011cd835cdb156de1e393"
+    },
+    {
+      "path": "src/onchain-io-bare.js",
+      "bytes": 292,
+      "sha256": "364ec06c073b4a4e35904ce9747a1eb386e485d09f5793137104768f856371e5"
+    },
+    {
+      "path": "src/onchain-io-node.js",
+      "bytes": 281,
+      "sha256": "fa20066d63ecd616106bfd3577e02e0d3158380db64e591b9eb5d02206fc47e1"
+    },
+    {
+      "path": "src/onchain-journal.js",
+      "bytes": 5037,
+      "sha256": "02b326031b7309e14e897cdabbe8813623f78078a4a0ea36ecbc44ff5814deed"
+    },
+    {
+      "path": "src/onchain-message.js",
+      "bytes": 6117,
+      "sha256": "e088e97d44ad4f9183c2d1ceaf758a442970e8580f5d59221ea5ab5ca4bdb5da"
+    },
+    {
+      "path": "src/onchain-runtime-error.js",
+      "bytes": 254,
+      "sha256": "2a840f910aab3b08db46a9959d0eecc8d2912544b842becf7924351d4df248ba"
+    },
+    {
+      "path": "src/onchain-send.js",
+      "bytes": 8916,
+      "sha256": "c8b9ebcecc27af31f1a518e94a72f74d8eea491fc6753a7501657e2fbe4fd167"
+    },
+    {
+      "path": "src/onchain-signer.js",
+      "bytes": 19477,
+      "sha256": "a556eaa2fed6efaa8a8b84adffef9325ecaf09e7f819dbf3e3e95da42cec699d"
+    },
+    {
+      "path": "src/onchain-wallet.js",
+      "bytes": 59714,
+      "sha256": "38f36b7ead96f98e2dc9c67dd8b2983f41874ad53b1d7b4d2779bc5b612b29c1"
+    },
+    {
+      "path": "src/onchain-webrgb-url.js",
+      "bytes": 181,
+      "sha256": "28882c74c963cc63ed5ca053ea4e4d0bcbc0bac1d0108ebe0ab1511059dd8638"
+    },
+    {
+      "path": "src/onchain-webrgb.js",
+      "bytes": 26965,
+      "sha256": "c6a93195c1e89c9c68ca1ca765a88fd0e7b0459e9ff46403748aadbca1eb93c0"
+    },
+    {
+      "path": "src/onchain-worker.js",
+      "bytes": 5103,
+      "sha256": "24b75892bd90029e76bc4ce43498843c8de1e839bd07648574e8a9fa63ba6d7f"
+    },
+    {
+      "path": "third-party-dependencies.json",
+      "bytes": 620099,
+      "sha256": "6cd9219043b994e1f504cd9be70ce0ee8724ce8da75ee337c9d820272604c0ee"
+    },
+    {
+      "path": "webrgb-onchain.d.ts",
+      "bytes": 6439,
+      "sha256": "82900612e9179f4feda315e3f04316471ec8accc7665fe2b7ce9ca7c7b69cdf1"
+    }
+  ],
+  "releaseHold": false,
+  "publicationHold": true,
+  "publicationAllowed": false,
+  "npmIntegrity": "sha512-TI8rpZvMV3pb2DwCguZnMi4aGgvXKuChAwBYb+PKX6HGKh91cYFth8vMI+BiQ99GbtMlzYKd4POUkJCReH3VRA==",
+  "npmShasum": "2225445c3711f1a7e447ceb43c5d74c234cd2b06",
+  "npmDryRun": {
+    "passed": true,
+    "access": "public",
+    "tag": "next",
+    "lifecycleScripts": false,
+    "published": false,
+    "registryAuthenticationVerified": false
+  },
+  "verificationMode": "--verify-qualification",
+  "allSixteenArtifactsVerified": true
+}

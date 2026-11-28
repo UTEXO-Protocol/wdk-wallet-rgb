@@ -1,0 +1,537 @@
+{
+  "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+  "scope": "Exact rc.3 packed SDK/native to rebuilt rc.4; local upstream MinimalBridge and regtest only.",
+  "runtimes": {
+    "node": {
+      "old": {
+        "version": "3.0.0-rc.3",
+        "nativeSha256": "55504217503c1b6f05f8fbb4b19864611c013196f5823d5f92c08fcf2ec83577",
+        "address": "bcrt1prulqyrpqswhn5r27ygp8ht2kkrfetdtgj2djh0y32gljhvnf9vhst5rp7y",
+        "outputs": {
+          "txid": "f438aaff2e6edba52cc759c7392c5731a088064dbbc9becfbd206208d78c918c",
+          "created": 12
+        },
+        "mint": {
+          "prepared": {
+            "operationId": "upgrade-node-initial-mint-v3",
+            "state": "prepared",
+            "txid": "5d9c1074a01400a34d115a1a87b5586fe6012fcfed7164ca50396deaf2a5f50f",
+            "lockId": "88bf8596d5def5c6f508272e90833c791ef77ff3661ac1f6899263135799aa3a",
+            "opid": "3be8b939f67070a52ccd3fc6054b08134baf3c8e8b5684858689e86ea74b51cd",
+            "batchTransferIdx": 3
+          },
+          "paymentTxid": "0x178cb26d10e3795ac8bb3d3c49dfb331331dbe95599481fb4b94f41297700d8d",
+          "broadcast": {
+            "txid": "5d9c1074a01400a34d115a1a87b5586fe6012fcfed7164ca50396deaf2a5f50f",
+            "batchTransferIdx": 3,
+            "entropy": 3993255176701525000
+          },
+          "verified": {
+            "invoice": "rgb:~/~/FcgNP/bcrt:wvout:BftOG8Me-ieLifZ~-Sl4pIhc-vao2Na_-VI_tjAm-0ADNpjK-lxPv74w?assignment_name=assetOwner&expiry=1795857921&pk=8d0dc0bd1a79c9211c4484e2197f182984ac908f66ba0f878349132676c25bed&endpoints=rpc://127.0.0.1:48090/json-rpc",
+            "recipientId": "bcrt:wvout:BftOG8Me-ieLifZ~-Sl4pIhc-vao2Na_-VI_tjAm-0ADNpjK-lxPv74w",
+            "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+            "network": "regtest",
+            "txid": "5d9c1074a01400a34d115a1a87b5586fe6012fcfed7164ca50396deaf2a5f50f",
+            "opid": "3be8b939f67070a52ccd3fc6054b08134baf3c8e8b5684858689e86ea74b51cd",
+            "lockId": "88bf8596d5def5c6f508272e90833c791ef77ff3661ac1f6899263135799aa3a",
+            "amount": "6000000",
+            "beforeBlock": "259",
+            "evmChainId": "31337",
+            "bridgeContract": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0"
+          }
+        },
+        "balance": {
+          "settled": "5000000",
+          "future": "5000000",
+          "spendable": "5000000"
+        },
+        "burn": {
+          "txid": "80bfc3c13e8be54d89239308772bdc34cb2f678cafdbfb1ea9934f8a4731de86",
+          "batchTransferIdx": 5,
+          "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+          "amount": "1000000",
+          "minConfirmations": 6,
+          "burnDestination": {
+            "version": 1,
+            "destinationChainId": 42161,
+            "dstEid": 0,
+            "recipient": "0x1111111111111111111111111111111111111111"
+          },
+          "burnRecipient": {
+            "chainId": "eip155:42161",
+            "address": "0x1111111111111111111111111111111111111111"
+          }
+        },
+        "proofSha256": "8a942613973496eef8897a181c649ca14cdde32ac29158e44ce022adac9354e6",
+        "pendingInvoices": {
+          "witness": {
+            "invoice": "rgb:~/~/kbbaY/bcrt:wvout:BRxaLIME-CfJNZ1Y-VGoIiXY-gJKJadg-s~uMbRa-oGvmU8n-nupubSQ?assignment_name=assetOwner&expiry=1795857926&pk=d86a1c8b448ba1745440b8b68e38336addd29f8e37d0f5eafb584b00af1dead7&endpoints=rpc://127.0.0.1:48090/json-rpc",
+            "recipientId": "bcrt:wvout:BRxaLIME-CfJNZ1Y-VGoIiXY-gJKJadg-s~uMbRa-oGvmU8n-nupubSQ",
+            "batchTransferIdx": 3,
+            "expirationTimestamp": "1795857926"
+          },
+          "blind": {
+            "invoice": "rgb:~/~/kbbaY/bcrt:utxob:ivjb8SjO-XyQNwS_-oAc9XG~-EoEIkEy-qG9cE43-27il35Q-hzc05?assignment_name=assetOwner&expiry=1795857926&pk=246517e423f678ba12c8bdfbd572603b1ef513a5df78fc30807482525f9067d7&endpoints=rpc://127.0.0.1:48090/json-rpc",
+            "recipientId": "bcrt:utxob:ivjb8SjO-XyQNwS_-oAc9XG~-EoEIkEy-qG9cE43-27il35Q-hzc05",
+            "batchTransferIdx": 4,
+            "expirationTimestamp": "1795857926"
+          }
+        },
+        "transferCount": 5,
+        "complete": true
+      },
+      "upgrade": {
+        "nativeSha256": "ebf19da7ec3f80484c4a041005d234677e367c2803ef602392ab2837cfc1b791",
+        "scope": "Actual installed pack, persistent old wallet data; local chain settlement only.",
+        "version": "3.0.0-rc.4",
+        "retained": {
+          "addressSequenceMatchesOldRuntime": true,
+          "nextAddress": "bcrt1p9uhh5uhtrfnkhc78d7xgd8d55r8h78v8ph69yrmau3xt58ttnr2q7mf6td",
+          "publicKeys": true,
+          "btcBalance": true,
+          "bfaBalance": true,
+          "transfers": true,
+          "burnProof": true,
+          "burnRecovery": true,
+          "exportSha256": "937e65b827c128c7c5bbf56b2064caa0ac5e639c107ce4ca04b61872f9d6c7c0"
+        },
+        "pendingRecovery": [
+          {
+            "kind": "witness",
+            "identicalInvoice": true,
+            "unchangedJournal": true,
+            "noNativeAllocation": true,
+            "noRepeatedApproval": true
+          },
+          {
+            "kind": "blind",
+            "identicalInvoice": true,
+            "unchangedJournal": true,
+            "noNativeAllocation": true,
+            "noRepeatedApproval": true
+          }
+        ],
+        "pendingMint": {
+          "prepared": {
+            "operationId": "upgrade-node-upgraded-pending-mint",
+            "state": "prepared",
+            "txid": "21c4fc5470d7dc62e1890f2148f423ca7071d7b7f49d97ac43c9548b346c6ceb",
+            "lockId": "933356d5aa2329f1bb04bc758d7e27019009858a9bb10a8da1e5e4758dffae9a",
+            "opid": "1f90f52b9e22f8cb5ffa6bd171469896bea20529816c15980c255a25aed8f406",
+            "batchTransferIdx": 5
+          },
+          "paymentTxid": "0x3011b76a48d00af5c991cd57071fb6f82e98b50ce5847aabee323c350de92ece",
+          "broadcast": {
+            "txid": "21c4fc5470d7dc62e1890f2148f423ca7071d7b7f49d97ac43c9548b346c6ceb",
+            "batchTransferIdx": 5,
+            "entropy": 16837941895644530000
+          },
+          "verified": {
+            "invoice": "rgb:~/~/kbbaY/bcrt:wvout:BRxaLIME-CfJNZ1Y-VGoIiXY-gJKJadg-s~uMbRa-oGvmU8n-nupubSQ?assignment_name=assetOwner&expiry=1795857926&pk=d86a1c8b448ba1745440b8b68e38336addd29f8e37d0f5eafb584b00af1dead7&endpoints=rpc://127.0.0.1:48090/json-rpc",
+            "recipientId": "bcrt:wvout:BRxaLIME-CfJNZ1Y-VGoIiXY-gJKJadg-s~uMbRa-oGvmU8n-nupubSQ",
+            "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+            "network": "regtest",
+            "txid": "21c4fc5470d7dc62e1890f2148f423ca7071d7b7f49d97ac43c9548b346c6ceb",
+            "opid": "1f90f52b9e22f8cb5ffa6bd171469896bea20529816c15980c255a25aed8f406",
+            "lockId": "933356d5aa2329f1bb04bc758d7e27019009858a9bb10a8da1e5e4758dffae9a",
+            "amount": "1000000",
+            "beforeBlock": "391",
+            "evmChainId": "31337",
+            "bridgeContract": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0"
+          }
+        },
+        "bip322": {
+          "address": "bcrt1prulqyrpqswhn5r27ygp8ht2kkrfetdtgj2djh0y32gljhvnf9vhst5rp7y",
+          "verified": true
+        },
+        "restartVerified": true,
+        "lostBurnResponse": {
+          "txid": "cef175efe43c9e5c18f9e80e86e2eea2232081a28e0a29d1d486b922c6375adf",
+          "proofSha256": "a761031705c319bd1330151428b2954047c1b11a26a989347314fde72d29cb1a",
+          "recoverTwice": true,
+          "recoverAfterRestart": true,
+          "duplicateRejected": true,
+          "burnEndCalls": 1
+        },
+        "freshImport": {
+          "address": "bcrt1p38lxvg4umpfl94h53xrh9ms6kq3jaje620jq4x9zytl8vzz3xd3s7yy484",
+          "funding": "95a9bd3aea544cba01953c64c81f2a70979ca7657d443d904135f946544037a9",
+          "outputs": {
+            "txid": "b57f27e994392d4814d0d063ebb0bc5c0073bc538c9fbc97c0cfe1a02eaf05ae",
+            "created": 8
+          },
+          "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+          "duplicateRejected": true,
+          "exportSha256": "937e65b827c128c7c5bbf56b2064caa0ac5e639c107ce4ca04b61872f9d6c7c0",
+          "mint": {
+            "prepared": {
+              "operationId": "upgrade-node-fresh-imported-mint",
+              "state": "prepared",
+              "txid": "908e3f5f1994acf294546ed864be589a148fa824faa5017756c24118630eb6f1",
+              "lockId": "0b415b6fd3194f7f16a013950030ad31055a5feeb78c87347052d62905ea0f30",
+              "opid": "122e847d59735600779d0a6999204f136498bc3e39942b1bc57fa2a3b674ac27",
+              "batchTransferIdx": 6
+            },
+            "paymentTxid": "0x027d7c74dd119c13fdc8d076992e6c06ef127c414431ea645d796516636f055b",
+            "broadcast": {
+              "txid": "908e3f5f1994acf294546ed864be589a148fa824faa5017756c24118630eb6f1",
+              "batchTransferIdx": 6,
+              "entropy": 9440372315003765000
+            },
+            "verified": {
+              "invoice": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18/3I0xZVEQnQxYVk7vDnh5uNtQyUfsmThw6dX9n_Gvb5o/kbbaY/bcrt:wvout:BRD_CSEJ-bwwny6~-LhPqwvH-fS5NfAQ-KFO9v26-a_BaogQ-07Pv7Dg?assignment_name=assetOwner&expiry=1795858519&pk=b2b8d9da870995c44b90ffbb16353d084b5517ab903f18b22b26e1566f4985a9&endpoints=rpc://127.0.0.1:48090/json-rpc",
+              "recipientId": "bcrt:wvout:BRD_CSEJ-bwwny6~-LhPqwvH-fS5NfAQ-KFO9v26-a_BaogQ-07Pv7Dg",
+              "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+              "network": "regtest",
+              "txid": "908e3f5f1994acf294546ed864be589a148fa824faa5017756c24118630eb6f1",
+              "opid": "122e847d59735600779d0a6999204f136498bc3e39942b1bc57fa2a3b674ac27",
+              "lockId": "0b415b6fd3194f7f16a013950030ad31055a5feeb78c87347052d62905ea0f30",
+              "amount": "1000000",
+              "beforeBlock": "457",
+              "evmChainId": "31337",
+              "bridgeContract": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0"
+            }
+          },
+          "restartBalance": "1000000"
+        },
+        "bfaTransfer": {
+          "txid": "a4e85cd6b359873efe358464527857f657fec8a9456d3eaeb717c2f9539a681a",
+          "sender": "4500000",
+          "recipient": "1500000"
+        },
+        "ordinary": [
+          {
+            "schema": "Nia",
+            "assetId": "rgb:d~SHnAjK-6pz3YdE-Nza3zAd-muWA9Ps-11KtxlG-Qs~ywGk",
+            "contractSha256": "750034f2e56e94d9df05bad0ea3596630eb04ba529eab75687b0c8d08a9f535d",
+            "txid": "d30905b7350349866fa5824e047fb846e9ce5eca34c98cd433df5d4b0aff9967",
+            "sender": "900",
+            "recipient": "100"
+          },
+          {
+            "schema": "Cfa",
+            "assetId": "rgb:fhNPJ5fW-49ZOZL7-Ledp7nl-wstYAk2-OX4C3TN-QQVEP2A",
+            "contractSha256": "f79ad6e74f11d7362d06c685376451e0aa7b4d92f2d39cf4a1d3eeaa07e8981b",
+            "txid": "752420e4953004f747fd2e2fed4bebc6ab2ee7dde85f9e5af39086ca2b804109",
+            "sender": "900",
+            "recipient": "100"
+          }
+        ],
+        "btcTransfer": {
+          "txid": "6012eaf6d412ae726bed300d563f48a87ba4853527eb60ba0d7653d0f481b4e0",
+          "amount": "10000"
+        },
+        "complete": true
+      }
+    },
+    "bare": {
+      "old": {
+        "version": "3.0.0-rc.3",
+        "nativeSha256": "31b53c63c976cc78ce581e19b3ed7ff3c99d22acde26c38d2b491b65957651ca",
+        "address": "bcrt1py3fpx08ghs302tgm0wegy3gx96zl8zh2a7n4g9qx53yxdays60gseeqzwj",
+        "outputs": {
+          "txid": "5db95202127e534eb1cbf85e8bc4c8e0e66ae9459a4d7e15e71e56e62d184df4",
+          "created": 12
+        },
+        "mint": {
+          "prepared": {
+            "operationId": "upgrade-bare-initial-mint-v3",
+            "state": "prepared",
+            "txid": "72b137660b5e35c52adfeb710e1a1fe16cbd721281240c843b06b36a19c47261",
+            "lockId": "f4f04a1b10de55a47cfa8f693b737d0c6615d7d7d8e5891f6b9779a010449378",
+            "opid": "7bb3d60419fd39f94c82f440dc105caa7e072015bca4fc9d401a92459add48d2",
+            "batchTransferIdx": 4
+          },
+          "paymentTxid": "0xd58ef6b01c4c7a40dcfd30ccaf7d54d848b274bcda053713e34868d5aabddf61",
+          "broadcast": {
+            "txid": "72b137660b5e35c52adfeb710e1a1fe16cbd721281240c843b06b36a19c47261",
+            "batchTransferIdx": 4,
+            "entropy": 18346496473900740000
+          },
+          "verified": {
+            "invoice": "rgb:~/~/FcgNP/bcrt:wvout:BXCIbDFO-UPDS2Zp-UHSgwxt-kAsAqym-31L4LWg-ac6ZCR5-9wPf3Qg?assignment_name=assetOwner&expiry=1795857941&pk=105382c3a6053f4c5543ba7dea1569d0c45b1c4866cff117ac9f389d2d048d74&endpoints=rpc://127.0.0.1:48090/json-rpc",
+            "recipientId": "bcrt:wvout:BXCIbDFO-UPDS2Zp-UHSgwxt-kAsAqym-31L4LWg-ac6ZCR5-9wPf3Qg",
+            "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+            "network": "regtest",
+            "txid": "72b137660b5e35c52adfeb710e1a1fe16cbd721281240c843b06b36a19c47261",
+            "opid": "7bb3d60419fd39f94c82f440dc105caa7e072015bca4fc9d401a92459add48d2",
+            "lockId": "f4f04a1b10de55a47cfa8f693b737d0c6615d7d7d8e5891f6b9779a010449378",
+            "amount": "6000000",
+            "beforeBlock": "325",
+            "evmChainId": "31337",
+            "bridgeContract": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0"
+          }
+        },
+        "balance": {
+          "settled": "5000000",
+          "future": "5000000",
+          "spendable": "5000000"
+        },
+        "burn": {
+          "txid": "0d0d720a3e07b1e96c39743bf317fdebade3440c9bb853fcfe1cd9098814d015",
+          "batchTransferIdx": 4,
+          "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+          "amount": "1000000",
+          "minConfirmations": 6,
+          "burnDestination": {
+            "version": 1,
+            "destinationChainId": 42161,
+            "dstEid": 0,
+            "recipient": "0x1111111111111111111111111111111111111111"
+          },
+          "burnRecipient": {
+            "chainId": "eip155:42161",
+            "address": "0x1111111111111111111111111111111111111111"
+          }
+        },
+        "proofSha256": "524f0ed4316cfd0375198090730d77e7ad8de1bfdbe1761416d7a40188e8f3af",
+        "pendingInvoices": {
+          "witness": {
+            "invoice": "rgb:~/~/kbbaY/bcrt:wvout:BZKvaBo3-BMK6ka0-bJa4SSD-4j_jhEL-Q0pIHEI-2zdvaWl-REEpKCw?assignment_name=assetOwner&expiry=1795857947&pk=0c2d11cf0c13a8924008148a03b9ecc5f1be59e69dd235c6a306929fd88a40e9&endpoints=rpc://127.0.0.1:48090/json-rpc",
+            "recipientId": "bcrt:wvout:BZKvaBo3-BMK6ka0-bJa4SSD-4j_jhEL-Q0pIHEI-2zdvaWl-REEpKCw",
+            "batchTransferIdx": 2,
+            "expirationTimestamp": "1795857947"
+          },
+          "blind": {
+            "invoice": "rgb:~/~/kbbaY/bcrt:utxob:kkm528NQ-_b7gebW-DUdAL2P-g0HZHWT-miD4yb9-PhPh0i7-oamr6?assignment_name=assetOwner&expiry=1795857947&pk=e43d44099247efa39924d11657c05bce245a9440333aa1e8a4d7b63abe256776&endpoints=rpc://127.0.0.1:48090/json-rpc",
+            "recipientId": "bcrt:utxob:kkm528NQ-_b7gebW-DUdAL2P-g0HZHWT-miD4yb9-PhPh0i7-oamr6",
+            "batchTransferIdx": 3,
+            "expirationTimestamp": "1795857947"
+          }
+        },
+        "transferCount": 4,
+        "complete": true
+      },
+      "upgrade": {
+        "nativeSha256": "00f0c252e37ec6c07f978072201a1b82b1ffce78c900f04bd94ff96de06195e3",
+        "scope": "Actual installed pack, persistent old wallet data; local chain settlement only.",
+        "version": "3.0.0-rc.4",
+        "retained": {
+          "addressSequenceMatchesOldRuntime": true,
+          "nextAddress": "bcrt1pl6cvcyjypyy3tyuf97uhp90nc36jvm8z7u70nght8tqqq5y5kzmqsf9y4t",
+          "publicKeys": true,
+          "btcBalance": true,
+          "bfaBalance": true,
+          "transfers": true,
+          "burnProof": true,
+          "burnRecovery": true,
+          "exportSha256": "937e65b827c128c7c5bbf56b2064caa0ac5e639c107ce4ca04b61872f9d6c7c0"
+        },
+        "pendingRecovery": [
+          {
+            "kind": "witness",
+            "identicalInvoice": true,
+            "unchangedJournal": true,
+            "noNativeAllocation": true,
+            "noRepeatedApproval": true
+          },
+          {
+            "kind": "blind",
+            "identicalInvoice": true,
+            "unchangedJournal": true,
+            "noNativeAllocation": true,
+            "noRepeatedApproval": true
+          }
+        ],
+        "pendingMint": {
+          "prepared": {
+            "operationId": "upgrade-bare-upgraded-pending-mint",
+            "state": "prepared",
+            "txid": "75251e9a1616c6f186e60faf0e1ee01c0caa3c650c4be5dbf27d647658950779",
+            "lockId": "8bdecab3c80f6e0edfff5726a6fea0640e2633fcd8b10db4663cfd461e50ee43",
+            "opid": "4c4886cf722984b2a7b7f79daacd32d51c5f95a8194d1671d566a65973c8d3fa",
+            "batchTransferIdx": 7
+          },
+          "paymentTxid": "0xed7934148511b080f03b2886b8bfb972feda7edfb8c76070ca7dcd191aa27d76",
+          "broadcast": {
+            "txid": "75251e9a1616c6f186e60faf0e1ee01c0caa3c650c4be5dbf27d647658950779",
+            "batchTransferIdx": 7,
+            "entropy": 18324207832549630000
+          },
+          "verified": {
+            "invoice": "rgb:~/~/kbbaY/bcrt:wvout:BZKvaBo3-BMK6ka0-bJa4SSD-4j_jhEL-Q0pIHEI-2zdvaWl-REEpKCw?assignment_name=assetOwner&expiry=1795857947&pk=0c2d11cf0c13a8924008148a03b9ecc5f1be59e69dd235c6a306929fd88a40e9&endpoints=rpc://127.0.0.1:48090/json-rpc",
+            "recipientId": "bcrt:wvout:BZKvaBo3-BMK6ka0-bJa4SSD-4j_jhEL-Q0pIHEI-2zdvaWl-REEpKCw",
+            "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+            "network": "regtest",
+            "txid": "75251e9a1616c6f186e60faf0e1ee01c0caa3c650c4be5dbf27d647658950779",
+            "opid": "4c4886cf722984b2a7b7f79daacd32d51c5f95a8194d1671d566a65973c8d3fa",
+            "lockId": "8bdecab3c80f6e0edfff5726a6fea0640e2633fcd8b10db4663cfd461e50ee43",
+            "amount": "1000000",
+            "beforeBlock": "523",
+            "evmChainId": "31337",
+            "bridgeContract": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0"
+          }
+        },
+        "bip322": {
+          "address": "bcrt1py3fpx08ghs302tgm0wegy3gx96zl8zh2a7n4g9qx53yxdays60gseeqzwj",
+          "verified": true
+        },
+        "restartVerified": true,
+        "lostBurnResponse": {
+          "txid": "2a34e6b4e78c57bab8e009120ba51ae536475ccb61530487942b6247a14b6632",
+          "proofSha256": "61c9a1044aadacd0f6ea0221a747eaadbe99a726df4ae68ccca32274a972a80a",
+          "recoverTwice": true,
+          "recoverAfterRestart": true,
+          "duplicateRejected": true,
+          "burnEndCalls": 1
+        },
+        "freshImport": {
+          "address": "bcrt1pwq9gwf2ycugg53m79lmqgztjccsp7te39cgm6608vs04ugjdfnnsfeup0g",
+          "funding": "aeb07ceac4805ffbfe6c40af7e875c6ba5e6769b5c145093bcb27766fb9430ec",
+          "outputs": {
+            "txid": "2c6ab4ff862fd6f483a7f805ddbdd59bf578e01c8972d358a0b6b480f2cfc861",
+            "created": 8
+          },
+          "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+          "duplicateRejected": true,
+          "exportSha256": "937e65b827c128c7c5bbf56b2064caa0ac5e639c107ce4ca04b61872f9d6c7c0",
+          "mint": {
+            "prepared": {
+              "operationId": "upgrade-bare-fresh-imported-mint",
+              "state": "prepared",
+              "txid": "88664db5a820de6bf92314719a1f0378021d9562254c60e1a069317925f4e748",
+              "lockId": "ad6a07c5aad746b6d20e681d99d435893aeeb0f935f262a9d73d4949df7f2fb3",
+              "opid": "6e9ab30d18c0c28f084c954b946d7c82fd738c073754d49eb01434371c87aa7a",
+              "batchTransferIdx": 8
+            },
+            "paymentTxid": "0x5d314ffc06410ad05622b3807092d832700953b77054b0e35c3929744d586527",
+            "broadcast": {
+              "txid": "88664db5a820de6bf92314719a1f0378021d9562254c60e1a069317925f4e748",
+              "batchTransferIdx": 8,
+              "entropy": 78082602331055660
+            },
+            "verified": {
+              "invoice": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18/3I0xZVEQnQxYVk7vDnh5uNtQyUfsmThw6dX9n_Gvb5o/kbbaY/bcrt:wvout:BUyxSA_6-18P1irm-mStsUtb-dMA1pPd-xMBqNjW-3aKZpY_-Yizg4BQ?assignment_name=assetOwner&expiry=1795858542&pk=b9e8309ef5a36076c30a1c9c9c2fa531bdb2a832e82921b91b43ef8ed6788694&endpoints=rpc://127.0.0.1:48090/json-rpc",
+              "recipientId": "bcrt:wvout:BUyxSA_6-18P1irm-mStsUtb-dMA1pPd-xMBqNjW-3aKZpY_-Yizg4BQ",
+              "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18",
+              "network": "regtest",
+              "txid": "88664db5a820de6bf92314719a1f0378021d9562254c60e1a069317925f4e748",
+              "opid": "6e9ab30d18c0c28f084c954b946d7c82fd738c073754d49eb01434371c87aa7a",
+              "lockId": "ad6a07c5aad746b6d20e681d99d435893aeeb0f935f262a9d73d4949df7f2fb3",
+              "amount": "1000000",
+              "beforeBlock": "589",
+              "evmChainId": "31337",
+              "bridgeContract": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0"
+            }
+          },
+          "restartBalance": "1000000"
+        },
+        "bfaTransfer": {
+          "txid": "cd215dfbbc74c589f0b7a70a168bb2af1c9a878c845070a1178bb1ec4f476958",
+          "sender": "4500000",
+          "recipient": "1500000"
+        },
+        "ordinary": [
+          {
+            "schema": "Nia",
+            "assetId": "rgb:B~qOdyYl-_oy~NOs-yXIbIvm-Sfky8Vw-ttF9Q2d-OHKIPWk",
+            "contractSha256": "1d4abbcb54519a9ccfa029783049d2972f9b58829f3798272c78807d36bf968d",
+            "txid": "c066797d8edc222b06d2cd975a1d817fd2dbb98d623d117c89f15273a7641778",
+            "sender": "900",
+            "recipient": "100"
+          },
+          {
+            "schema": "Cfa",
+            "assetId": "rgb:mTisSSmb-ZSj6FzK-yVUMAhY-PGkF8fb-DXDMDxO-eHgt7zg",
+            "contractSha256": "aefaf2ede97de885a518e54cc1ae9b6b8facfa8e2ebebb0496ee50f0e3236461",
+            "txid": "4c1f93f0c4b6ccf6ab38f5bbc52da033a6f79a85fbbc847564d563b85d101ce9",
+            "sender": "900",
+            "recipient": "100"
+          }
+        ],
+        "btcTransfer": {
+          "txid": "e9f3d159a36ece92648e458a09b4ed6d0ca2070d15843ed795be770357760096",
+          "amount": "10000"
+        },
+        "complete": true
+      }
+    }
+  },
+  "contract": {
+    "path": "public-busdt-contract.rgb",
+    "sha256": "937e65b827c128c7c5bbf56b2064caa0ac5e639c107ce4ca04b61872f9d6c7c0",
+    "byteLength": 623,
+    "assetId": "rgb:5kTvEi0g-3dObsUs-MQ1AASh-hjkuAS_-ZmiL3lj-9NpFp18"
+  },
+  "sandboxOffline": {
+    "node": {
+      "assetId": "rgb:uVMNCuVU-U00Y_wv-6~7ZbW7-tEuUMcE-pB0wDzC-nt7Qsdc",
+      "sha256": "7a6ae740c1ab22d7fade416fe7c6c20c438e41cde105221490c00c42b281cc83",
+      "byteLength": 648,
+      "name": "Bridged USDT",
+      "ticker": "BUSDT",
+      "precision": 6,
+      "noOnlineSession": true,
+      "wrongChainRejected": true,
+      "wrongIdRejected": true,
+      "duplicateRejected": true,
+      "zeroBalance": true,
+      "restartPreserved": true
+    },
+    "bare": {
+      "assetId": "rgb:uVMNCuVU-U00Y_wv-6~7ZbW7-tEuUMcE-pB0wDzC-nt7Qsdc",
+      "sha256": "7a6ae740c1ab22d7fade416fe7c6c20c438e41cde105221490c00c42b281cc83",
+      "byteLength": 648,
+      "name": "Bridged USDT",
+      "ticker": "BUSDT",
+      "precision": 6,
+      "noOnlineSession": true,
+      "wrongChainRejected": true,
+      "wrongIdRejected": true,
+      "duplicateRejected": true,
+      "zeroBalance": true,
+      "restartPreserved": true
+    }
+  },
+  "qualificationDate": "2026-11-27",
+  "upstream": {
+    "previousSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+    "candidateSource": "a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2",
+    "candidateTree": "a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd",
+    "candidateVersion": "3.0.0-rc.4"
+  },
+  "candidatePack": {
+    "scope": "Provisional admitted local host qualification pack; final complete matrix pack still needs byte-identity comparison.",
+    "archiveSha256": "8b9ba2e5d95ea07174e95418e2416b358bc09773604877dd65ebb5c91c2cf78f",
+    "packageVersion": "3.0.0-rc.4",
+    "archiveFilesMatchedInstalled": 31,
+    "nodeSha256": "ebf19da7ec3f80484c4a041005d234677e367c2803ef602392ab2837cfc1b791",
+    "bareSha256": "00f0c252e37ec6c07f978072201a1b82b1ffce78c900f04bd94ff96de06195e3",
+    "qualificationProducer": "7f6a3f9787961187b65df1a381304fff3edfc3ca",
+    "finalLocalBuildProducer": "b765e9b46a3872ab012cbdbc1f1c04ee1a377f4e",
+    "finalLocalBuildReceipts": [
+      "qualification/local-rc4-node/",
+      "qualification/local-rc4-bare/"
+    ],
+    "finalLocalNodeBytesEqualTested": true,
+    "finalLocalBareBytesEqualTested": true,
+    "separateFinalCiAcceptanceReceipt": "funded-upgrade-final-ci.json"
+  },
+  "baselinePack": {
+    "version": "3.0.0-rc.3",
+    "sha256": "9ea21275c335cb037c93646bf2d47182c79a1c48d1be56b4a7af98b6b3a9e1c4",
+    "nativeProducer": "5de1c87f1fe448a571aad8724e9d24217ffb6b2e",
+    "exactOriginalPackAndNativeBytes": true,
+    "originalAabAvailable": false
+  },
+  "limitations": [
+    "Host Node/Bare Darwin ARM64 qualification only; Android/iOS build and app acceptance reported separately.",
+    "The old npm pack/native bytes are exact; the original distributed AAB was deleted and was not recovered.",
+    "The local upstream MinimalBridge verifies token lock records; it does not implement hosted gateway/TEE admission.",
+    "V1 burn Bitcoin commitments and saved proof recovery were verified. EVM redemption of these burns was not exercised.",
+    "Exact complete CI pack execution is recorded separately in funded-upgrade-final-ci.json; the local hashes in this receipt are not CI hashes."
+  ],
+  "fixture": {
+    "rgbIssuerSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+    "rgbProtocol": "0.11.2-rc.2",
+    "openzeppelinSource": "cab19933c33c2ad1d4c7a84864a3601dddfd16f3",
+    "ports": {
+      "bitcoin": 48443,
+      "electrum": 48001,
+      "proxy": 48090,
+      "anvil": 48545
+    },
+    "externalBridgeOperated": false,
+    "sharedStackChanged": false
+  }
+}

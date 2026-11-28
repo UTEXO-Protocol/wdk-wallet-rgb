@@ -1,0 +1,64 @@
+{
+  "status": "passed",
+  "node": "v22.23.3",
+  "target": "darwin-arm64",
+  "packageVersion": "3.0.0-rc.4",
+  "archiveSha256": "f0ecf049ca0b108d3338d4be2e360439029ac67ed196f0a0f7c680c9fe57e1f9",
+  "packageJsonSha256": "e6c68276a50ea9898b61f6705913f0448ff5eba64ca014b566dc6945eee7ac42",
+  "nativeManifestSha256": "cc9573375f2bdd602fe577d1d5f54b4ed47ef77a6ba65534cb47e1a6b86163e0",
+  "nativeSha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66",
+  "nativeBytes": 47052408,
+  "artifactDiscovery": "Automatic bundled addon discovery; no path or hash override",
+  "independentManagers": 4,
+  "independentNativeThreads": 4,
+  "checks": [
+    "simultaneous offline open",
+    "three concurrent read and BIP-322 rounds",
+    "cross-wallet public signature verification",
+    "native same-directory collision across separate manager isolates",
+    "partial teardown while other wallets remain live",
+    "reopen after partial and full teardown preserves all four identities",
+    "all workers exit after awaited shutdown",
+    "host umask unchanged"
+  ],
+  "identityDigests": [
+    "da9e0948dab723ac54929820579103fd75de8ab47c76bf6874de1fa0436ffedc",
+    "2692d462644dfd66003e05e19f565c143c911be365c3937ee8c32ea1c23562e8",
+    "51d2a006337ab09f3183653f06f219210152b44ad84d860cb73119c025d5c7fc",
+    "549c55b70277e81ee4ca4703933778458654290a23b7f80b997de79c0de2c508"
+  ],
+  "rounds": [
+    {
+      "round": 0,
+      "wallets": 4,
+      "approvalsPerWallet": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "round": 1,
+      "wallets": 4,
+      "approvalsPerWallet": [
+        2,
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "round": 2,
+      "wallets": 4,
+      "approvalsPerWallet": [
+        3,
+        3,
+        3,
+        3
+      ]
+    }
+  ],
+  "financialActivity": "None: disposable offline wallets and local message signing only",
+  "limitation": "Packed package offline concurrency acceptance. Funded settlement and other platforms require separate acceptance."
+}

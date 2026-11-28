@@ -1,273 +1,40 @@
-# Migration Guide: @utexo/wdk-wallet-rgb v1 to v2
+# Upgrading to the on-chain SDK
 
-This guide explains how to migrate your RGB wallet state from `@utexo/wdk-wallet-rgb` v1 to v2.
+Version 3 replaces the 2.x wrapper with an asynchronous Node/Bare wallet, an application-owned signer and durable operation records. It is a breaking release. It does not migrate an existing wallet directory or restore a 2.x encrypted backup.
 
-## Overview
+## Application changes
 
-`@utexo/wdk-wallet-rgb` v2 uses RGB SDK v2, which stores all wallet data locally using `rgb-lib` directly (no RGB Node server required). The migration process consists of:
+| Previous integration | Version 3 |
+| --- | --- |
+| Synchronous native wrapper methods | Await the account's asynchronous methods. |
+| `sendTransaction()` / `transfer()` or manual Begin/End calls | Use `sendBtc()` / `sendRgbInvoice()` with a stable operation ID and an authorization callback. |
+| Generic signing methods | Use `signMessageBip322()` with explicit message authorization. |
+| Implicit native package discovery | Node and Bare select their exact platform addon from the package. Mobile applications link and verify the admitted addon. |
+| `dispose()` as the only shutdown step | Await `account.shutdown()` or `manager.shutdown()` before disposing Tether Core or replacing the wallet. |
+| Seed or legacy backup treated as full RGB recovery | Preserve the complete wallet directory, including consignments, allocation data and WDK operation/input journals. A seed alone restores keys and discoverable Bitcoin history. |
 
-1. Creating a backup of your wallet state in v1
-2. Restoring the backup in v2 to a local directory
-3. Initializing your wallet in v2 pointing to the restored directory
+The public configuration and methods are defined in [onchain.d.ts](onchain.d.ts). The [integration guide](CANDIDATE.md) includes Core registration, authorization, network profiles, issuance and recovery examples.
 
-## 🔐 Privacy Recommendation (Important)
+## First-release wallet state
 
-If you are migrating from `@utexo/wdk-wallet-rgb` v1, it is important to understand the privacy implications of the legacy architecture.
+This is the first planned publication of the version 3 implementation. Qualification uses fresh wallet directories and ordinary recovery within this version. Earlier alpha/RC databases are test artifacts, not a supported production upgrade baseline. The release uses merged RGB-Tools source `f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d`, including the public contract APIs from #124; it does not include the older-database metadata repair proposed in #138.
 
-Version 1 relied on an RGB Node server, which means that wallet metadata (such as extended public keys and transaction graph information) may have been exposed to the node operator. This exposure is **permanent** and cannot be reversed by upgrading software alone.
+Create or import a wallet into its own private directory. Importing a seed restores the keys and discoverable Bitcoin history; registering a public RGB contract restores metadata, not allocations. Preserve the complete directory, validated RGB stock and WDK journals for RGB balance and proof recovery. Restarting a wallet created by this release must retain its identities, pending operations and proofs.
 
-### Recommended approach (if privacy matters)
+## Updating the Node transport
 
-If wallet privacy is important to you, we strongly recommend:
+For an application previously configured against the experimental RC4 executable, remove `nativeExecutable` and its old executable `nativeSha256`; the SDK now resolves and verifies its bundled `.node` addon. An explicit `nativeAddon` path is optional and must match the admitted binary for the current platform. It cannot select an arbitrary native build.
 
-1. **Creating a brand new wallet with a new seed phrase in v2**
-2. Migrating assets from the old wallet to the new wallet using standard RGB transfers
-3. Discontinuing use of the old seed phrase and xpubs
+Await shutdown before replacing an account or moving its directory. Restart the host process after updating the SDK or replacing a native addon; native code is intentionally kept mapped across worker teardown and cannot be hot-swapped safely. The addon runs on a dedicated worker thread. A timeout rejects the caller's wait, but a native operation that has already started may still complete. Shutdown waits for that operation and releases the native lock before resolving. Reopen with the original operation ID and use the recovery API; never resend under a new ID. Unlike the previous executable, a native crash affects the host process, so applications must preserve the journals across process restart.
 
-This is the **only way** to fully eliminate historical metadata exposure.
+## Earlier wallet engines
 
-### Alternative (state migration)
+Create a new, private directory when moving from 2.x or an incompatible earlier engine. Use distinct directories for Mainnet, Public Signet, Dev Signet and Regtest. Do not copy a legacy database into a new directory or remove the directory identity marker to bypass admission. Earlier BFA.7/BFA.8 directories with an identity other than `rgb-l1-beta8-v1` require their original SDK. The upstream file-codec migration feature does not bypass WDK directory admission.
 
-The migration steps below restore wallet state using the **same seed phrase** and preserve balances and history. This approach is safe from a funds perspective, but it **does not remove prior privacy exposure**.
+For qualification of an incompatible engine, use a fresh disposable wallet. Retain an existing funded wallet's original SDK and complete data until funds have been transferred and independently reconciled. This release makes no same-seed, same-address, database-conversion or RGB seed-only recovery guarantee across incompatible engines. Do not use a production wallet directory as a disposable qualification fixture.
 
-Choose the approach that best matches your threat model.
+## Interrupted operations
 
+Keep the original operation ID and parameters when reconciling an interrupted send, output setup or burn. Use the corresponding recovery method; do not create a replacement spend merely because a result was lost. Signed-input reservations and operation journals are part of the wallet's financial state. Do not delete them to make an operation retryable.
 
-## Step 1: Backup Wallet State in v1
-
-A backup of your wallet state is created using `@utexo/wdk-wallet-rgb` v1:
-
-```javascript
-import WalletManagerRgb from '@utexo/wdk-wallet-rgb@^1.0.0'
-
-const seedPhrase = 'your seed phrase here'
-
-// Initialize wallet manager in v1
-const manager = new WalletManagerRgb(seedPhrase, {
-  network: 'testnet',
-  rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org' // v1 required parameter
-})
-
-const account = await manager.getAccount()
-
-// Create backup
-const password = 'your-strong-password'
-const backup = await account.createBackup(password)
-
-// backup structure:
-// {
-//   message: string;
-//   download_url: string;
-// }
-
-// Download and save the backup file
-import fs from 'fs'
-import https from 'https'
-import path from 'path'
-
-const backupDir = './backups'
-if (!fs.existsSync(backupDir)) {
-  fs.mkdirSync(backupDir, { recursive: true })
-}
-
-const backupFilePath = path.join(backupDir, 'wallet.backup')
-
-// Download backup from download_url
-const file = fs.createWriteStream(backupFilePath)
-https.get(backup.download_url, (response) => {
-  response.pipe(file)
-  file.on('finish', () => {
-    file.close()
-    console.log('Backup saved to:', backupFilePath)
-  })
-})
-```
-
-**Important:** The backup file should be saved securely and the password used to encrypt it should be remembered.
-
-## Step 2: Restore Wallet in v2
-
-The backup is restored using `@utexo/wdk-wallet-rgb` v2:
-
-```javascript
-import { restoreFromBackup } from '@utexo/rgb-sdk'
-import path from 'path'
-import fs from 'fs'
-
-const backupFilePath = './backups/wallet.backup'
-const password = 'your-strong-password'
-const dataDir = path.resolve('./restored-wallet')
-
-// Ensure restore directory exists
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true })
-}
-
-// Restore wallet from backup
-// This MUST be called BEFORE creating the WalletManager instance
-// Note: restoreFromBackup is imported from @utexo/rgb-sdk
-const responseMsg = restoreFromBackup({
-  backupFilePath,
-  password,
-  dataDir
-})
-
-console.log(responseMsg.message)
-```
-
-## Step 3: Initialize Wallet in v2
-
-After the restore is complete, the wallet instance is created pointing to the restored directory:
-
-```javascript
-import WalletManagerRgb from '@utexo/wdk-wallet-rgb@^2.0.0'
-
-const seedPhrase = 'your seed phrase here'
-
-// Initialize wallet manager in v2 pointing to restored directory
-const manager = new WalletManagerRgb(seedPhrase, {
-  network: 'testnet',
-  dataDir: './restored-wallet', // Point to restored directory
-  indexerUrl: 'ssl://electrum.iriswallet.com:50013', // optional
-  transportEndpoint: 'rpcs://proxy.iriswallet.com/0.2/json-rpc' // optional
-})
-
-const account = await manager.getAccount()
-
-// Register wallet (synchronous in v2)
-const { address, btcBalance } = account.registerWallet()
-console.log('Wallet address:', address)
-console.log('BTC Balance:', btcBalance)
-
-// List assets (synchronous in v2)
-const assets = account.listAssets()
-console.log('Assets:', assets)
-
-//  RGB state is now stored locally!
-```
-
-## Complete Migration Example
-
-Here's a complete example showing the full migration process:
-
-```javascript
-import WalletManagerRgb from '@utexo/wdk-wallet-rgb'
-import { restoreFromBackup } from '@utexo/rgb-sdk'
-import fs from 'fs'
-import path from 'path'
-import https from 'https'
-
-async function migrateFromV1ToV2() {
-  const seedPhrase = 'your seed phrase here'
-  const backupPassword = 'your-strong-password'
-
-  // ============================================
-  // STEP 1: Backup in v1 
-  // ============================================
-  console.log('Step 1: Creating backup in v1...')
-
-  // Use v1 SDK for this step
-  const { default: WalletManagerRgbV1 } = await import('@utexo/wdk-wallet-rgb@^1.0.0')
-
-  const managerV1 = new WalletManagerRgbV1(seedPhrase, {
-    network: 'testnet',
-    rgbNodeEndpoint: 'https://rgb-node.test.thunderstack.org'
-  })
-
-  const accountV1 = await managerV1.getAccount()
-  const backup = await accountV1.createBackup(backupPassword)
-
-  // Save backup file
-  const backupDir = './backups'
-  if (!fs.existsSync(backupDir)) {
-    fs.mkdirSync(backupDir, { recursive: true })
-  }
-
-  const backupFilePath = path.join(backupDir, 'wallet.backup')
-
-  // Download backup
-  await new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(backupFilePath)
-    https.get(backup.download_url, (response) => {
-      response.pipe(file)
-      file.on('finish', () => {
-        file.close()
-        resolve()
-      })
-    }).on('error', reject)
-  })
-
-  console.log('Backup saved to:', backupFilePath)
-
-  // Cleanup v1
-  accountV1.dispose()
-  managerV1.dispose()
-
-  // ============================================
-  // STEP 2: Restore in v2
-  // ============================================
-  console.log('Step 2: Restoring backup in v2...')
-
-  const dataDir = path.resolve('./restored-wallet')
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true })
-  }
-
-  restoreFromBackup({
-    backupFilePath,
-    password: backupPassword,
-    dataDir
-  })
-
-  console.log('Wallet restored to:', dataDir)
-
-  // ============================================
-  // STEP 3: Initialize wallet in v2
-  // ============================================
-  console.log('Step 3: Initializing wallet in v2...')
-
-  const managerV2 = new WalletManagerRgb(seedPhrase, {
-    network: 'testnet',
-    dataDir: dataDir,
-    indexerUrl: 'ssl://electrum.iriswallet.com:50013',
-    transportEndpoint: 'rpcs://proxy.iriswallet.com/0.2/json-rpc'
-  })
-
-  const accountV2 = await managerV2.getAccount()
-
-  // Register wallet (synchronous in v2)
-  const { address, btcBalance } = accountV2.registerWallet()
-  console.log('Wallet address:', address)
-  console.log('BTC Balance:', btcBalance)
-
-  // List assets (synchronous in v2)
-  const assets = accountV2.listAssets()
-  console.log('Assets:', assets)
-
-  console.log('Migration complete! Your RGB state is now stored locally.')
-
-  // Cleanup
-  accountV2.dispose()
-  managerV2.dispose()
-}
-
-migrateFromV1ToV2().catch(console.error)
-```
-
-## What Gets Preserved
-
-- All RGB assets and their balances
-- Transfer history
-- UTXO state
-- Wallet keys (derived from seed phrase, so same seed = same keys)
-
-## Next Steps
-
-After migration:
-
-1. Test your wallet by checking balances and listing assets
-2. Verify all your RGB assets are present
-3. Test a transfer to ensure everything works correctly
-4. Remove the old RGB Node server dependency if no longer needed
-
-For more information, see the [README.md](./README.md) and [CHANGELOG.md](./CHANGELOG.md).
+Standalone contract registration and export are available through the pinned upstream APIs. Query `getCapabilities()` before offering them; BTC-only accounts do not admit RGB contract operations. Registration requires the binary contract, expected asset ID and SHA-256, adds no allocations and returns `ASSET_ALREADY_KNOWN` for an existing asset. Do not treat that error as validation of the submitted bytes. Generic receive remains supported. Retrying an existing WebRGB receive must retain its operation ID, request key and expected asset: an already-issued generic invoice is recovered unchanged, even if the asset can now be registered.

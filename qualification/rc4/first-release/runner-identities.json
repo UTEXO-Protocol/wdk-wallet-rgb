@@ -1,0 +1,12 @@
+{
+  "files": {
+    "qualify.mjs": "4ad3a347f9885b475177eafe9571931def72ff95d6b5d62e0039b364934e877c",
+    "packed-peer.mjs": "185407c60143efe25c53b8346c656c383d3b82d0d74816e23e2a5ba5db59dbfc",
+    "local_fixture.py": "fde198646e0aa06e2881c4b9330aef18d77836e978ce0733f6bee880acb27933",
+    "audit.py": "88afb0fe43527482610063ca458a8f29a65e2d50dab7d83b781b48f0f3823ac5",
+    "qualify-stock-cancellation.mjs": "143731d55c9b4db3ac5eff087bdaca4c281e9355891a21b7f134046cddea20ec",
+    "verify-pack-transition.py": "f5fa1056804bca9f2fb7945db871bae5c5699b17856a5fd1356a73fc0dfe96b4"
+  },
+  "frozenBeforeFundedSdkOperations": true,
+  "notes": "Fixture issuer and cancellation preparation already completed; no SDK mint/transfer/burn invoked. Added independent review assertions before first financial invocation."
+}

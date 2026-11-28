@@ -1,0 +1,57 @@
+{
+  "packageSha256": "f0ecf049ca0b108d3338d4be2e360439029ac67ed196f0a0f7c680c9fe57e1f9",
+  "packageSource": "16d0e23a32495c738b6689bf98e6e001a5b824ac",
+  "qualificationPackageSha256": "64b27875903f9c0ff7f792bc65293052755efb55e91a51964b08331651ca74ab",
+  "releaseVerifierSha256": "8bc83223c7abac1c1557e5926c2c05742118c7994fc9c65d111266bdfee944f7",
+  "packageAdmission": {
+    "matchedFiles": 48,
+    "everyArchiveFileMatched": true
+  },
+  "nativeHashes": {
+    "node": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66",
+    "bare": "684d838bf14e13c2ade76955aa4423c2a11079d771d260db5715b9e67e5abf9a"
+  },
+  "existingFundedWallets": {
+    "node": {
+      "openedFreshProcess": true,
+      "metadataAndBalancesStable": true,
+      "originalKeysAndBip322Verified": true,
+      "allBurnProofsRecoveredIdentically": true,
+      "allTransfersRecoveredByOriginalId": true
+    },
+    "bare": {
+      "openedFreshProcess": true,
+      "metadataAndBalancesStable": true,
+      "originalKeysAndBip322Verified": true,
+      "allBurnProofsRecoveredIdentically": true,
+      "allTransfersRecoveredByOriginalId": true
+    }
+  },
+  "freshWallets": {
+    "node": {
+      "creation": true,
+      "bip322": true,
+      "publicContractRegistration": true,
+      "restartKeepsIdentityAndMetadata": true,
+      "noInventedAllocations": true,
+      "webRgbBurnProofAndMintMethodsAvailable": true
+    },
+    "bare": {
+      "creation": true,
+      "bip322": true,
+      "publicContractRegistration": true,
+      "restartKeepsIdentityAndMetadata": true,
+      "noInventedAllocations": true,
+      "webRgbBurnProofAndMintMethodsAvailable": true
+    }
+  },
+  "financialMutationsInvoked": false,
+  "complete": true,
+  "runnerSha256": "67a28a280688042be3eff50b948d4cb44935589e246ba908b25373b5030ac5f1",
+  "equivalenceReceiptSha256": "7ccb0da98c26c64429a16a826cf6d81417aab8c877af16093d257bc2fe24353d",
+  "initialAdmissionHarnessCorrection": {
+    "reason": "Final release-verifier receipt omits qualification-only holds/publicationAllowed fields. The helper was corrected to read the actual final receipt and validate both installed manifest holds.",
+    "beforeWalletOpen": true,
+    "financialOperationsReplayed": false
+  }
+}

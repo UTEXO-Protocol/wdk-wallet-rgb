@@ -1,9 +1,53 @@
 # Changelog
 
-All notable changes to `@utexo/wdk-wallet-rgb` are documented here.
+## 3.0.0-rc.4 — Unreleased
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+This is the first planned publication of the on-chain version 3 SDK. Earlier
+alpha and RC builds were qualification candidates; their evidence remains in
+Git history.
+
+### Breaking changes from 2.x
+
+- Replace the synchronous wrapper with asynchronous Node/Bare accounts, an
+  application-owned signer, explicit transaction approval and durable operation IDs.
+- Use `sendBtc()`, `sendRgbInvoice()` and BIP-322 signing instead of the legacy
+  send/sign aliases. Await account shutdown before disposing Tether Core.
+- Use an engine-specific wallet directory. There is no 2.x database converter;
+  a seed alone does not restore RGB proofs, allocations or operation journals.
+
+### Added
+
+- BTC receive/send; RGB output preparation, approval, creation and recovery;
+  NIA/CFA issuance and transfers on every supported RGB profile.
+- Optional-amount blinded and witness invoices, exact expired ordinary-receive
+  cancellation and durable expected-asset binding for generic receives.
+- WebRGB 0.1.7 prepared-mint verification, explicit V1 burn routes and scoped
+  proof export/recovery. Arbitrum, Ethereum, Polygon, Plasma and Tron routes
+  require application configuration.
+- Offline public contract registration/export with expected asset ID and hash,
+  bounded bytes and no allocations or transfers created by registration.
+- BIP-322, immutable public account keys, Tether Core integration and awaited
+  native shutdown. Pure getters can retry one unavailable indexer response;
+  financial operations retain their original identity and are not replayed.
+- Five Node-API addons and eleven Bare addons with source, lock, ABI and checksum
+  admission, all delivered in the npm archive. Node runs the unchanged engine on a
+  dedicated thread and waits for native cleanup without replaying interrupted operations.
+
+### Integration and dependencies
+
+- Qualify this first release with fresh wallets and merged upstream source.
+  Keep the complete wallet state for subsequent restart and recovery.
+  Duplicate contract registration returns `ASSET_ALREADY_KNOWN`; it does not
+  validate replacement bytes.
+- Pin public RGB-Tools `f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d`, including
+  merged public contract APIs, without a downstream source overlay. RGB protocol
+  dependencies remain `0.11.2-rc.2`; both runtimes use bundled SQLite 3.54.1.
+- Update the stock `url` dependency to 2.5.9 and `form_urlencoded` to 1.2.3 to
+  resolve RUSTSEC-2026-0592. Remaining upstream findings are recorded in
+  [DEPENDENCY-POLICY.md](DEPENDENCY-POLICY.md).
+
+Publication remains held until the rebuilt package passes qualification and the
+final release source and artifacts are reviewed. The intended npm tag is `next`.
 
 ## [2.0.3] — 2026-01-28
 

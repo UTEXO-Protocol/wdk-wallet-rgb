@@ -1,0 +1,12 @@
+{
+  "issuerRgbSource": "567e5b8308f70a6242137475394be5a82fc15c95",
+  "issuerExecutableSha256": "a91c549f010250b1ccff1fc1a2b6b0f1a679cf77533d33d2d4b072e4a06d19c9",
+  "issuerHelperSourceSha256": "ddb14234212b1e60d2860f2a3161dad598b8cb45c65123b04bc5190ef2ee8ffd",
+  "proofInspectorSha256": "ddaadf27ad5500102fbc2fb82f5d86fa3c40532911fd3aa9473e1eef55edf216",
+  "ownedComposeProject": "wdk_contract_upgrade_20261127",
+  "freshIssuerDirectory": "issuer-fixture/issuer-state",
+  "fixtureFunded": true,
+  "oldWalletsOpened": false,
+  "fixtureHelperSha256": "1691e27eadb78c864c7424e6ad0bb67662ef8d2c37b6ec613c9157261604667b",
+  "composeSha256": "70584caf06a5634d305aec3a9ceb97c02dfa5f96d067165bdfdc551b4512e7f5"
+}
