@@ -1,0 +1,68 @@
+{
+  "source": "16d0e23a32495c738b6689bf98e6e001a5b824ac",
+  "archive": {
+    "filename": "utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz",
+    "sha256": "f0ecf049ca0b108d3338d4be2e360439029ac67ed196f0a0f7c680c9fe57e1f9",
+    "name": "@utexo/wdk-wallet-rgb",
+    "version": "3.0.0-rc.4",
+    "size": 305291167,
+    "unpackedSize": 888906366,
+    "shasum": "da3af116cfd54599c28b801fa0d8cf1855afa000",
+    "integrity": "sha512-07gyA4XfWL0ZYv57XDZqLAVoQZ3tzUXVvQvRYRef5bbFSBqVF8Mp100X0sHoeFykc0d+D2aluyJvz1ldbJgbcQ==",
+    "entryCount": 48
+  },
+  "npmPublishDryRunPassed": true,
+  "registryAuthenticationVerified": false,
+  "published": false,
+  "installedFilesMatched": 48,
+  "concurrency": {
+    "node22": {
+      "node": "v22.23.3",
+      "nativeSha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66",
+      "independentManagers": 4,
+      "independentNativeThreads": 4,
+      "checks": [
+        "simultaneous offline open",
+        "three concurrent read and BIP-322 rounds",
+        "cross-wallet public signature verification",
+        "native same-directory collision across separate manager isolates",
+        "partial teardown while other wallets remain live",
+        "reopen after partial and full teardown preserves all four identities",
+        "all workers exit after awaited shutdown",
+        "host umask unchanged"
+      ]
+    },
+    "node24": {
+      "node": "v24.22.3",
+      "nativeSha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66",
+      "independentManagers": 4,
+      "independentNativeThreads": 4,
+      "checks": [
+        "simultaneous offline open",
+        "three concurrent read and BIP-322 rounds",
+        "cross-wallet public signature verification",
+        "native same-directory collision across separate manager isolates",
+        "partial teardown while other wallets remain live",
+        "reopen after partial and full teardown preserves all four identities",
+        "all workers exit after awaited shutdown",
+        "host umask unchanged"
+      ]
+    },
+    "node26": {
+      "node": "v26.11.1",
+      "nativeSha256": "861d06600b835919e2e7912903968abaa6e7cb7141489768c193823415c0ca66",
+      "independentManagers": 4,
+      "independentNativeThreads": 4,
+      "checks": [
+        "simultaneous offline open",
+        "three concurrent read and BIP-322 rounds",
+        "cross-wallet public signature verification",
+        "native same-directory collision across separate manager isolates",
+        "partial teardown while other wallets remain live",
+        "reopen after partial and full teardown preserves all four identities",
+        "all workers exit after awaited shutdown",
+        "host umask unchanged"
+      ]
+    }
+  }
+}

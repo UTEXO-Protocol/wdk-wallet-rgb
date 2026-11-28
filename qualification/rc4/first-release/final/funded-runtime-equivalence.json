@@ -1,0 +1,32 @@
+{
+  "fundedPackageSource": "c1093ff80e2987110d873034439d241a0f8cfeaa",
+  "fundedPackageSha256": "64b27875903f9c0ff7f792bc65293052755efb55e91a51964b08331651ca74ab",
+  "finalPackageSource": "16d0e23a32495c738b6689bf98e6e001a5b824ac",
+  "finalPackageSha256": "f0ecf049ca0b108d3338d4be2e360439029ac67ed196f0a0f7c680c9fe57e1f9",
+  "fileCount": 48,
+  "identicalFiles": 45,
+  "exactChangedFiles": [
+    "README.md",
+    "src/onchain-bare-native.json",
+    "src/onchain-node-native.json"
+  ],
+  "allowedChanges": {
+    "README.md": "One publication-status sentence only",
+    "nativeManifests": "publicationHold true to false only"
+  },
+  "runtimeFilesAndDependenciesUnchanged": true,
+  "allSixteenNativeBinariesByteIdentical": true,
+  "fundedReceipt": {
+    "path": "funded/funded-release.json",
+    "sha256": "30381c6cbdfd2be20ecf0068844e04b0115bff6975c800edf5fd5a1ede6e9a29"
+  },
+  "financialReceipt": {
+    "path": "funded/financial-release.json",
+    "sha256": "4324a486f2a151878f7145f36a0a39519207a5385aeccbdd3c8d0c2d0b228c4b"
+  },
+  "previousIndependentPackAuditSha256": "c292a5afb59c2203eacd4f2b853834938556cea315a97164da6b0171a329210a",
+  "finalIndependentPackAuditSha256": "792c003313cecbf8df730d5d8940c137a618127884eab01840082f871369d1ab",
+  "releaseAssetsVerified": true,
+  "publicationPerformed": false,
+  "scope": "Byte-equivalence and release artifact audit only. Original funded evidence is retained; this comparison does not replay transactions or claim additional hosted/mobile acceptance."
+}
