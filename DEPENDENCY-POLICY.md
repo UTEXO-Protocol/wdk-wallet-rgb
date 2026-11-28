@@ -1,9 +1,9 @@
 # Dependency policy
 
 RC4 uses unmodified public RGB-Tools rgb-lib commit
-`a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, tree
-`a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd`. It includes merged contract API
-PR #124 and the pending [BFA metadata upgrade repair in PR #138](https://github.com/RGB-Tools/rgb-lib/pull/138).
+`f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d`, tree
+`0c20cd05eb2899962c152b6ccac324e2a705dc38`. It includes the merged public
+contract import/export API from PR #124.
 The crate labels itself `0.3.0-beta.7`; the commit identifies the source.
 The locked RGB protocol dependencies are registry `0.11.2-rc.2` packages.
 WDK applies no downstream source patches or Cargo source overrides.
@@ -54,5 +54,7 @@ maintenance warning separately.
 Keep the current audit, dependency inventory and native identities with release
 evidence. Refresh the audit before publication, reassess any new findings and
 rebuild when native locks change. Functional tests do not establish that these
-dependencies are free of defects. The pending upstream metadata repair and
-existing-wallet upgrade acceptance are separate release requirements.
+dependencies are free of defects. This first release is qualified on fresh
+wallets. Reopening current wallet state and recovering interrupted operations
+remain required; upgrading older
+qualification databases is outside this release scope.

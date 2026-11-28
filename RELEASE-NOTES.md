@@ -20,22 +20,21 @@ Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedd
 mobile runtimes. The npm archive contains all Node and Bare addons; Node selects
 its addon automatically and no longer requires an executable path. Mobile applications link the appropriate native artifact.
 
-Follow [MIGRATION.md](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/v3.0.0-rc.4/MIGRATION.md) when replacing 2.x. Existing RC3 applications
-keep their complete wallet directory and keys; RC4 repairs cached BFA metadata
-from retained validated stock. Do not reopen an upgraded directory with an older
-binary. A seed alone cannot restore RGB proofs or WDK journals.
+Follow [MIGRATION.md](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/v3.0.0-rc.4/MIGRATION.md) when replacing 2.x. This first version 3 release
+uses fresh wallet directories. Preserve the complete directory for later
+restart and recovery; a seed alone cannot restore RGB proofs or WDK journals.
 
 The SDK ships no deployment-specific USDT metadata. Mainnet NIA/CFA are supported;
 Mainnet BFA, automatic VSS restore and contracts needing missing external media
 are outside this release's supported scope. Cancellation excludes BFA, assetless
 and progressed receives. Local mint/burn tests do not establish hosted payouts.
 
-The source is public RGB-Tools `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, with
+The source is public RGB-Tools `f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d`, with
 no downstream source patches. The stock URL library update resolves
 RUSTSEC-2026-0592. Remaining Esplora TLS findings and maintenance warnings are
 recorded in [DEPENDENCY-POLICY.md](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/v3.0.0-rc.4/DEPENDENCY-POLICY.md).
 
-These notes are prepared for release; publication remains blocked on
-[upstream #138](https://github.com/RGB-Tools/rgb-lib/pull/138) and final review.
+These notes are prepared for release; publication remains held until the rebuilt
+package passes qualification and final review is complete.
 See [QUALIFICATION.md](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/v3.0.0-rc.4/QUALIFICATION.md) for exact artifact identities, passing
 scopes and the distinction between installed-app, hosted and physical-device tests.

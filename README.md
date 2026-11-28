@@ -2,7 +2,7 @@
 
 An on-chain Bitcoin and RGB wallet SDK for Node and Bare. The application owns the signer and approves transactions; the native engine receives public account data and reviewed signed PSBTs. There is no Lightning dependency.
 
-Version 3 replaces the 2.x wrapper. See the [upgrade guide](MIGRATION.md) for integration changes and the in-place RC3-to-RC4 wallet update.
+Version 3 replaces the 2.x wrapper. See the [integration changes](MIGRATION.md) when replacing the earlier wrapper.
 
 ## Installation
 
@@ -12,7 +12,7 @@ After `3.0.0-rc.4` is published under `next`, install the exact version:
 npm install --save-exact @utexo/wdk-wallet-rgb@3.0.0-rc.4
 ```
 
-Until publication, install the reviewed local archive with `npm install ./utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz`. PR #23 remains on publication hold pending [upstream #138](https://github.com/RGB-Tools/rgb-lib/pull/138).
+Until publication, install the reviewed local archive with `npm install ./utexo-wdk-wallet-rgb-3.0.0-rc.4.tgz`. Publication remains on hold until the rebuilt package and final release review are complete.
 
 Node requires `^22.21.0 || >=24.9.0`; Bare requires `>=1.37.1`, including embedded mobile runtimes. The complete npm package contains all five Node and eleven Bare addons. Node selects and verifies its packaged addon automatically; no executable path or separate download is needed. Installation does not download or compile native code.
 

@@ -2,7 +2,7 @@
 
 The watch-only engine is shared by the Node-API and Bare addons. The application owns the seed, transaction review and signer. Native code receives public account keys and an exact signed PSBT after approval.
 
-The build uses unmodified RGB-Tools rgb-lib `0.3.0-beta.7`, commit `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, tree `a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd`. Electrum 0.25.2 and Esplora 0.12.3 are registry sources with Cargo checksums. There are no downstream RGB or client source patches. The RGB protocol crates use the locked registry `0.11.2-rc.2` graph. The `rgb_fs_store_migration` feature retains upstream decoding for earlier RGB file formats; it does not convert an earlier WDK wallet directory. The legacy manifest fields `overlayTree` and `integrationTree` now both identify the unmodified upstream tree.
+The build uses unmodified RGB-Tools rgb-lib `0.3.0-beta.7`, commit `f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d`, tree `0c20cd05eb2899962c152b6ccac324e2a705dc38`. Electrum 0.25.2 and Esplora 0.12.3 are registry sources with Cargo checksums. There are no downstream RGB or client source patches. The RGB protocol crates use the locked registry `0.11.2-rc.2` graph. The `rgb_fs_store_migration` feature retains upstream decoding for earlier RGB file formats; it does not convert an earlier WDK wallet directory. The legacy manifest fields `overlayTree` and `integrationTree` now both identify the unmodified upstream tree.
 
 ## Build and test
 
@@ -44,7 +44,7 @@ Before an RGB send or burn reaches native `End`, WDK persists its exposed input 
 
 Cancellation uses upstream retention and proxy-loss rules. It does not preserve the removed patch's stronger requirement for authenticated proof of an empty proxy record. Display eligibility is only an observation; the mutation checks current state again.
 
-`importContract` checks bounded bytes, SHA-256 and the expected asset ID, then calls the public upstream validator/importer. It adds no allocation. Duplicate imports remain errors; they do not prove that newly supplied bytes were validated. `exportContract` returns bounded pure genesis bytes and their digest, with no native path. Media attachment inputs are outside this envelope. The pinned source includes merged public API PR #124 and the pending [BFA metadata upgrade repair in #138](https://github.com/RGB-Tools/rgb-lib/pull/138); WDK applies no source overlay. Existing RC3 wallets retain their complete directory and journals during the qualified in-place update.
+`importContract` checks bounded bytes, SHA-256 and the expected asset ID, then calls the public upstream validator/importer. It adds no allocation. Duplicate imports remain errors; they do not prove that newly supplied bytes were validated. `exportContract` returns bounded pure genesis bytes and their digest, with no native path. Media attachment inputs are outside this envelope. The pinned source includes merged public API PR #124; WDK applies no source overlay. This first release uses fresh wallet directories. Contract registration writes the BFA metadata required for listing and transfers; complete directories and journals remain necessary for later reopening and recovery.
 
 ## Recovery and qualification
 

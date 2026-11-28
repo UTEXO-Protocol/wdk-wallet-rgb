@@ -1,8 +1,8 @@
 # On-chain WDK integration guide
 
-This qualification candidate uses the exact public RGB-Tools rgb-lib commit below with stock Electrum and Esplora clients and no downstream source overlay. Its BFA metadata upgrade repair is pending in [upstream PR #138](https://github.com/RGB-Tools/rgb-lib/pull/138). See the [qualification register](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/QUALIFICATION.md) for the exact rebuilt artifacts, tests and outstanding acceptance.
+This qualification candidate uses the exact public RGB-Tools rgb-lib commit below with stock Electrum and Esplora clients and no downstream source overlay. It uses the merged upstream source, including the public contract import/export APIs. See the [qualification register](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/QUALIFICATION.md) for the exact rebuilt artifacts, tests and outstanding acceptance.
 
-`@utexo/wdk-wallet-rgb@3.0.0-rc.4` retains the version 3 API and RC3 wallet directory identity. Version 3 is a breaking change from the published 2.x wrapper; see [MIGRATION.md](MIGRATION.md). The native protocol is version 2 and requires network checks, unsigned-operation recovery, journal writes, ordinary RGB asset issuance and contract registration/export. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and refuses incompatible engine directories.
+`@utexo/wdk-wallet-rgb@3.0.0-rc.4` is the first planned publication of the version 3 implementation. Version 3 is a breaking change from the published 2.x wrapper; see [MIGRATION.md](MIGRATION.md). The native protocol is version 2 and requires network checks, unsigned-operation recovery, journal writes, ordinary RGB asset issuance and contract registration/export. The native wallet receives public account data and signed PSBTs. The application signer checks outputs, fee, key origins and exact PSBT identity before adding witnesses. The SDK retains one account per manager and refuses incompatible engine directories.
 
 | Component | Pinned version or source |
 | --- | --- |
@@ -10,13 +10,13 @@ This qualification candidate uses the exact public RGB-Tools rgb-lib commit belo
 | Bare runtime minimum and test runtime | `1.37.1` (desktop and embedded mobile) |
 | Android symbol qualification runtime | Bare Kit `3.1.0`, Bare `1.37.1` |
 | Bare C headers | `1.35.0` |
-| RGB library | RGB-Tools `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, tree `a8e6f0e2a67e01fccc2c9882eb599436bc7eaedd` (pending PR #138; source package label `0.3.0-beta.7`) |
+| RGB library | RGB-Tools `f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d`, tree `0c20cd05eb2899962c152b6ccac324e2a705dc38` (merged upstream; source package label `0.3.0-beta.7`) |
 | Native artifacts | [Node target pins](src/onchain-node-native.json) and [Bare target pins](src/onchain-bare-native.json), qualified separately |
 | Signing | `@scure/btc-signer@2.4.1`, `@scure/bip32@2.4.0`, `@scure/base@2.4.0`, `@noble/curves@2.4.0`, `@noble/hashes@2.4.0` |
 
 `account.getPublicKeys()` returns a new frozen public identity with `network`, `accountXpubVanilla`, `accountXpubColored` and `masterFingerprint`. It is available offline and refuses access after account shutdown. This host API is not exposed through the WebRGB method list.
 
-RC4 keeps RC3's `rgb-l1-beta8-v1` wallet directory identity, account paths and journals. It opens those existing directories in place; it does not reset a wallet or recreate its invoices. The pinned upstream repair derives the new BFA metadata cache from retained contract stock in the same transaction, failing safely if the stock is missing. Earlier incompatible engine directories remain refused before their databases open. The source's beta.7 package label reflects upstream branch history, not a switch to the older BFA.7 engine or protocols.
+This first release is qualified with fresh wallet directories. Normal creation and contract import populate BFA metadata through the merged upstream API; no older-wallet metadata repair is included. Preserve each created wallet's complete directory for restart and recovery. The source's beta.7 package label reflects upstream branch history, not a switch to the older BFA.7 engine or protocols.
 
 ## Build and use
 

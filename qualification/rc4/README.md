@@ -1,10 +1,14 @@
 # RC4 qualification evidence
 
-## Current Node addon pack
+## First-release qualification
 
-The current complete archive is `b6054baa…`, package source `1323731…`. It contains five rebuilt Node-API addons from `ca2deb6…` and eleven unchanged Bare addons from `c5b4c1f…`. `platforms.json` records their exact mixed producers and admission evidence. [Node addon evidence](node-addon/README.md) covers all 48 packed files, actual Node 22/24/26 concurrency, funded in-place executable-to-addon upgrades, transfers, mint/burn and proof recovery. Publication remains held.
+The current release source uses merged RGB-Tools `f4971e0…` without the older-wallet repair in closed #138. It requires rebuilt Node/Bare artifacts and separate fresh-wallet acceptance. See the [current register](../../QUALIFICATION.md) for the exact admitted source and results. The older pack records below remain historical; they do not qualify the new upstream source.
 
-The records below remain historical. They qualify their own executable-based archives and provide retained wallet baselines; they do not identify the new Node package. `dependency-audit.json` remains applicable because both Cargo locks and npm dependencies are unchanged.
+## Previous Node addon pack
+
+The previous complete archive is `b6054baa…`, package source `1323731…`. It contains five rebuilt Node-API addons from `ca2deb6…` and eleven unchanged Bare addons from `c5b4c1f…`. The [historical platform receipt](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/1d5507c431ed14c932b790abff27fbbc649b6a01/qualification/rc4/platforms.json) records their exact mixed producers and admission evidence. [Node addon evidence](node-addon/README.md) covers all 48 packed files, actual Node 22/24/26 concurrency, funded in-place executable-to-addon upgrades, transfers, mint/burn and proof recovery. Publication remains held.
+
+The records below remain historical. They qualify their own executable-based archives and provide retained wallet baselines; they do not identify the new Node package. Its audit receipt describes that candidate's locks and dependencies; the new source must be audited separately.
 
 ## Previous executable-based release-preparation pack
 

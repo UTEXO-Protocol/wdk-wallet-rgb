@@ -15,15 +15,15 @@ Version 3 replaces the 2.x wrapper with an asynchronous Node/Bare wallet, an app
 
 The public configuration and methods are defined in [onchain.d.ts](onchain.d.ts). The [integration guide](CANDIDATE.md) includes Core registration, authorization, network profiles, issuance and recovery examples.
 
-## Updating RC3 to RC4
+## First-release wallet state
 
-RC4 retains the `rgb-l1-beta8-v1` directory identity, account derivation, network/profile identity and existing journals. Keep the complete RC3 wallet directory and update it in place. Do not reset it, import its seed into a new directory, or recreate pending invoices and operation IDs. This is distinct from the unsupported 2.x and earlier-engine conversions below.
+This is the first planned publication of the version 3 implementation. Qualification uses fresh wallet directories and ordinary recovery within this version. Earlier alpha/RC databases are test artifacts, not a supported production upgrade baseline. The release uses merged RGB-Tools source `f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d`, including the public contract APIs from #124; it does not include the older-database metadata repair proposed in #138.
 
-The exact RGB source is `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, which includes the merged public contract APIs and the pending [PR #138 metadata repair](https://github.com/RGB-Tools/rgb-lib/pull/138). The repair restores BFA bridge and reject-list metadata from the wallet's retained validated stock; it does not change balances, allocations or transfers. Missing stock fails the open operation rather than inventing metadata. Upstream also migrates consignment file names and adds invoice storage. Preserve a complete private backup before the first upgrade; do not reopen an upgraded database with the older binary. Exact funded wallet and installed-application upgrade acceptance is recorded in the [qualification register](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/candidate/onchain-bfa/QUALIFICATION.md), separately from source tests.
+Create or import a wallet into its own private directory. Importing a seed restores the keys and discoverable Bitcoin history; registering a public RGB contract restores metadata, not allocations. Preserve the complete directory, validated RGB stock and WDK journals for RGB balance and proof recovery. Restarting a wallet created by this release must retain its identities, pending operations and proofs.
 
 ## Updating the Node transport
 
-The Node addon uses the same Rust engine, database schema, directory identity, derivation and operation journals as the earlier RC4 executable. Keep the complete wallet directory and the same configuration. Remove `nativeExecutable` and its old executable `nativeSha256`; the SDK now resolves and verifies its bundled `.node` addon. An explicit `nativeAddon` path is optional and must match the admitted binary for the current platform. It cannot select an arbitrary native build.
+For an application previously configured against the experimental RC4 executable, remove `nativeExecutable` and its old executable `nativeSha256`; the SDK now resolves and verifies its bundled `.node` addon. An explicit `nativeAddon` path is optional and must match the admitted binary for the current platform. It cannot select an arbitrary native build.
 
 Await shutdown before replacing an account or moving its directory. Restart the host process after updating the SDK or replacing a native addon; native code is intentionally kept mapped across worker teardown and cannot be hot-swapped safely. The addon runs on a dedicated worker thread. A timeout rejects the caller's wait, but a native operation that has already started may still complete. Shutdown waits for that operation and releases the native lock before resolving. Reopen with the original operation ID and use the recovery API; never resend under a new ID. Unlike the previous executable, a native crash affects the host process, so applications must preserve the journals across process restart.
 
@@ -31,7 +31,7 @@ Await shutdown before replacing an account or moving its directory. Restart the 
 
 Create a new, private directory when moving from 2.x or an incompatible earlier engine. Use distinct directories for Mainnet, Public Signet, Dev Signet and Regtest. Do not copy a legacy database into a new directory or remove the directory identity marker to bypass admission. Earlier BFA.7/BFA.8 directories with an identity other than `rgb-l1-beta8-v1` require their original SDK. The upstream file-codec migration feature does not bypass WDK directory admission.
 
-For qualification of an incompatible engine, use a fresh disposable wallet. Retain an existing funded wallet's original SDK and complete data until funds have been transferred and independently reconciled. This release makes no same-seed, same-address, database-conversion or RGB seed-only recovery guarantee across incompatible engines. These restrictions do not require resetting the RC3 wallets described above.
+For qualification of an incompatible engine, use a fresh disposable wallet. Retain an existing funded wallet's original SDK and complete data until funds have been transferred and independently reconciled. This release makes no same-seed, same-address, database-conversion or RGB seed-only recovery guarantee across incompatible engines. Do not use a production wallet directory as a disposable qualification fixture.
 
 ## Interrupted operations
 

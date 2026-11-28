@@ -33,22 +33,21 @@ Git history.
   admission, all delivered in the npm archive. Node runs the unchanged engine on a
   dedicated thread and waits for native cleanup without replaying interrupted operations.
 
-### Upgrade and dependencies
+### Integration and dependencies
 
-- Preserve RC3 wallet directories, keys, pending invoices, balances and proof
-  files. The pinned upstream BFA metadata repair in
-  [RGB-Tools #138](https://github.com/RGB-Tools/rgb-lib/pull/138) remains a release
-  dependency. Duplicate contract registration returns `ASSET_ALREADY_KNOWN`;
-  it does not validate replacement bytes.
-- Pin public RGB-Tools `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2`, including
+- Qualify this first release with fresh wallets and merged upstream source.
+  Keep the complete wallet state for subsequent restart and recovery.
+  Duplicate contract registration returns `ASSET_ALREADY_KNOWN`; it does not
+  validate replacement bytes.
+- Pin public RGB-Tools `f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d`, including
   merged public contract APIs, without a downstream source overlay. RGB protocol
   dependencies remain `0.11.2-rc.2`; both runtimes use bundled SQLite 3.54.1.
 - Update the stock `url` dependency to 2.5.9 and `form_urlencoded` to 1.2.3 to
   resolve RUSTSEC-2026-0592. Remaining upstream findings are recorded in
   [DEPENDENCY-POLICY.md](DEPENDENCY-POLICY.md).
 
-Publication remains held until upstream #138 is accepted and the final release
-source and artifacts are reviewed. The intended npm tag is `next`.
+Publication remains held until the rebuilt package passes qualification and the
+final release source and artifacts are reviewed. The intended npm tag is `next`.
 
 ## [2.0.3] — 2026-01-28
 

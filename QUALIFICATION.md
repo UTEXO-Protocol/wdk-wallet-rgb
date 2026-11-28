@@ -2,9 +2,17 @@
 
 This register covers `@utexo/wdk-wallet-rgb@3.0.0-rc.4`. Build, packed runtime, funded local and installed-app checks have separate scopes. Receipts and disposable fixtures are excluded from the npm package.
 
-## Current Node addon candidate
+## Current first-release candidate
 
-Node uses a bundled Node-API v8 addon on a dedicated thread instead of a separate Rust executable. The shared Rust engine, upstream sources, database identities and Bare native inputs are unchanged. Every Node target was rebuilt and executed; all eleven Bare binaries retain their original hashes. The complete archive passed funded Node/Bare acceptance. Publication remains held.
+The release now pins merged RGB-Tools `f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d`, tree `0c20cd05eb2899962c152b6ccac324e2a705dc38`, with the merged public contract APIs from #124 and no downstream source patch. The source package labels itself `0.3.0-beta.7`; the exact commit identifies the implementation. Closed #138 is not included or required for this fresh-wallet release.
+
+All five Node and eleven Bare targets were rebuilt from `60f22b2a62665ee61c4d0898320e29999c9f6209`. [Producer CI](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/46126203212) passes all 19 jobs. [Platform admission](qualification/rc4/platforms.json) independently verifies every source, archive, binary and ABI: nine desktop targets execute packed consumers, and seven mobile targets pass build/ABI checks. Node runs 59 Rust tests per target; desktop Bare runs 51. Native artifact admission is complete. Funded fresh-wallet, final package and installed-app checks are in progress; publication remains held. Historical results below do not substitute for those checks.
+
+Fresh BFA creation/import writes its metadata through the merged upstream API. Qualification does not require upgrading an older alpha/RC wallet database. It does require preserving all wallet state, pending operations and proof bytes across restarts after creation with this candidate. Seed import does not recover missing RGB allocations or proofs.
+
+## Previous Node addon candidate
+
+Node uses a bundled Node-API v8 addon on a dedicated thread instead of a separate Rust executable. In this historical candidate, the shared Rust engine, upstream sources, database identities and Bare native inputs were unchanged. Every Node target was rebuilt and executed; all eleven Bare binaries retained their original hashes. Its complete archive passed funded Node/Bare acceptance.
 
 | Input | Reviewed identity |
 | --- | --- |
@@ -16,8 +24,8 @@ Node uses a bundled Node-API v8 addon on a dedicated thread instead of a separat
 
 | Scope | Result and evidence |
 | --- | --- |
-| Node platform builds | All five [producer jobs pass](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/46015918020): macOS ARM64/x64, Linux GNU ARM64/x64 and Linux musl x64. Each runs 54 Rust library and five network integration tests, native lifecycle tests and actual packed-consumer automatic/explicit addon loading. [Platform admission](qualification/rc4/platforms.json) independently verifies GitHub ZIP hashes, source/locks, binary identities, ABI, exports and loader protections. |
-| Retained Bare platforms | All eleven native artifacts retain the admitted source and hashes from [their successful producer](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/45995455771). The shared engine and Bare bindings are unchanged. Four desktop targets have their retained runtime acceptance; seven mobile targets have retained build/ABI acceptance. Current packed Bare Darwin ARM64 also passes the funded tests below. |
+| Node platform builds | All five [producer jobs pass](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/46015918020): macOS ARM64/x64, Linux GNU ARM64/x64 and Linux musl x64. Each runs 54 Rust library and five network integration tests, native lifecycle tests and actual packed-consumer automatic/explicit addon loading. [Historical platform admission](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/blob/1d5507c431ed14c932b790abff27fbbc649b6a01/qualification/rc4/platforms.json) independently verifies GitHub ZIP hashes, source/locks, binary identities, ABI, exports and loader protections. |
+| Retained Bare platforms | All eleven native artifacts retain the admitted source and hashes from [their successful producer](https://github.com/UTEXO-Protocol/wdk-wallet-rgb/actions/runs/45995455771). The shared engine and Bare bindings are unchanged. Four desktop targets have their retained runtime acceptance; seven mobile targets have retained build/ABI acceptance. That archive's Bare Darwin ARM64 passed the funded tests below. |
 | Source and lifecycle tests | 165 JavaScript tests, public types, 36 release/scope regressions, runtime npm audit and strict local Clippy pass. Fourteen real Node-API fixture regressions cover identity/bounds, terminal errors, timeout/close during a dispatched mutation, retained directory ownership and no replay. These fixtures are separate from actual funded execution. |
 | Complete package | [Archive receipt](qualification/rc4/node-addon/complete-pack.json): 48 files, 305,412,746 bytes, five Node and eleven Bare addons. Every file matches committed source or an admitted binary. Independent installation comparisons and the local npm publication dry-run pass. Registry authentication and server acceptance are not established. |
 | Concurrent native execution | The exact CI Darwin ARM64 addon in the full archive passes on [Node 22, 24 and 26](qualification/rc4/node-addon/concurrency/acceptance.json). Four independent managers/native threads perform reads and BIP-322, enforce native lock exclusion across JS isolates, shut down partially and completely, and reopen with unchanged identities. |
@@ -40,9 +48,9 @@ Node applications remove `nativeExecutable` and the old executable hash, preserv
 | Package source | `2331119dfc48b782dc1ad5af3f32d21ff38319a1` |
 | Archive SHA-256 | `c7b42d8bc1bde6ea5f02a66aa1f7927115ac9a3678eaf702a7480c71aa447dbe` |
 
-The public RGB source includes merged contract APIs from [#124](https://github.com/RGB-Tools/rgb-lib/pull/124) and the pending [BFA metadata repair in #138](https://github.com/RGB-Tools/rgb-lib/pull/138). Its crate label is `0.3.0-beta.7`; the exact commit identifies this newer source. No downstream source overlay or Cargo source override is applied. PR #103 is superseded by #124.
+This historical public RGB source included the merged contract APIs from [#124](https://github.com/RGB-Tools/rgb-lib/pull/124) and the now-closed [BFA metadata repair in #138](https://github.com/RGB-Tools/rgb-lib/pull/138). No downstream source overlay or Cargo source override was applied. PR #103 is superseded by #124.
 
-**#138 remains a merge dependency.** It reconstructs missing BFA bridge/reject-list metadata from retained validated stock during transactional wallet initialization, preserving keys, allocations and transfers. Missing stock fails without a partial backfill. Without the repair, an older BFA database can migrate and then panic when listing an asset.
+The #138 tests covered reconstruction of missing BFA metadata in older databases. Those earlier upgrade results are retained for traceability, not as a current release dependency. The first release does not admit an older alpha/RC database as its upgrade baseline.
 
 The previous candidate had complete native artifact admission. `publicationHold: true` remains. Removing that hold changes a packed file: repack and rerun package admission/consumer checks against the final release source. [RELEASING.md](RELEASING.md) records the review, normal-merge and publication order.
 
@@ -66,7 +74,7 @@ The [Android update receipt](qualification/rc4/iris-android-update.json) and iOS
 
 ## Remaining limits
 
-- Obtain upstream #138 acceptance, verify the accepted source, and rebuild if native inputs change. Required SDK reviews, npm maintainer authentication and authorized publication remain separate steps.
+- Complete new-source artifact admission and funded fresh-wallet acceptance. Required SDK reviews, npm maintainer authentication and authorized publication remain separate steps.
 - Local mint/burn/proof tests do not establish hosted gateway/TEE enforcement, EVM redemption or payouts on external networks. The package contains no deployment-specific USDT export or metadata.
 - A seed restores keys and discoverable Bitcoin history, not missing RGB consignments, allocations or journals. Preserve the complete wallet directory. Automatic VSS restore and legacy 2.x wallet conversion are not provided.
 - Cancellation follows upstream retention/proxy-loss semantics; BFA, assetless and progressed receives remain excluded. Ambiguous signed inputs stay reserved. Recovery preserves the original operation identity rather than constructing another payment.
@@ -74,7 +82,7 @@ The [Android update receipt](qualification/rc4/iris-android-update.json) and iOS
 
 ## Retained baseline and historical evidence
 
-[RC3 baseline identities](qualification/rc3/README.md) and its platform receipt remain here because the RC4 upgrade tests depend on those exact older inputs. Historical results do not qualify a different package or binary.
+[RC3 baseline identities](qualification/rc3/README.md) and its platform receipt remain here to reproduce the historical RC4 upgrade tests. Historical results do not qualify a different package or binary.
 
 Superseded qualification receipts remain available at immutable commit `a6dd195b3988b6fccd70dce9a66c2577ac368853`:
 

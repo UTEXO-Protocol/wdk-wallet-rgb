@@ -1,6 +1,6 @@
 # Bare native builds
 
-The addon uses the same watch-only engine as the Node worker. The application owns the seed, transaction review and signer. Builds use unmodified RGB-Tools rgb-lib `0.3.0-beta.7` at `a62fc7d3aa21f715a53c32419ab6d9fbbf1721a2` (the pending upstream BFA metadata repair in PR #138) with stock Electrum and Esplora clients. See the [qualification register](../../QUALIFICATION.md) for current results and dependency advisories.
+The addon uses the same watch-only engine as the Node worker. The application owns the seed, transaction review and signer. Builds use unmodified RGB-Tools rgb-lib `0.3.0-beta.7` at `f4971e0165c2ed35ca74e65e3fd0071e4eed7f2d` (merged upstream) with stock Electrum and Esplora clients. See the [qualification register](../../QUALIFICATION.md) for current results and dependency advisories.
 
 The SDK requires **Bare 1.37.1 or newer**, including embedded mobile runtimes. The build locks pin `bare@1.37.1`, `bare-runtime@1.37.1` and `bare-headers@1.35.0`. Android symbol qualification uses Bare Kit 3.1.0 with Bare source `32aa0ae69da547f0d0cca011f3e8bcbbfc9f44c3`. An older app runtime must be updated and tested before integrating this candidate.
 
